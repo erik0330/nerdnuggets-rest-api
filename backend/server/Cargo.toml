@@ -1,0 +1,32 @@
+[package]
+name = "server"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "NerdNuggetsBackend"
+path = "src/main.rs"
+
+[dependencies]
+async-stripe.workspace = true
+aws-sdk-s3.workspace = true
+aws-sdk-sesv2.workspace = true
+aws-config.workspace = true
+axum.workspace = true
+bcrypt.workspace = true
+chrono.workspace = true
+database.path = "../database"
+email_address.workspace = true
+jsonwebtoken.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+telegram-auth-rs.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+twitter-v2.workspace = true
+third_party_api.path = "../libraries/third_party_api"
+types.path = "../libraries/types"
+url.workspace = true
+utils.path = "../libraries/utils"
+uuid.workspace = true

@@ -1,0 +1,21 @@
+[package]
+name = "database"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-stripe.workspace = true
+aws-sdk-sesv2.workspace = true
+bcrypt.workspace = true
+chrono.workspace = true
+jsonwebtoken.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+sqlx.workspace = true
+serde_json.workspace = true
+third_party_api.path = "../libraries/third_party_api"
+types.path = "../libraries/types"
+utils.path = "../libraries/utils"
+uuid.workspace = true

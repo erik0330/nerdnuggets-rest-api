@@ -1,0 +1,17 @@
+[package]
+name = "third_party_api"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+arrs.workspace = true
+anyhow.workspace = true
+chrono.workspace = true
+reqwest.workspace = true
+rsa.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+types.path = "../types"
+url.workspace = true

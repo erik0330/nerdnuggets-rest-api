@@ -1,0 +1,11 @@
+pub const FROM_EMAIL_ADDRESS: &str = "NobleBlocks <info@nobleblocks.com>";
+pub const EMAIL_SEND_AGAIN_IN_SECONDS: i64 = 30;
+pub const MAX_COUNT_ARTICLE_TEMP: i64 = 5;
+pub const RATING_CONNECT_SOCIAL: i32 = 2;
+pub const RATING_REPORT: i32 = 5;
+pub const RATING_CREAT_POST: i32 = 5;
+pub const RATING_CREAT_COMMENT: i32 = 3;
+pub const RATING_LIKE: i32 = 1;
+// pub const STR_ROLE_AUTHOR: &str = "Author";
+// pub const STR_ROLE_REVIEWER: &str = "Reviewer";
+// pub const STR_ROLE_EDITOR: &str = "Editor";

@@ -1,0 +1,25 @@
+# Various IDEs and Editors
+.vscode/
+.idea/
+**/*~
+
+# Mac OSX temporary files
+.DS_Store
+**/.DS_Store
+
+# dfx temporary files
+.dfx/
+
+# rust
+target/
+
+# environment variables
+.env
+.env.prod
+arweave_pk.json
+
+# canister wasms
+wasms/
+
+pocket-ic
+/src

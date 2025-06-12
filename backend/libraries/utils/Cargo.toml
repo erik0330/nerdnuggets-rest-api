@@ -1,0 +1,21 @@
+[package]
+name = "utils"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+aws-sdk-sesv2.workspace = true
+chrono.workspace = true
+dotenv.workspace = true
+email_address.workspace = true
+rand.workspace = true
+rsa.workspace = true
+serde.workspace = true
+serde_bytes.workspace = true
+sha2.workspace = true
+sqlx.workspace = true
+types.path = "../types"
+url.workspace = true
+uuid.workspace = true
