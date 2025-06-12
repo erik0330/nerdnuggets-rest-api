@@ -64,7 +64,7 @@ pub async fn routes(db_conn: Arc<DatabasePool>, env: Env) -> IntoMakeService<Rou
             .merge(auth::routes())
             .with_state(app_state)
             .merge(Router::new().route("/health", get(|| async { "<h1>NERDNUGGETS BACKEND</h1>" })))
-            .merge(Router::new().route("/version", get(|| async { "V1.0.1" })))
+            .merge(Router::new().route("/version", get(|| async { "NerdNuggets Backend V1.0.1" })))
     };
 
     let cors = CorsLayer::new()
@@ -94,7 +94,7 @@ pub async fn routes(db_conn: Arc<DatabasePool>, env: Env) -> IntoMakeService<Rou
         .allow_credentials(true)
         .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]);
 
-    let app_router = Router::new().nest("/api/v1", merged_router).layer(cors);
+    let app_router = Router::new().nest("/api/v2", merged_router).layer(cors);
 
     app_router.into_make_service()
 }
