@@ -36,17 +36,6 @@ impl UserService {
             .ok_or_else(|| UserError::UserNotFound.into())
     }
 
-    pub async fn find_by_user_name(
-        &self,
-        user_name: &str,
-        increase: bool,
-    ) -> Result<User, ApiError> {
-        self.user_repo
-            .find_by_user_name(user_name, increase)
-            .await
-            .ok_or_else(|| UserError::UserNotFound.into())
-    }
-
     pub async fn find_by_email(&self, email: &str) -> Result<User, ApiError> {
         self.user_repo
             .find_by_email(email)
@@ -276,18 +265,18 @@ impl UserService {
         })
     }
 
-    pub async fn check_username(
-        &self,
-        id: Uuid,
-        username: &str,
-    ) -> Result<UserCheckResponse, ApiError> {
-        let is_available = if let Some(user) = self.user_repo.find_by_username(username).await {
-            user.id == id
-        } else {
-            true
-        };
-        Ok(UserCheckResponse { is_available })
-    }
+    // pub async fn check_username(
+    //     &self,
+    //     id: Uuid,
+    //     username: &str,
+    // ) -> Result<UserCheckResponse, ApiError> {
+    //     let is_available = if let Some(user) = self.user_repo.find_by_username(username).await {
+    //         user.id == id
+    //     } else {
+    //         true
+    //     };
+    //     Ok(UserCheckResponse { is_available })
+    // }
 
     pub fn verify_password(&self, user: &User, password: &str) -> bool {
         bcrypt::verify(password, user.password.clone().unwrap().as_str()).unwrap_or(false)
@@ -295,7 +284,7 @@ impl UserService {
 
     pub async fn create_user_with_email(
         &self,
-        username: &str,
+        name: &str,
         institution: &str,
         email: &str,
         password: &str,
@@ -305,7 +294,7 @@ impl UserService {
         }
         match self
             .user_repo
-            .create_user_with_email(username, institution, email, password)
+            .create_user_with_email(name, institution, email, password)
             .await
         {
             Ok(user) => Ok(user),
@@ -313,23 +302,23 @@ impl UserService {
         }
     }
 
-    pub async fn update_username(
-        &self,
-        id: Uuid,
-        payload: UserUpdateUsernameRequest,
-    ) -> Result<UserUpdateResponse, ApiError> {
-        if let Some(user) = self.user_repo.find_by_username(&payload.user_name).await {
-            if user.id == id {
-                return Ok(UserUpdateResponse { state: true });
-            } else {
-                return Err(UserError::UsernameAlreadyExists)?;
-            }
-        }
-        match self.user_repo.update_username(id, &payload.user_name).await {
-            Ok(result) => Ok(UserUpdateResponse { state: result }),
-            Err(e) => Err(DbError::SomethingWentWrong(e.to_string()))?,
-        }
-    }
+    // pub async fn update_username(
+    //     &self,
+    //     id: Uuid,
+    //     payload: UserUpdateUsernameRequest,
+    // ) -> Result<UserUpdateResponse, ApiError> {
+    //     if let Some(user) = self.user_repo.find_by_username(&payload.user_name).await {
+    //         if user.id == id {
+    //             return Ok(UserUpdateResponse { state: true });
+    //         } else {
+    //             return Err(UserError::UsernameAlreadyExists)?;
+    //         }
+    //     }
+    //     match self.user_repo.update_username(id, &payload.user_name).await {
+    //         Ok(result) => Ok(UserUpdateResponse { state: result }),
+    //         Err(e) => Err(DbError::SomethingWentWrong(e.to_string()))?,
+    //     }
+    // }
 
     // pub async fn update_profile(
     //     &self,

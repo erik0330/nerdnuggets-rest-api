@@ -6,7 +6,7 @@ use uuid::Uuid;
 pub struct User {
     pub id: Uuid,
     pub username: Option<String>,
-    pub full_name: Option<String>,
+    pub name: Option<String>,
     pub password: Option<String>,
     pub email: String,
     pub verified_email: bool,
@@ -29,7 +29,7 @@ impl User {
         UserInfo {
             id: self.id,
             username: self.username.clone().unwrap_or_default(),
-            full_name: self.full_name.clone().unwrap_or_default(),
+            name: self.name.clone().unwrap_or_default(),
             password: self.password.clone(),
             email: self.email.clone(),
             verified_email: self.verified_email,
@@ -58,7 +58,7 @@ impl User {
 pub struct UserInfo {
     pub id: Uuid,
     pub username: String,
-    pub full_name: String,
+    pub name: String,
     pub password: Option<String>,
     pub email: String,
     pub verified_email: bool,

@@ -351,7 +351,7 @@ pub async fn register_with_email(
         .service
         .user
         .create_user_with_email(
-            &payload.username,
+            &payload.name,
             &payload.institution,
             &payload.email,
             &bcrypt::hash(payload.password, 12).unwrap(),

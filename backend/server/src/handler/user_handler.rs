@@ -76,19 +76,19 @@ use uuid::Uuid;
 //     }));
 // }
 
-pub async fn check_username(
-    Extension(user): Extension<User>,
-    opts: Option<Query<UserCheckUsernameOption>>,
-    State(state): State<AppState>,
-) -> Result<Json<UserCheckResponse>, ApiError> {
-    let Query(opts) = opts.unwrap_or_default();
-    let res = state
-        .service
-        .user
-        .check_username(user.id, &opts.username.unwrap_or_default())
-        .await?;
-    Ok(Json(res))
-}
+// pub async fn check_username(
+//     Extension(user): Extension<User>,
+//     opts: Option<Query<UserCheckUsernameOption>>,
+//     State(state): State<AppState>,
+// ) -> Result<Json<UserCheckResponse>, ApiError> {
+//     let Query(opts) = opts.unwrap_or_default();
+//     let res = state
+//         .service
+//         .user
+//         .check_username(user.id, &opts.username.unwrap_or_default())
+//         .await?;
+//     Ok(Json(res))
+// }
 
 // pub async fn update_username(
 //     Extension(user): Extension<User>,
