@@ -124,7 +124,7 @@ pub struct UserLoginWithTwitter2Request {
 pub struct UserReadDto {
     pub id: Uuid,
     pub username: String,
-    pub full_name: String,
+    pub name: String,
     pub email: String,
     pub roles: Vec<String>,
     pub avatar_url: Option<String>,
@@ -143,7 +143,7 @@ impl UserReadDto {
         Self {
             id: model.id,
             username: model.username.unwrap_or_default(),
-            full_name: model.full_name.unwrap_or_default(),
+            name: model.name.unwrap_or_default(),
             email: model.email,
             roles: model.roles,
             avatar_url: model.avatar_url,
@@ -180,7 +180,7 @@ pub struct UserCheckResponse {
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 pub struct UserRegisterWithEmailRequest {
-    pub username: String,
+    pub name: String,
     pub institution: String,
     pub email: String,
     pub password: String,
