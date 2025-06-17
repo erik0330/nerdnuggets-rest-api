@@ -1,8 +1,8 @@
-use crate::state::AppState;
-use axum::Router;
+use crate::{handler::user_handler::update_user_onboarding, state::AppState};
+use axum::{routing::post, Router};
 
 pub fn routes() -> Router<AppState> {
-    Router::new()
+    Router::new().route("/user/onboarding/:id", post(update_user_onboarding))
     // .route("/user/role_change", post(change_role))
     // .route("/user/check_username", get(check_username))
     // .route("/user/update_username", post(update_username))

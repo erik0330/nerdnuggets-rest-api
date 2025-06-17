@@ -12,6 +12,7 @@ CREATE TABLE
         gmail VARCHAR(255),
         roles TEXT[] DEFAULT ARRAY[]::TEXT[],
         institution VARCHAR(255),
+        interests TEXT[] DEFAULT ARRAY[]::TEXT[],
         avatar_url VARCHAR(255),
         bio TEXT,
         tier VARCHAR(255) NOT NULL,

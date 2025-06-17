@@ -4,10 +4,11 @@ use std::{str::FromStr, sync::Arc};
 use types::{
     dto::{
         UserAddAffiliationRequest, UserAddAffiliationResponse, UserCheckResponse,
-        UserDeleteRequest, UserEditAffiliationRequest, UserUpdateDomainExpertiseRequest,
-        UserUpdateNobleblocksRoleRequest, UserUpdateNotificationRequest, UserUpdateProfileRequest,
-        UserUpdateResponse, UserUpdateRolesRequest, UserUpdateSettingProfileRequest,
-        UserUpdateUsernameRequest, UserUploadAvatarResponse, UserUploadWallPaperResponse,
+        UserDeleteRequest, UserEditAffiliationRequest, UserOnboardingRequest,
+        UserUpdateDomainExpertiseRequest, UserUpdateNobleblocksRoleRequest,
+        UserUpdateNotificationRequest, UserUpdateProfileRequest, UserUpdateResponse,
+        UserUpdateRolesRequest, UserUpdateSettingProfileRequest, UserUpdateUsernameRequest,
+        UserUploadAvatarResponse, UserUploadWallPaperResponse,
     },
     error::{ApiError, DbError, UserError},
     models::{Affiliation, SpeechWithTitle, TempUser, User, UserInfo},
@@ -102,107 +103,6 @@ impl UserService {
     //         .map_err(|err| DbError::SomethingWentWrong(err.to_string()).into())
     // }
 
-    // pub async fn create_user_with_data(
-    //     &self,
-    //     noble_id: &Option<String>,
-    //     user_name: &Option<String>,
-    //     first_name: &Option<String>,
-    //     second_name: &Option<String>,
-    //     gender: &Option<i16>,
-    //     degree: &Option<Vec<String>>,
-    //     country: &Option<String>,
-    //     city: &Option<String>,
-    //     avatar_url: &Option<String>,
-    //     about_me: &Option<String>,
-    //     principal: &Option<String>,
-    //     gmail: &Option<String>,
-    //     date_created: &Option<DateTime<Utc>>,
-    //     date_updated: &Option<DateTime<Utc>>,
-    // ) -> Result<User, ApiError> {
-    //     self.user_repo
-    //         .create_user_with_data(
-    //             noble_id,
-    //             user_name,
-    //             first_name,
-    //             second_name,
-    //             gender,
-    //             degree,
-    //             country,
-    //             city,
-    //             avatar_url,
-    //             about_me,
-    //             principal,
-    //             gmail,
-    //             date_created,
-    //             date_updated,
-    //         )
-    //         .await
-    //         .map_err(|err| DbError::SomethingWentWrong(err.to_string()).into())
-    // }
-
-    // pub async fn tempuser_by_email(&self, email: &str) -> Result<TempUser, ApiError> {
-    //     self.user_repo
-    //         .tempuser_by_email(email)
-    //         .await
-    //         .ok_or_else(|| UserError::UserNotFound.into())
-    // }
-
-    // pub async fn update_tempuser_with_email(
-    //     &self,
-    //     email: &str,
-    //     password: &str,
-    //     verify_type: &str,
-    //     passkey: &str,
-    //     try_limit: i16,
-    //     iat: i64,
-    //     exp: i64,
-    //     updated_at: DateTime<Utc>,
-    // ) -> Result<bool, ApiError> {
-    //     self.user_repo
-    //         .update_tempuser_with_email(
-    //             email,
-    //             password,
-    //             verify_type,
-    //             passkey,
-    //             try_limit,
-    //             iat,
-    //             exp,
-    //             updated_at,
-    //         )
-    //         .await
-    //         .map_err(|_| {
-    //             DbError::SomethingWentWrong("TempUser can't be updated".to_string()).into()
-    //         })
-    // }
-
-    // pub async fn create_tempuser_with_email(
-    //     &self,
-    //     email: &str,
-    //     password: &str,
-    //     verify_type: &str,
-    //     passkey: &str,
-    //     try_limit: i16,
-    //     iat: i64,
-    //     exp: i64,
-    //     now: DateTime<Utc>,
-    // ) -> Result<bool, ApiError> {
-    //     self.user_repo
-    //         .create_tempuser_with_email(
-    //             email,
-    //             password,
-    //             verify_type,
-    //             passkey,
-    //             try_limit,
-    //             iat,
-    //             exp,
-    //             now,
-    //         )
-    //         .await
-    //         .map_err(|_| {
-    //             DbError::SomethingWentWrong("TempUser can't be created".to_string()).into()
-    //         })
-    // }
-
     pub async fn update_gmail(&self, id: Uuid, gmail: Option<String>) -> Result<bool, ApiError> {
         self.user_repo
             .update_gmail(id, gmail)
@@ -210,47 +110,31 @@ impl UserService {
             .map_err(|_| DbError::SomethingWentWrong("Update gmail failed".to_string()).into())
     }
 
-    // pub async fn update_website(
-    //     &self,
-    //     id: Uuid,
-    //     web_site: Option<String>,
-    // ) -> Result<bool, ApiError> {
-    //     self.user_repo
-    //         .update_website(id, web_site)
-    //         .await
-    //         .map_err(|_| DbError::SomethingWentWrong("Update website failed".to_string()).into())
-    // }
-
-    // pub async fn update_linkedin(
-    //     &self,
-    //     id: Uuid,
-    //     linkedin: Option<String>,
-    // ) -> Result<bool, ApiError> {
-    //     self.user_repo
-    //         .update_linkedin(id, linkedin)
-    //         .await
-    //         .map_err(|_| DbError::SomethingWentWrong("Update linkedin failed".to_string()).into())
-    // }
-
-    // pub async fn update_orc_id(&self, id: Uuid, orc_id: Option<String>) -> Result<bool, ApiError> {
-    //     self.user_repo
-    //         .update_orc_id(id, orc_id)
-    //         .await
-    //         .map_err(|_| DbError::SomethingWentWrong("Update orc Id failed".to_string()).into())
-    // }
-
-    // pub async fn update_google_scholar(
-    //     &self,
-    //     id: Uuid,
-    //     google_scholar: Option<String>,
-    // ) -> Result<bool, ApiError> {
-    //     self.user_repo
-    //         .update_google_scholar(id, google_scholar)
-    //         .await
-    //         .map_err(|_| {
-    //             DbError::SomethingWentWrong("Update google scholar failed".to_string()).into()
-    //         })
-    // }
+    pub async fn update_user_onboarding(
+        &self,
+        id: &str,
+        payload: UserOnboardingRequest,
+    ) -> Result<User, ApiError> {
+        let id = Uuid::from_str(id).map_err(|_| {
+            ApiError::DbError(DbError::SomethingWentWrong(
+                "Invalid UUID format".to_string(),
+            ))
+        })?;
+        self.user_repo
+            .update_user_onboarding(
+                id,
+                &payload.name,
+                &payload.institution,
+                &payload.bio,
+                payload.roles,
+                payload.interests,
+                &payload.wallet_address,
+            )
+            .await
+            .map_err(|_| {
+                DbError::SomethingWentWrong("Update user onboarding failed".to_string()).into()
+            })
+    }
 
     pub async fn create_user_with_google(&self, gmail: &str) -> Result<User, ApiError> {
         self.user_repo
