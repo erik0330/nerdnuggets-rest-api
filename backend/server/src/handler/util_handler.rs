@@ -47,10 +47,9 @@ pub async fn get_city(
 }
 
 pub async fn get_institutions(
-    opts: Option<Query<GetInstitutionsOption>>,
+    Query(opts): Query<GetInstitutionsOption>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<GetInstitutionsItem>>, ApiError> {
-    let Query(opts) = opts.unwrap_or_default();
     let result = state
         .service
         .util
@@ -60,10 +59,9 @@ pub async fn get_institutions(
 }
 
 pub async fn get_institution_detail(
-    opts: Option<Query<GetInstitutionDetailOption>>,
+    Query(opts): Query<GetInstitutionDetailOption>,
     State(state): State<AppState>,
 ) -> Result<Json<GetInstitutionDetailItem>, ApiError> {
-    let Query(opts) = opts.unwrap_or_default();
     let result = state
         .service
         .util
