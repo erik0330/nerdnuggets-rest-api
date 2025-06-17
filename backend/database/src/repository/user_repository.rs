@@ -180,6 +180,30 @@ impl UserRepository {
         Ok(row.rows_affected() == 1)
     }
 
+    pub async fn update_user_onboarding(
+        &self,
+        id: Uuid,
+        name: &str,
+        institution: &str,
+        bio: &str,
+        roles: Vec<String>,
+        interests: Vec<String>,
+        wallet_address: &str,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>("UPDATE users SET name = $1, institution = $2, bio = $3, roles = $4, interests = $5, wallet_address = $6, updated_at = $7 WHERE id = $8 RETURNING *")
+            .bind(name)
+            .bind(institution)
+            .bind(bio)
+            .bind(roles)
+            .bind(interests)
+            .bind(wallet_address)
+            .bind(Utc::now())
+            .bind(id)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(user)
+    }
+
     // pub async fn update_website(
     //     &self,
     //     id: Uuid,

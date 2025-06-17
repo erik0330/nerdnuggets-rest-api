@@ -13,6 +13,7 @@ pub struct User {
     pub gmail: Option<String>,
     pub roles: Vec<String>,
     pub institution: Option<String>,
+    pub interests: Vec<String>,
     pub avatar_url: Option<String>,
     pub bio: Option<String>,
     // wallet
@@ -35,6 +36,8 @@ impl User {
             verified_email: self.verified_email,
             gmail: self.gmail.clone(),
             roles: self.roles.clone(),
+            institution: self.institution.clone().unwrap_or_default(),
+            interests: self.interests.clone(),
             avatar_url: self.avatar_url.clone(),
             bio: self.bio.clone(),
             tier: self.tier.clone(),
@@ -64,6 +67,8 @@ pub struct UserInfo {
     pub verified_email: bool,
     pub gmail: Option<String>,
     pub roles: Vec<String>,
+    pub institution: String,
+    pub interests: Vec<String>,
     pub avatar_url: Option<String>,
     pub bio: Option<String>,
     // wallet

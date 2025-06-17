@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::state::{AppState, TwitterChallenge};
 use aws_sdk_s3::primitives::ByteStream;
-use axum::extract::{Multipart, Query, State};
+use axum::extract::{Multipart, Path, Query, State};
 use axum::{Extension, Json};
 use chrono::{DateTime, Duration, Utc};
 use third_party_api::google_oauth::get_google_user;
@@ -12,8 +12,8 @@ use types::dto::{
     GetUsersByIdsOption, MarkNotificationAsReadRequest, NobleblocksOAuth2Params,
     ReadNotificationRequest, UserConnectGoogleScholarRequest, UserConnectGoogleScholarResponse,
     UserConnectOrcIdRequest, UserConnectOrcIdResponse, UserConnectStripePaymentRequest,
-    UserGetSettingsResponse, UserPayByStripe, UserUpdateDomainExpertiseRequest,
-    UserUpdateNobleblocksRoleRequest,
+    UserGetSettingsResponse, UserOnboardingRequest, UserPayByStripe,
+    UserUpdateDomainExpertiseRequest, UserUpdateNobleblocksRoleRequest,
 };
 use types::models::{MessageType, NotificationInfo, NotificationType, SpeechInfo};
 use types::StripePayType;
@@ -47,6 +47,19 @@ use utils::{
     constants::{EMAIL_SEND_AGAIN_IN_SECONDS, RATING_CONNECT_SOCIAL, RATING_LIKE, RATING_REPORT},
 };
 use uuid::Uuid;
+
+pub async fn update_user_onboarding(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<UserOnboardingRequest>,
+) -> Result<Json<UserReadDto>, ApiError> {
+    let user = state
+        .service
+        .user
+        .update_user_onboarding(&id, payload)
+        .await?;
+    return Ok(Json(UserReadDto::from(user)));
+}
 
 // pub async fn change_role(
 //     Extension(user): Extension<User>,

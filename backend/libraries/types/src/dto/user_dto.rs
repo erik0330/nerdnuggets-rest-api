@@ -127,6 +127,8 @@ pub struct UserReadDto {
     pub name: String,
     pub email: String,
     pub roles: Vec<String>,
+    pub institution: String,
+    pub interests: Vec<String>,
     pub avatar_url: Option<String>,
     pub bio: Option<String>,
     // wallet
@@ -147,6 +149,8 @@ impl UserReadDto {
             email: model.email,
             roles: model.roles,
             avatar_url: model.avatar_url,
+            institution: model.institution.unwrap_or_default(),
+            interests: model.interests,
             bio: model.bio,
             tier: model.tier,
             nerd_balance: model.nerd_balance,
@@ -179,11 +183,23 @@ pub struct UserCheckResponse {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserRegisterWithEmailRequest {
     pub name: String,
     pub institution: String,
     pub email: String,
     pub password: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserOnboardingRequest {
+    pub name: String,
+    pub institution: String,
+    pub bio: String,
+    pub roles: Vec<String>,
+    pub interests: Vec<String>,
+    pub wallet_address: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
