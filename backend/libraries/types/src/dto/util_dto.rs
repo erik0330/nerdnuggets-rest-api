@@ -21,12 +21,14 @@ pub struct GetCityOption {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetInstitutionsOption {
     pub search_type: String,
     pub query: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetInstitutionsItem {
     pub name: String,
     pub formatted_address: String,
@@ -34,11 +36,13 @@ pub struct GetInstitutionsItem {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetInstitutionDetailOption {
     pub place_id: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetInstitutionDetailItem {
     pub name: String,
     pub formatted_address: String,
