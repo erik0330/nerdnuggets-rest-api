@@ -70,15 +70,14 @@ pub async fn get_institution_detail(
 }
 
 pub async fn get_categories(
-    opts: Option<Query<GetCategoryOption>>,
+    Query(opts): Query<GetCategoryOption>,
     State(state): State<AppState>,
 ) -> Result<Json<GetCategoryResponse>, ApiError> {
-    let Query(opts) = opts.unwrap_or_default();
     let result = state
         .service
         .util
         .get_categories(
-            opts.category.unwrap_or_default(),
+            opts.name.unwrap_or_default(),
             opts.is_available,
             opts.start,
             opts.limit,

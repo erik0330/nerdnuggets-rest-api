@@ -1,7 +1,7 @@
 use crate::pool::DatabasePool;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::models::Project;
+use types::models::{Milestone, Project, TeamMember};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -89,6 +89,16 @@ impl ProjectRepository {
         Ok(row.rows_affected() == 1)
     }
 
+    pub async fn get_team_members(&self, project_id: Uuid) -> Vec<TeamMember> {
+        sqlx::query_as::<_, TeamMember>(
+            "SELECT * FROM team_member WHERE project_id = $1 ORDER BY created_at",
+        )
+        .bind(project_id)
+        .fetch_all(self.db_conn.get_pool())
+        .await
+        .unwrap_or(Vec::new())
+    }
+
     pub async fn create_team_member(
         &self,
         project_id: Uuid,
@@ -118,6 +128,16 @@ impl ProjectRepository {
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(true)
+    }
+
+    pub async fn get_milestones(&self, project_id: Uuid) -> Vec<Milestone> {
+        sqlx::query_as::<_, Milestone>(
+            "SELECT * FROM milestone WHERE project_id = $1 ORDER BY created_at",
+        )
+        .bind(project_id)
+        .fetch_all(self.db_conn.get_pool())
+        .await
+        .unwrap_or(Vec::new())
     }
 
     pub async fn create_milestone(

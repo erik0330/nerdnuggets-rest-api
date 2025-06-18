@@ -138,21 +138,21 @@ impl UtilRepository {
 
     pub async fn get_categories(
         &self,
-        category: &str,
+        name: &str,
         is_available: Option<bool>,
         start: i32,
         limit: i32,
     ) -> Vec<Category> {
         let query = if let Some(available) = is_available {
-            format!("SELECT * FROM category WHERE category_name ILIKE $1 AND is_available = {} ORDER BY CASE WHEN category_name ILIKE $4 THEN 0 ELSE 1 END, category_name LIMIT $2 OFFSET $3", available)
+            format!("SELECT * FROM category WHERE name ILIKE $1 AND is_available = {} ORDER BY CASE WHEN name ILIKE $4 THEN 0 ELSE 1 END, name LIMIT $2 OFFSET $3", available)
         } else {
-            format!("SELECT * FROM category WHERE category_name ILIKE $1 ORDER BY CASE WHEN category_name ILIKE $4 THEN 0 ELSE 1 END, category_name LIMIT $2 OFFSET $3")
+            format!("SELECT * FROM category WHERE name ILIKE $1 ORDER BY CASE WHEN name ILIKE $4 THEN 0 ELSE 1 END, name LIMIT $2 OFFSET $3")
         };
         sqlx::query_as::<_, Category>(&query)
-            .bind(format!("%{category}%"))
+            .bind(format!("%{name}%"))
             .bind(limit)
             .bind(start)
-            .bind(format!("{category}%"))
+            .bind(format!("{name}%"))
             .fetch_all(self.db_conn.get_pool())
             .await
             .unwrap_or_default()
@@ -167,7 +167,7 @@ impl UtilRepository {
     }
 
     pub async fn get_category_by_name(&self, category: &str) -> Option<Category> {
-        sqlx::query_as::<_, Category>("SELECT * FROM category WHERE category_name = $1")
+        sqlx::query_as::<_, Category>("SELECT * FROM category WHERE name = $1")
             .bind(category)
             .fetch_optional(self.db_conn.get_pool())
             .await
@@ -175,7 +175,7 @@ impl UtilRepository {
     }
 
     pub async fn insert_category(&self, category: &str) -> Option<Category> {
-        sqlx::query_as::<_, Category>("INSERT INTO category(category_name) VALUES($1) RETURNING *")
+        sqlx::query_as::<_, Category>("INSERT INTO category(name) VALUES($1) RETURNING *")
             .bind(category)
             .fetch_optional(self.db_conn.get_pool())
             .await
@@ -192,9 +192,9 @@ impl UtilRepository {
         .unwrap_or_default()
     }
 
-    pub async fn update_category(&self, id: Uuid, category_name: &str, is_available: bool) -> bool {
-        sqlx::query("UPDATE category SET category_name = $1, is_available = $2 WHERE id = $3")
-            .bind(category_name)
+    pub async fn update_category(&self, id: Uuid, name: &str, is_available: bool) -> bool {
+        sqlx::query("UPDATE category SET name = $1, is_available = $2 WHERE id = $3")
+            .bind(name)
             .bind(is_available)
             .bind(id)
             .execute(self.db_conn.get_pool())

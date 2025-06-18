@@ -43,6 +43,7 @@ impl Project {
     pub fn to_info(
         &self,
         user: UserInfo,
+        category: Vec<Category>,
         team_members: Vec<TeamMember>,
         milestones: Vec<Milestone>,
     ) -> ProjectInfo {
@@ -55,7 +56,7 @@ impl Project {
             upload_files: self.upload_files.clone(),
             cover_photo: self.cover_photo.clone(),
             youtube_link: self.youtube_link.clone(),
-            category: self.category.clone(),
+            category,
             status: self.status,
             funding_goal: self.funding_goal,
             duration: self.duration,
@@ -92,7 +93,7 @@ pub struct ProjectInfo {
     pub upload_files: Vec<String>,
     pub cover_photo: Option<String>,
     pub youtube_link: Option<String>,
-    pub category: Vec<Uuid>,
+    pub category: Vec<Category>,
     pub status: i16,
     pub funding_goal: Option<i32>,
     pub duration: Option<i32>,
@@ -155,7 +156,7 @@ pub struct Milestone {
 #[serde(rename_all = "camelCase")]
 pub struct Category {
     pub id: Uuid,
-    pub category_name: String,
+    pub name: String,
     pub is_available: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

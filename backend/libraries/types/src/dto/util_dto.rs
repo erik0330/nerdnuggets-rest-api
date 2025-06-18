@@ -65,8 +65,9 @@ pub struct GetDegreeOption {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetCategoryOption {
-    pub category: Option<String>,
+    pub name: Option<String>,
     pub is_available: Option<bool>,
     pub start: Option<i32>,
     pub limit: Option<i32>,
