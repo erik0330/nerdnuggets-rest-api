@@ -53,18 +53,6 @@ pub struct AdminDeleteUnreportPostRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
-pub struct AdminAddCategoriesRequest {
-    pub category_names: Vec<String>,
-}
-
-#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
-pub struct AdminUpdateCategoryRequest {
-    pub id: Uuid,
-    pub category_name: String,
-    pub is_available: bool,
-}
-
-#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 pub struct AdminDeleteCategoryRequest {
     pub id: Uuid,
 }

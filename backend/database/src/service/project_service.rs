@@ -1,4 +1,4 @@
-use crate::{pool::DatabasePool, ProjectRepository, UserRepository};
+use crate::{pool::DatabasePool, ProjectRepository, UserRepository, UtilRepository};
 use std::sync::Arc;
 use types::{
     dto::{ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request},
@@ -12,6 +12,7 @@ use uuid::Uuid;
 pub struct ProjectService {
     project_repo: ProjectRepository,
     user_repo: UserRepository,
+    util_repo: UtilRepository,
 }
 
 impl ProjectService {
@@ -19,6 +20,7 @@ impl ProjectService {
         Self {
             project_repo: ProjectRepository::new(db_conn),
             user_repo: UserRepository::new(db_conn),
+            util_repo: UtilRepository::new(db_conn),
         }
     }
 
@@ -28,7 +30,10 @@ impl ProjectService {
             .get_by_user_id(project.user_id)
             .await
             .ok_or_else(|| ApiError::UserError(UserError::UserNotFound))?;
-        Ok(project.to_info(user.to_info(), Vec::new(), Vec::new()))
+        let category = self.util_repo.get_category_by_ids(&project.category).await;
+        let team_members = self.project_repo.get_team_members(project.id).await;
+        let milestones = self.project_repo.get_milestones(project.id).await;
+        Ok(project.to_info(user.to_info(), category, team_members, milestones))
     }
 
     pub async fn get_project_by_id(&self, id: &str) -> Result<ProjectInfo, ApiError> {

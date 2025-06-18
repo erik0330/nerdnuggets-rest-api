@@ -3,13 +3,13 @@
 CREATE TABLE
     IF NOT EXISTS category (
         id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-        category_name VARCHAR(255),
+        name VARCHAR(255),
         is_available BOOLEAN DEFAULT false,
         created_at TIMESTAMPTZ DEFAULT now(),
         updated_at TIMESTAMPTZ DEFAULT now()
     );
 
-INSERT INTO category (category_name, is_available) VALUES 
+INSERT INTO category (name, is_available) VALUES 
     ('Cancer Studies', true),
     ('Neuroscience', true),
     ('Infectious Diseases', true),

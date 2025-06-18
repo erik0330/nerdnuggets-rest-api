@@ -163,7 +163,7 @@ impl UtilService {
 
     pub async fn get_categories(
         &self,
-        category: String,
+        name: String,
         is_available: Option<bool>,
         start: Option<i32>,
         limit: Option<i32>,
@@ -171,12 +171,7 @@ impl UtilService {
         Ok(GetCategoryResponse {
             category_list: self
                 .util_repo
-                .get_categories(
-                    &category,
-                    is_available,
-                    start.unwrap_or(0),
-                    limit.unwrap_or(10),
-                )
+                .get_categories(&name, is_available, start.unwrap_or(0), limit.unwrap_or(10))
                 .await,
         })
     }
@@ -211,13 +206,10 @@ impl UtilService {
     pub async fn update_category(
         &self,
         id: Uuid,
-        category_name: &str,
+        name: &str,
         is_available: bool,
     ) -> Result<bool, ApiError> {
-        Ok(self
-            .util_repo
-            .update_category(id, category_name, is_available)
-            .await)
+        Ok(self.util_repo.update_category(id, name, is_available).await)
     }
 
     pub async fn delete_category(&self, id: Uuid) -> Result<bool, ApiError> {
