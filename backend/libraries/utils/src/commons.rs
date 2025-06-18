@@ -3,9 +3,25 @@ use aws_sdk_sesv2::types::{Body, Content, Destination, EmailContent, Message};
 use chrono::{DateTime, Utc};
 use email_address::EmailAddress;
 use rand::{thread_rng, Rng};
-use std::hash::{DefaultHasher, Hash, Hasher};
-use types::EmailVerifyType;
+use std::{
+    hash::{DefaultHasher, Hash, Hasher},
+    str::FromStr,
+};
+use types::{
+    error::{ApiError, DbError},
+    EmailVerifyType,
+};
 use url::Url;
+use uuid::Uuid;
+
+pub fn uuid_from_str(id: &str) -> Result<Uuid, ApiError> {
+    let id = Uuid::from_str(id).map_err(|_| {
+        ApiError::DbError(DbError::SomethingWentWrong(
+            "Invalid UUID format".to_string(),
+        ))
+    })?;
+    Ok(id)
+}
 
 pub async fn send_auth_email(
     email: String,

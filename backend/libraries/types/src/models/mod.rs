@@ -1,5 +1,4 @@
 mod affiliation;
-mod category;
 mod city_list;
 mod degree;
 mod employments;
@@ -15,7 +14,6 @@ mod values;
 mod wallpaper;
 
 pub use affiliation::*;
-pub use category::*;
 pub use city_list::*;
 pub use degree::*;
 pub use employments::*;

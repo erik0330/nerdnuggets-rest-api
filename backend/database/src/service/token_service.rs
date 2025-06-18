@@ -1,10 +1,5 @@
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
-use types::{
-    dto::{TokenClaimsDto, TokenReadDto},
-    error::TokenError,
-    models::User,
-    UserRoleType,
-};
+use types::{dto::TokenClaimsDto, error::TokenError, models::User, UserRoleType};
 use utils::env::Env;
 
 #[derive(Clone)]

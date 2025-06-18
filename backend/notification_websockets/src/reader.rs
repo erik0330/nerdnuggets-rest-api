@@ -8,7 +8,7 @@ use types::error::Error;
 use crate::Notification;
 
 pub struct Reader<I: IndexStore> {
-    service: AppService,
+    _service: AppService,
     index_store: I,
     sender: Sender<Notification>,
 }
@@ -16,7 +16,7 @@ pub struct Reader<I: IndexStore> {
 impl<I: IndexStore> Reader<I> {
     pub fn new(service: AppService, index_store: I, sender: Sender<Notification>) -> Self {
         Self {
-            service,
+            _service: service,
             index_store,
             sender,
         }
@@ -42,7 +42,7 @@ impl<I: IndexStore> Reader<I> {
     }
 
     async fn read_notifications(&self) -> Result<(), Error> {
-        let from_notification_index = self.index_processed_up_to().await? + 1;
+        let _from_notification_index = self.index_processed_up_to().await? + 1;
 
         // let notifications = self
         //     .service
@@ -85,6 +85,7 @@ impl<I: IndexStore> Reader<I> {
         }
     }
 
+    #[allow(dead_code)]
     async fn set_index_processed_up_to(&self, index: i64) -> Result<(), Error> {
         self.index_store.set(index).await
     }

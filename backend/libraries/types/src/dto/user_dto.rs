@@ -1,4 +1,3 @@
-use super::token_dto::TokenReadDto;
 use crate::{
     models::{Affiliation, Degree, MessageType, NotificationType, SpeechInfo, User, UserInfo},
     NerdNuggetsOAuth2AppName,

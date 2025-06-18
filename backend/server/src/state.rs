@@ -6,6 +6,7 @@ use types::NerdNuggetsOAuth2AppName;
 use utils::env::Env;
 use uuid::Uuid;
 
+#[allow(dead_code)]
 pub struct TwitterChallenge {
     pub verifier: PkceCodeVerifier,
     pub redirect_url: String,
@@ -15,6 +16,7 @@ pub struct TwitterChallenge {
 }
 
 impl TwitterChallenge {
+    #[allow(dead_code)]
     pub fn new(verifier: PkceCodeVerifier, redirect_url: String, user_id: Option<Uuid>) -> Self {
         let now = Utc::now();
         let exp = now
@@ -31,6 +33,7 @@ impl TwitterChallenge {
     }
 }
 
+#[allow(dead_code)]
 pub struct NobleblocksChallenge {
     pub app_name: NerdNuggetsOAuth2AppName,
     pub state: Uuid,
@@ -40,6 +43,7 @@ pub struct NobleblocksChallenge {
 }
 
 impl NobleblocksChallenge {
+    #[allow(dead_code)]
     pub fn new(app_name: NerdNuggetsOAuth2AppName, redirect_url: String) -> Self {
         let now = Utc::now();
         let exp = now
@@ -55,6 +59,7 @@ impl NobleblocksChallenge {
         }
     }
 
+    #[allow(dead_code)]
     pub fn build_querystring(&self) -> String {
         format!(
             "?app_name={:?}&state={}&redirect_url={}",
@@ -63,6 +68,7 @@ impl NobleblocksChallenge {
     }
 }
 
+#[allow(dead_code)]
 pub struct OAuth2Ctx {
     pub client: Oauth2Client,
     pub challenges: HashMap<String, TwitterChallenge>,
@@ -70,6 +76,7 @@ pub struct OAuth2Ctx {
 }
 
 impl OAuth2Ctx {
+    #[allow(dead_code)]
     pub fn remove_expired_challenges(&mut self) {
         let now = Utc::now().timestamp();
         self.challenges.retain(|_, challenge| challenge.exp < now);
@@ -83,7 +90,7 @@ pub struct AppState {
     pub env: Env,
     pub service: AppService,
     pub s3_client: aws_sdk_s3::Client,
-    pub ses_client: aws_sdk_sesv2::Client,
+    pub _ses_client: aws_sdk_sesv2::Client,
 }
 
 impl AppState {
@@ -97,7 +104,7 @@ impl AppState {
             service: AppService::init(db, &env),
             env,
             s3_client,
-            ses_client,
+            _ses_client: ses_client,
         }
     }
 }
