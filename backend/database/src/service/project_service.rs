@@ -1,9 +1,11 @@
 use crate::{pool::DatabasePool, ProjectRepository, UserRepository};
-use std::{str::FromStr, sync::Arc};
+use std::sync::Arc;
 use types::{
+    dto::ProjectUpdateStep1Request,
     error::{ApiError, DbError, UserError},
     models::{Project, ProjectInfo},
 };
+use utils::commons::uuid_from_str;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -30,14 +32,9 @@ impl ProjectService {
     }
 
     pub async fn get_project_by_id(&self, id: &str) -> Result<ProjectInfo, ApiError> {
-        let id = Uuid::from_str(id).map_err(|_| {
-            ApiError::DbError(DbError::SomethingWentWrong(
-                "Invalid UUID format".to_string(),
-            ))
-        })?;
         let project = self
             .project_repo
-            .get_project_by_id(id)
+            .get_project_by_id(uuid_from_str(id)?)
             .await
             .ok_or_else(|| DbError::SomethingWentWrong("Project not found".to_string()))?;
         self.project_to_info(&project).await
@@ -50,5 +47,29 @@ impl ProjectService {
             .await
             .map_err(|err| DbError::SomethingWentWrong(err.to_string()))?;
         self.project_to_info(&project).await
+    }
+
+    pub async fn update_project_step_1(
+        &self,
+        id: &str,
+        payload: ProjectUpdateStep1Request,
+    ) -> Result<bool, ApiError> {
+        let res = self
+            .project_repo
+            .update_project_step_1(
+                uuid_from_str(id)?,
+                payload.manuscript,
+                payload.upload_files.unwrap_or_default(),
+                payload.cover_photo,
+                payload.title,
+                payload.description,
+                payload.category,
+                payload.funding_goal,
+                payload.duration,
+                payload.youtube_link,
+            )
+            .await
+            .map_err(|_| DbError::SomethingWentWrong("Update project failed".to_string()))?;
+        Ok(res)
     }
 }

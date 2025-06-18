@@ -34,4 +34,33 @@ impl ProjectRepository {
         .await?;
         Ok(project)
     }
+
+    pub async fn update_project_step_1(
+        &self,
+        id: Uuid,
+        manuscript: Option<String>,
+        upload_files: Vec<String>,
+        cover_photo: Option<String>,
+        title: String,
+        description: String,
+        category: Vec<Uuid>,
+        funding_goal: i32,
+        duration: i32,
+        youtube_link: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE project SET manuscript = $1, upload_files = $2, cover_photo = $3, title = $4, description = $5, category = $6, funding_goal = $7, duration = $8, youtube_link = $9 WHERE id = $10")
+            .bind(manuscript)
+            .bind(upload_files)
+            .bind(cover_photo)
+            .bind(title)
+            .bind(description)
+            .bind(category)
+            .bind(funding_goal)
+            .bind(duration)
+            .bind(youtube_link)
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
 }
