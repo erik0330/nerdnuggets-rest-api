@@ -1,38 +1,29 @@
 use crate::{pool::DatabasePool, repository::UserRepository, UtilRepository};
-use chrono::{DateTime, Utc};
 use std::{str::FromStr, sync::Arc};
 use types::{
-    dto::{
-        UserAddAffiliationRequest, UserAddAffiliationResponse, UserCheckResponse,
-        UserDeleteRequest, UserEditAffiliationRequest, UserOnboardingRequest,
-        UserUpdateDomainExpertiseRequest, UserUpdateNobleblocksRoleRequest,
-        UserUpdateNotificationRequest, UserUpdateProfileRequest, UserUpdateResponse,
-        UserUpdateRolesRequest, UserUpdateSettingProfileRequest, UserUpdateUsernameRequest,
-        UserUploadAvatarResponse, UserUploadWallPaperResponse,
-    },
+    dto::{UserCheckResponse, UserOnboardingRequest},
     error::{ApiError, DbError, UserError},
-    models::{Affiliation, SpeechWithTitle, TempUser, User, UserInfo},
+    models::User,
 };
-use utils::commons::generate_random_number;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct UserService {
     user_repo: UserRepository,
-    util_repo: UtilRepository,
+    _util_repo: UtilRepository,
 }
 
 impl UserService {
     pub fn new(db_conn: &Arc<DatabasePool>) -> Self {
         Self {
             user_repo: UserRepository::new(db_conn),
-            util_repo: UtilRepository::new(db_conn),
+            _util_repo: UtilRepository::new(db_conn),
         }
     }
 
     pub async fn find_by_user_id(&self, user_id: Uuid) -> Result<User, ApiError> {
         self.user_repo
-            .find_by_user_id(user_id)
+            .get_by_user_id(user_id)
             .await
             .ok_or_else(|| UserError::UserNotFound.into())
     }

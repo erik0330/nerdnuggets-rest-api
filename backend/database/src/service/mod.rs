@@ -1,9 +1,9 @@
-mod admin_service;
+mod project_service;
 mod token_service;
 mod user_service;
 mod util_service;
 
-pub use admin_service::*;
+pub use project_service::*;
 pub use token_service::*;
 pub use user_service::*;
 pub use util_service::*;
@@ -14,7 +14,7 @@ use utils::env::Env;
 
 #[derive(Clone)]
 pub struct AppService {
-    pub admin: AdminService,
+    pub project: ProjectService,
     pub token: TokenService,
     pub user: UserService,
     pub util: UtilService,
@@ -23,7 +23,7 @@ pub struct AppService {
 impl AppService {
     pub fn init(db: &Arc<DatabasePool>, env: &Env) -> Self {
         Self {
-            admin: AdminService::init(db),
+            project: ProjectService::new(db),
             token: TokenService::new(env),
             user: UserService::new(db),
             util: UtilService::new(db),

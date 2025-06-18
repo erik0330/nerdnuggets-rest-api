@@ -1,52 +1,11 @@
-use std::str::FromStr;
-
-use crate::state::{AppState, TwitterChallenge};
-use aws_sdk_s3::primitives::ByteStream;
-use axum::extract::{Multipart, Path, Query, State};
-use axum::{Extension, Json};
-use chrono::{DateTime, Duration, Utc};
-use third_party_api::google_oauth::get_google_user;
-use twitter_v2::{authorization::Scope, oauth2::PkceCodeChallenge};
-use types::dto::{
-    GetCardInfo, GetNotificationsOption, GetSpeechParams, GetSpeechesParams, GetSpeechesResponse,
-    GetUsersByIdsOption, MarkNotificationAsReadRequest, NobleblocksOAuth2Params,
-    ReadNotificationRequest, UserConnectGoogleScholarRequest, UserConnectGoogleScholarResponse,
-    UserConnectOrcIdRequest, UserConnectOrcIdResponse, UserConnectStripePaymentRequest,
-    UserGetSettingsResponse, UserOnboardingRequest, UserPayByStripe,
-    UserUpdateDomainExpertiseRequest, UserUpdateNobleblocksRoleRequest,
-};
-use types::models::{MessageType, NotificationInfo, NotificationType, SpeechInfo};
-use types::StripePayType;
+use crate::state::AppState;
+use axum::extract::{Path, State};
+use axum::Json;
+use types::dto::UserOnboardingRequest;
 use types::{
-    dto::{
-        GetMembersOption, GetProfileOption, GetSuggestedUserOption, UserAddAffiliationRequest,
-        UserAddAffiliationResponse, UserBlockRequest, UserChangeRoleRequest, UserCheckResponse,
-        UserCheckUsernameOption, UserConnectGoogleRequest, UserConnectGoogleResponse,
-        UserConnectLinkedinRequest, UserConnectLinkedinResponse, UserConnectTelegramRequest,
-        UserConnectTelegramResponse, UserConnectWebSiteRequest, UserConnectWebSiteResponse,
-        UserDeleteRequest, UserEditAffiliationRequest, UserFollowRequest,
-        UserGetNotificationResponse, UserGetPrivacyResponse, UserGetProfileResponse,
-        UserGetPublishingResponse, UserGetRolesResponse, UserGetSocialResponse,
-        UserLoginAndRegisterResponse, UserLoginWithTwitterResponse, UserReadDto, UserReportRequest,
-        UserResendVerifyCodeResetPwdRequest, UserSendPasskeyResponse,
-        UserSendVerifyCodeResetPwdRequest, UserUpdateEmailRequest, UserUpdateIsActiveRequest,
-        UserUpdateNotificationRequest, UserUpdatePasswordRequest, UserUpdateProfileRequest,
-        UserUpdatePublishingRequest, UserUpdateResponse, UserUpdateRolesRequest,
-        UserUpdateSettingProfileRequest, UserUpdateUsernameRequest, UserUpdateWallPaperRequest,
-        UserUploadAvatarResponse, UserUploadWallPaperResponse, UserVerifyPasskeyRequest,
-        UserVerifyPasskeyResetPwdRequest,
-    },
-    error::{ApiError, DbError, TokenError, UploadError, UserError, ValidatedRequest},
-    models::{Affiliation, User, UserInfo},
-    EmailVerifyType, SubscriptionInfo, UserRoleType,
+    dto::UserReadDto,
+    error::{ApiError, ValidatedRequest},
 };
-use url::Url;
-use utils::commons::is_valid_email;
-use utils::{
-    commons::{datetime_to_string, send_auth_email},
-    constants::{EMAIL_SEND_AGAIN_IN_SECONDS, RATING_CONNECT_SOCIAL, RATING_LIKE, RATING_REPORT},
-};
-use uuid::Uuid;
 
 pub async fn update_user_onboarding(
     Path(id): Path<String>,

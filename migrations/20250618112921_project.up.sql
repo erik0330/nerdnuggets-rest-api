@@ -1,0 +1,35 @@
+-- Add up migration script here
+
+CREATE TABLE
+    IF NOT EXISTS project (
+        id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL,
+        title TEXT,
+        description TEXT,
+        manuscript VARCHAR(255),
+        upload_files TEXT[] DEFAULT ARRAY[]::TEXT[],
+        cover_photo VARCHAR(255),
+        youtube_link VARCHAR(255),
+        category UUID[] DEFAULT ARRAY[]::UUID[],
+        status SMALLINT DEFAULT 0,
+        funding_goal INT,
+        duration INT,
+        details TEXT,
+        personnel_cost INT,
+        equipment_cost INT,
+        materials_cost INT,
+        overhead_cost INT,
+        other_cost INT,
+        tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+        team_members UUID[] DEFAULT ARRAY[]::UUID[],
+        milestones UUID[] DEFAULT ARRAY[]::UUID[],
+        ai_analysis TEXT,
+        ai_status SMALLINT,
+        ai_objectives SMALLINT,
+        ai_methodology SMALLINT,
+        ai_budget SMALLINT,
+        ai_expertise SMALLINT,
+        ai_innovation SMALLINT,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+    );

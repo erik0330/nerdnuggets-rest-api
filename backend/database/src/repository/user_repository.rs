@@ -1,11 +1,8 @@
 use crate::pool::DatabasePool;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::{
-    models::{Affiliation, TempUser, User, UserInfo},
-    InsertResult, UserTierType,
-};
+use types::{models::User, UserTierType};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -128,7 +125,7 @@ impl UserRepository {
             .unwrap_or(None)
     }
 
-    pub async fn find_by_user_id(&self, id: Uuid) -> Option<User> {
+    pub async fn get_by_user_id(&self, id: Uuid) -> Option<User> {
         sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
             .bind(id)
             .fetch_optional(self.db_conn.get_pool())

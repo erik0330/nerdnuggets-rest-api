@@ -1,5 +1,5 @@
-mod admin;
 mod auth;
+mod project;
 mod public;
 mod user;
 mod util;
@@ -50,7 +50,7 @@ pub async fn routes(db_conn: Arc<DatabasePool>, env: Env) -> IntoMakeService<Rou
 
         let app_state = AppState::init(&db_conn, env, s3_client, ses_client);
         Router::new()
-            .merge(admin::routes())
+            .merge(project::routes())
             .merge(user::routes())
             .merge(util::routes())
             .layer(ServiceBuilder::new().layer(middleware::from_fn_with_state(
