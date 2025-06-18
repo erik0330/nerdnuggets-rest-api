@@ -3,6 +3,7 @@
 CREATE TABLE
     IF NOT EXISTS team_member (
         id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+        project_id UUID NOT NULL,
         name VARCHAR(255) NOT NULL,
         role VARCHAR(255) NOT NULL,
         bio TEXT,

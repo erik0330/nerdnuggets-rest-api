@@ -1,7 +1,7 @@
 use crate::{pool::DatabasePool, ProjectRepository, UserRepository};
 use std::sync::Arc;
 use types::{
-    dto::ProjectUpdateStep1Request,
+    dto::{ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request},
     error::{ApiError, DbError, UserError},
     models::{Project, ProjectInfo},
 };
@@ -71,5 +71,66 @@ impl ProjectService {
             .await
             .map_err(|_| DbError::SomethingWentWrong("Update project failed".to_string()))?;
         Ok(res)
+    }
+
+    pub async fn update_project_step_2(
+        &self,
+        id: &str,
+        payload: ProjectUpdateStep2Request,
+    ) -> Result<bool, ApiError> {
+        let res = self
+            .project_repo
+            .update_project_step_2(
+                uuid_from_str(id)?,
+                payload.details,
+                payload.personnel_cost,
+                payload.equipment_cost,
+                payload.materials_cost,
+                payload.overhead_cost,
+                payload.other_cost,
+                payload.tags.unwrap_or_default(),
+            )
+            .await
+            .map_err(|_| DbError::SomethingWentWrong("Update project failed".to_string()))?;
+        Ok(res)
+    }
+
+    pub async fn update_project_step_3(
+        &self,
+        id: &str,
+        payload: ProjectUpdateStep3Request,
+    ) -> Result<bool, ApiError> {
+        let project_id = uuid_from_str(id)?;
+        self.project_repo.delete_team_members(project_id).await.ok();
+        self.project_repo.delete_milestones(project_id).await.ok();
+        for tm in payload.team_members {
+            self.project_repo
+                .create_team_member(
+                    project_id,
+                    tm.name,
+                    tm.role,
+                    tm.bio,
+                    tm.linkedin,
+                    tm.twitter,
+                    tm.github,
+                )
+                .await
+                .ok();
+        }
+        for ms in payload.milestones {
+            self.project_repo
+                .create_milestone(
+                    project_id,
+                    ms.number,
+                    ms.title,
+                    ms.description,
+                    ms.funding_amount,
+                    ms.days_after_start,
+                    ms.days_of_prediction,
+                )
+                .await
+                .ok();
+        }
+        Ok(true)
     }
 }

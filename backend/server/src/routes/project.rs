@@ -1,5 +1,8 @@
 use crate::{
-    handler::project_handler::{create_project, get_project_by_id, update_project_step_1},
+    handler::project_handler::{
+        create_project, get_project_by_id, update_project_step_1, update_project_step_2,
+        update_project_step_3,
+    },
     state::AppState,
 };
 use axum::{
@@ -12,4 +15,6 @@ pub fn routes() -> Router<AppState> {
         .route("/project/:id", get(get_project_by_id))
         .route("/project", post(create_project))
         .route("/project/:id/1", patch(update_project_step_1))
+        .route("/project/:id/2", patch(update_project_step_2))
+        .route("/project/:id/3", patch(update_project_step_3))
 }

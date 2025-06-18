@@ -21,8 +21,6 @@ CREATE TABLE
         overhead_cost INT,
         other_cost INT,
         tags TEXT[] DEFAULT ARRAY[]::TEXT[],
-        team_members UUID[] DEFAULT ARRAY[]::UUID[],
-        milestones UUID[] DEFAULT ARRAY[]::UUID[],
         ai_analysis TEXT,
         ai_status SMALLINT,
         ai_objectives SMALLINT,
