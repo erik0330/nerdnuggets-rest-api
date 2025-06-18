@@ -27,9 +27,6 @@ pub struct Project {
     pub other_cost: Option<i32>,
     pub tags: Vec<String>,
 
-    pub team_members: Vec<Uuid>,
-    pub milestones: Vec<Uuid>,
-
     pub ai_analysis: Option<String>,
     pub ai_status: Option<i16>,
     pub ai_objectives: Option<i16>,
@@ -127,6 +124,7 @@ pub struct ProjectInfo {
 #[serde(rename_all = "camelCase")]
 pub struct TeamMember {
     pub id: Uuid,
+    pub project_id: Uuid,
     pub name: String,
     pub role: String,
     pub bio: String,
@@ -141,6 +139,8 @@ pub struct TeamMember {
 #[serde(rename_all = "camelCase")]
 pub struct Milestone {
     pub id: Uuid,
+    pub project_id: Uuid,
+    pub number: i16,
     pub title: String,
     pub description: String,
     pub funding_amount: i32,

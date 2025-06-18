@@ -1,11 +1,16 @@
 use crate::state::AppState;
 use axum::extract::{Path, State};
-use axum::Json;
+use axum::{Extension, Json};
 use types::dto::UserOnboardingRequest;
+use types::models::User;
 use types::{
     dto::UserReadDto,
     error::{ApiError, ValidatedRequest},
 };
+
+pub async fn get_user(Extension(user): Extension<User>) -> Result<Json<UserReadDto>, ApiError> {
+    Ok(Json(UserReadDto::from(user)))
+}
 
 pub async fn update_user_onboarding(
     Path(id): Path<String>,

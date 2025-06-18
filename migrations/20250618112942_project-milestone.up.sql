@@ -3,6 +3,8 @@
 CREATE TABLE
     IF NOT EXISTS milestone (
         id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+        project_id UUID NOT NULL,
+        number SMALLINT NOT NULL,
         title VARCHAR(255) NOT NULL,
         description TEXT,
         funding_amount INT,

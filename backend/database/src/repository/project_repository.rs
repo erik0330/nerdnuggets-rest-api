@@ -63,4 +63,91 @@ impl ProjectRepository {
             .await?;
         Ok(row.rows_affected() == 1)
     }
+
+    pub async fn update_project_step_2(
+        &self,
+        id: Uuid,
+        details: String,
+        personnel_cost: i32,
+        equipment_cost: Option<i32>,
+        materials_cost: Option<i32>,
+        overhead_cost: Option<i32>,
+        other_cost: i32,
+        tags: Vec<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE project SET details = $1, personnel_cost = $2, equipment_cost = $3, materials_cost = $4, overhead_cost = $5, other_cost = $6, tags = $7 WHERE id = $8")
+            .bind(details)
+            .bind(personnel_cost)
+            .bind(equipment_cost)
+            .bind(materials_cost)
+            .bind(overhead_cost)
+            .bind(other_cost)
+            .bind(tags)
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn create_team_member(
+        &self,
+        project_id: Uuid,
+        name: String,
+        role: String,
+        bio: String,
+        linkedin: String,
+        twitter: String,
+        github: String,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("INSERT INTO team_member (project_id, name, role, bio, linkedin, twitter, github) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+            .bind(project_id)
+            .bind(name)
+            .bind(role)
+            .bind(bio)
+            .bind(linkedin)
+            .bind(twitter)
+            .bind(github)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn delete_team_members(&self, project_id: Uuid) -> Result<bool, SqlxError> {
+        let _ = sqlx::query("DELETE FROM team_member WHERE project_id = $1")
+            .bind(project_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(true)
+    }
+
+    pub async fn create_milestone(
+        &self,
+        project_id: Uuid,
+        number: i16,
+        title: String,
+        description: String,
+        funding_amount: i32,
+        days_after_start: i32,
+        days_of_prediction: i32,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("INSERT INTO milestone (project_id, number, title, description, funding_amount, days_after_start, days_of_prediction) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+            .bind(project_id)
+            .bind(number)
+            .bind(title)
+            .bind(description)
+            .bind(funding_amount)
+            .bind(days_after_start)
+            .bind(days_of_prediction)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn delete_milestones(&self, project_id: Uuid) -> Result<bool, SqlxError> {
+        let _ = sqlx::query("DELETE FROM milestone WHERE project_id = $1")
+            .bind(project_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(true)
+    }
 }
