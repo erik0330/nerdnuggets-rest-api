@@ -8,8 +8,7 @@ use types::{
     dto::{
         GetCategoryOption, GetCategoryResponse, GetCityOption, GetCityResponse, GetCountryOption,
         GetCountryResponse, GetInstitutionDetailItem, GetInstitutionDetailOption,
-        GetInstitutionsItem, GetInstitutionsOption, UtilUpdateRemoveRequest, UtilUpdateResponse,
-        UtilUploadAddResponse,
+        GetInstitutionsItem, GetInstitutionsOption, RemoveFileFromS3Request,
     },
     error::{ApiError, UploadError, ValidatedRequest},
     models::Category,
@@ -70,65 +69,6 @@ pub async fn get_institution_detail(
     Ok(Json(result))
 }
 
-// pub async fn get_degree(
-//     opts: Option<Query<GetDegreeOption>>,
-//     State(state): State<AppState>,
-// ) -> Result<Json<GetDegreeResponse>, ApiError> {
-//     let Query(opts) = opts.unwrap_or_default();
-//     let result = state
-//         .service
-//         .util
-//         .get_degree(
-//             opts.degree.unwrap_or_default(),
-//             opts.is_available.map(|i| i as i16),
-//         )
-//         .await?;
-//     Ok(Json(result))
-// }
-
-// pub async fn update_degree(
-//     Extension(role): Extension<UserRoleType>,
-//     State(state): State<AppState>,
-//     ValidatedRequest(payload): ValidatedRequest<UpdateDegreeOption>,
-// ) -> Result<Json<UtilUpdateResponse>, ApiError> {
-//     match role {
-//         UserRoleType::Admin | UserRoleType::SuperAdmin => {}
-//         _ => {
-//             return Err(ApiError::UserError(UserError::SomethingWentWrong(
-//                 "You are not an Admin".to_string(),
-//             )));
-//         }
-//     }
-//     let result = state
-//         .service
-//         .util
-//         .update_degree(
-//             payload.id,
-//             payload.degree_name,
-//             payload.abbreviation,
-//             if payload.is_available { 1 } else { 0 },
-//         )
-//         .await?;
-//     Ok(Json(UtilUpdateResponse { state: result }))
-// }
-
-// pub async fn get_hashtags(
-//     opts: Option<Query<GetHashTagsOption>>,
-//     State(state): State<AppState>,
-// ) -> Result<Json<GetHashTagsResponse>, ApiError> {
-//     let Query(opts) = opts.unwrap_or_default();
-//     let result = state
-//         .service
-//         .util
-//         .get_hashtags(
-//             &opts.hashtags.unwrap_or_default(),
-//             opts.limit.unwrap_or(10),
-//             opts.order_by.unwrap_or_default(),
-//         )
-//         .await?;
-//     Ok(Json(result))
-// }
-
 pub async fn get_categories(
     opts: Option<Query<GetCategoryOption>>,
     State(state): State<AppState>,
@@ -155,13 +95,12 @@ pub async fn get_category_by_id(
     Ok(Json(result))
 }
 
-pub async fn upload_add(
+pub async fn upload_file_to_s3(
     Path(folder): Path<String>,
     State(state): State<AppState>,
     mut multipart: Multipart,
-) -> Result<Json<UtilUploadAddResponse>, ApiError> {
+) -> Result<Json<String>, ApiError> {
     let bucket_name = state.env.aws_bucket_name;
-
     let mut file_bytes = None;
     let mut name_field = None;
     let mut content_type = None;
@@ -196,16 +135,14 @@ pub async fn upload_add(
     }
     let extension = file_name.rsplit('.').next().map(|f| format!(".{f}"));
     let name = if let Some(name) = name_field {
-        format!("/{}{}", name, extension.unwrap_or_default())
+        format!("{}{}", name, extension.unwrap_or_default())
     } else {
-        extension.unwrap_or_default()
+        file_name
     };
     let bytes = file_bytes.ok_or(ApiError::UploadError(UploadError::NoFileProvided))?;
-    let key = format!("{folder}/{}{}", Uuid::new_v4().to_string(), name);
+    let key = format!("{folder}/{}-{}", Uuid::new_v4().to_string(), name);
     let url = format!("https://{bucket_name}/{key}");
-
     let body = ByteStream::from(bytes.clone());
-
     state
         .s3_client
         .put_object()
@@ -221,29 +158,26 @@ pub async fn upload_add(
                 "Failed to upload file to S3".to_string(),
             ))
         })?;
-
-    Ok(Json(UtilUploadAddResponse {
-        state: true,
-        attached_link: url,
-    }))
+    Ok(Json(url))
 }
 
-pub async fn upload_remove(
+pub async fn remove_file_from_s3(
     State(state): State<AppState>,
-    ValidatedRequest(payload): ValidatedRequest<UtilUpdateRemoveRequest>,
-) -> Result<Json<UtilUpdateResponse>, ApiError> {
-    if let Ok(url) = Url::parse(&payload.attached_link) {
+    ValidatedRequest(payload): ValidatedRequest<RemoveFileFromS3Request>,
+) -> Result<Json<bool>, ApiError> {
+    if let Ok(url) = Url::parse(&payload.link) {
         let bucket_name = state.env.aws_bucket_name;
         let key = url.path().trim_start_matches('/').to_string();
-        state
+        let result = state
             .s3_client
             .delete_object()
             .bucket(&bucket_name)
             .key(key)
             .send()
             .await
-            .ok();
-        return Ok(Json(UtilUpdateResponse { state: true }));
+            .ok()
+            .is_some();
+        return Ok(Json(result));
     }
     Err(UploadError::SomethingWentWrong(
         "Url is invalid".to_string(),

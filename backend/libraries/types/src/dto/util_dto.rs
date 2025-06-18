@@ -113,20 +113,9 @@ pub struct GetWallPapersResponse {
     pub wallpapers: Vec<WallPapers>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct UtilUploadAddResponse {
-    pub state: bool,
-    pub attached_link: String,
-}
-
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
-pub struct UtilUpdateRemoveRequest {
-    pub attached_link: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct UtilUpdateResponse {
-    pub state: bool,
+pub struct RemoveFileFromS3Request {
+    pub link: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
