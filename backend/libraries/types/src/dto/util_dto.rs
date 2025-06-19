@@ -1,4 +1,4 @@
-use crate::models::{Category, City, Country, Degree, EmploymentsInfo, HashTagsInfo, WallPapers};
+use crate::models::{City, Country, Degree, EmploymentsInfo, HashTagsInfo, WallPapers};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
@@ -117,9 +117,4 @@ pub struct GetWallPapersResponse {
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 pub struct RemoveFileFromS3Request {
     pub link: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetCategoryResponse {
-    pub category_list: Vec<Category>,
 }

@@ -2,10 +2,7 @@ use crate::{pool::DatabasePool, repository::UtilRepository};
 use serde_json::Value;
 use std::{str::FromStr, sync::Arc};
 use types::{
-    dto::{
-        GetCategoryResponse, GetCityResponse, GetCountryResponse, GetInstitutionDetailItem,
-        GetInstitutionsItem,
-    },
+    dto::{GetCityResponse, GetCountryResponse, GetInstitutionDetailItem, GetInstitutionsItem},
     error::{ApiError, DbError},
     models::Category,
 };
@@ -167,13 +164,11 @@ impl UtilService {
         is_available: Option<bool>,
         start: Option<i32>,
         limit: Option<i32>,
-    ) -> Result<GetCategoryResponse, ApiError> {
-        Ok(GetCategoryResponse {
-            category_list: self
-                .util_repo
-                .get_categories(&name, is_available, start.unwrap_or(0), limit.unwrap_or(10))
-                .await,
-        })
+    ) -> Result<Vec<Category>, ApiError> {
+        Ok(self
+            .util_repo
+            .get_categories(&name, is_available, start.unwrap_or(0), limit.unwrap_or(10))
+            .await)
     }
 
     pub async fn get_category_by_id(&self, id: &str) -> Result<Category, ApiError> {
