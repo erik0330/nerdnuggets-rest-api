@@ -1,9 +1,12 @@
 use crate::state::AppState;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
-use types::dto::{ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request};
+use types::dto::{
+    GetProjectsOption, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+    ProjectUpdateStep3Request,
+};
 use types::error::{ApiError, ValidatedRequest};
-use types::models::{ProjectInfo, User};
+use types::models::{ProjectInfo, ProjectItemInfo, User};
 
 pub async fn get_project_by_id(
     Path(id): Path<String>,
@@ -56,6 +59,26 @@ pub async fn update_project_step_3(
         .service
         .project
         .update_project_step_3(&id, payload)
+        .await?;
+    Ok(Json(res))
+}
+
+pub async fn submit_project(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    let res = state.service.project.submit_project(&id).await?;
+    Ok(Json(res))
+}
+
+pub async fn get_projects(
+    Query(opts): Query<GetProjectsOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ProjectItemInfo>>, ApiError> {
+    let res = state
+        .service
+        .project
+        .get_projects(opts.title, opts.category_id, opts.offset, opts.limit)
         .await?;
     Ok(Json(res))
 }

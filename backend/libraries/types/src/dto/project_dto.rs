@@ -56,3 +56,12 @@ pub struct ProjectMilestoneRequest {
     pub days_after_start: i32,
     pub days_of_prediction: i32,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetProjectsOption {
+    pub title: Option<String>,
+    pub category_id: Option<Uuid>,
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}

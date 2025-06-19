@@ -125,22 +125,16 @@ impl AIErrorCheckStatus {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub enum ProjectStatus {
     #[default]
-    InReview,
-    DaoProgress,
-    FundingProcess,
-    Completed,
-    Rejected,
+    Creating,
+    Submitted,
 }
 
 #[allow(dead_code)]
 impl ProjectStatus {
     pub fn from(status: i16) -> Self {
         match status {
-            0 => Self::InReview,
-            1 => Self::DaoProgress,
-            2 => Self::FundingProcess,
-            3 => Self::Completed,
-            4 | _ => Self::Rejected,
+            0 => Self::Creating,
+            1 | _ => Self::Submitted,
         }
     }
     pub fn to_i16(&self) -> i16 {
