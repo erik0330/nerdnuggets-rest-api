@@ -205,7 +205,6 @@ impl ProjectRepository {
             query = format!("{} WHERE {}", &query, &filters.join(" AND "));
         }
         query = format!("{} ORDER BY p.updated_at DESC LIMIT $1 OFFSET $2", &query);
-        println!("{}", &query);
         let mut query = sqlx::query_as::<_, ProjectItem>(&query)
             .bind(limit.unwrap_or(5))
             .bind(offset.unwrap_or(0));

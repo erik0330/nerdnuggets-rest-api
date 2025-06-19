@@ -6,9 +6,9 @@ use axum::{
 };
 use types::{
     dto::{
-        GetCategoryOption, GetCategoryResponse, GetCityOption, GetCityResponse, GetCountryOption,
-        GetCountryResponse, GetInstitutionDetailItem, GetInstitutionDetailOption,
-        GetInstitutionsItem, GetInstitutionsOption, RemoveFileFromS3Request,
+        GetCategoryOption, GetCityOption, GetCityResponse, GetCountryOption, GetCountryResponse,
+        GetInstitutionDetailItem, GetInstitutionDetailOption, GetInstitutionsItem,
+        GetInstitutionsOption, RemoveFileFromS3Request,
     },
     error::{ApiError, UploadError, ValidatedRequest},
     models::Category,
@@ -72,7 +72,7 @@ pub async fn get_institution_detail(
 pub async fn get_categories(
     Query(opts): Query<GetCategoryOption>,
     State(state): State<AppState>,
-) -> Result<Json<GetCategoryResponse>, ApiError> {
+) -> Result<Json<Vec<Category>>, ApiError> {
     let result = state
         .service
         .util
