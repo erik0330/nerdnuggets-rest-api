@@ -1,7 +1,10 @@
 use crate::pool::DatabasePool;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::models::{Milestone, Project, TeamMember};
+use types::{
+    models::{Milestone, Project, ProjectItem, TeamMember},
+    ProjectStatus,
+};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -24,12 +27,13 @@ impl ProjectRepository {
             .unwrap_or(None)
     }
 
-    pub async fn create_project(&self, user_id: Uuid) -> Result<Project, SqlxError> {
+    pub async fn create_project(&self, user_id: Uuid, nerd_id: &str) -> Result<Project, SqlxError> {
         let project = sqlx::query_as::<_, Project>(
-            "INSERT INTO project (user_id)
-            VALUES ($1) RETURNING *",
+            "INSERT INTO project (user_id, nerd_id)
+            VALUES ($1, $2) RETURNING *",
         )
         .bind(user_id)
+        .bind(nerd_id)
         .fetch_one(self.db_conn.get_pool())
         .await?;
         Ok(project)
@@ -169,5 +173,49 @@ impl ProjectRepository {
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(true)
+    }
+
+    pub async fn submit_project(&self, id: Uuid) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE project SET status = $1 WHERE id = $2")
+            .bind(ProjectStatus::Submitted.to_i16())
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_projects(
+        &self,
+        title: Option<String>,
+        category_id: Option<Uuid>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<ProjectItem>, SqlxError> {
+        let mut filters = Vec::new();
+        let mut index = 3;
+        let mut query = format!("SELECT p.id, p.nerd_id, p.user_id, p.title, p.description, p.cover_photo, p.category, p.status, p.funding_goal, p.duration, p.tags, p.funding_amount, p.count_contributors, p.created_at, p.updated_at, p.dao_at, p.started_at FROM project p");
+        if title.as_ref().map_or(false, |s| !s.is_empty()) {
+            filters.push(format!("p.title ILIKE ${index}"));
+            index += 1;
+        }
+        if category_id.is_some() {
+            filters.push(format!("${index} = ANY(p.category)"));
+        }
+        if !filters.is_empty() {
+            query = format!("{} WHERE {}", &query, &filters.join(" AND "));
+        }
+        query = format!("{} ORDER BY p.updated_at DESC LIMIT $1 OFFSET $2", &query);
+        println!("{}", &query);
+        let mut query = sqlx::query_as::<_, ProjectItem>(&query)
+            .bind(limit.unwrap_or(5))
+            .bind(offset.unwrap_or(0));
+        if let Some(title) = title.as_ref().filter(|s| !s.is_empty()) {
+            query = query.bind(format!("%{}%", title));
+        }
+        if let Some(category_id) = category_id {
+            query = query.bind(category_id)
+        }
+        let projects = query.fetch_all(self.db_conn.get_pool()).await?;
+        Ok(projects)
     }
 }

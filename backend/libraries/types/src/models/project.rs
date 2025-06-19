@@ -7,6 +7,7 @@ use super::UserInfo;
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
 pub struct Project {
     pub id: Uuid,
+    pub nerd_id: String,
     pub user_id: Uuid,
     pub title: Option<String>,
     pub description: Option<String>,
@@ -35,8 +36,13 @@ pub struct Project {
     pub ai_expertise: Option<i16>,
     pub ai_innovation: Option<i16>,
 
+    pub funding_amount: i32,
+    pub count_contributors: i32,
+
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub dao_at: Option<DateTime<Utc>>,
+    pub started_at: Option<DateTime<Utc>>,
 }
 
 impl Project {
@@ -49,6 +55,7 @@ impl Project {
     ) -> ProjectInfo {
         ProjectInfo {
             id: self.id,
+            nerd_id: self.nerd_id.clone(),
             user,
             title: self.title.clone(),
             description: self.description.clone(),
@@ -76,16 +83,21 @@ impl Project {
             ai_budget: self.ai_budget,
             ai_expertise: self.ai_expertise,
             ai_innovation: self.ai_innovation,
+            funding_amount: self.funding_amount,
+            count_contributors: self.count_contributors,
             created_at: self.created_at,
             updated_at: self.updated_at,
+            dao_at: self.dao_at,
+            started_at: self.started_at,
         }
     }
 }
 
-#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectInfo {
     pub id: Uuid,
+    pub nerd_id: String,
     pub user: UserInfo,
     pub title: Option<String>,
     pub description: Option<String>,
@@ -117,8 +129,13 @@ pub struct ProjectInfo {
     pub ai_expertise: Option<i16>,
     pub ai_innovation: Option<i16>,
 
+    pub funding_amount: i32,
+    pub count_contributors: i32,
+
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub dao_at: Option<DateTime<Utc>>,
+    pub started_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
@@ -160,4 +177,76 @@ pub struct Category {
     pub is_available: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectItem {
+    pub id: Uuid,
+    pub nerd_id: String,
+    pub user_id: Uuid,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub cover_photo: Option<String>,
+    pub category: Vec<Uuid>,
+    pub status: i16,
+    pub funding_goal: Option<i32>,
+    pub duration: Option<i32>,
+    pub tags: Vec<String>,
+
+    pub funding_amount: i32,
+    pub count_contributors: i32,
+
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub dao_at: Option<DateTime<Utc>>,
+    pub started_at: Option<DateTime<Utc>>,
+}
+
+impl ProjectItem {
+    pub fn to_info(&self, user: UserInfo, category: Vec<Category>) -> ProjectItemInfo {
+        ProjectItemInfo {
+            id: self.id,
+            nerd_id: self.nerd_id.clone(),
+            user,
+            title: self.title.clone().unwrap_or_default(),
+            description: self.description.clone().unwrap_or_default(),
+            cover_photo: self.cover_photo.clone(),
+            category,
+            status: self.status,
+            funding_goal: self.funding_goal,
+            duration: self.duration,
+            tags: self.tags.clone(),
+            funding_amount: self.funding_amount,
+            count_contributors: self.count_contributors,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            dao_at: self.dao_at,
+            started_at: self.started_at,
+        }
+    }
+}
+
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectItemInfo {
+    pub id: Uuid,
+    pub nerd_id: String,
+    pub user: UserInfo,
+    pub title: String,
+    pub description: String,
+    pub cover_photo: Option<String>,
+    pub category: Vec<Category>,
+    pub status: i16,
+    pub funding_goal: Option<i32>,
+    pub duration: Option<i32>,
+    pub tags: Vec<String>,
+
+    pub funding_amount: i32,
+    pub count_contributors: i32,
+
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub dao_at: Option<DateTime<Utc>>,
+    pub started_at: Option<DateTime<Utc>>,
 }

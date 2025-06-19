@@ -3,9 +3,9 @@ use std::sync::Arc;
 use types::{
     dto::{ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request},
     error::{ApiError, DbError, UserError},
-    models::{Project, ProjectInfo},
+    models::{Project, ProjectInfo, ProjectItemInfo},
 };
-use utils::commons::uuid_from_str;
+use utils::commons::{generate_random_number, uuid_from_str};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -46,9 +46,10 @@ impl ProjectService {
     }
 
     pub async fn create_project(&self, user_id: Uuid) -> Result<ProjectInfo, ApiError> {
+        let nerd_id = format!("RP-2025-{}", generate_random_number(1000, 9999));
         let project = self
             .project_repo
-            .create_project(user_id)
+            .create_project(user_id, &nerd_id)
             .await
             .map_err(|err| DbError::SomethingWentWrong(err.to_string()))?;
         self.project_to_info(&project).await
@@ -137,5 +138,34 @@ impl ProjectService {
                 .ok();
         }
         Ok(true)
+    }
+
+    pub async fn submit_project(&self, id: &str) -> Result<bool, ApiError> {
+        self.project_repo
+            .submit_project(uuid_from_str(id)?)
+            .await
+            .map_err(|_| DbError::SomethingWentWrong("Submit project failed".to_string()).into())
+    }
+
+    pub async fn get_projects(
+        &self,
+        title: Option<String>,
+        category_id: Option<Uuid>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<ProjectItemInfo>, ApiError> {
+        let projects = self
+            .project_repo
+            .get_projects(title, category_id, offset, limit)
+            .await
+            .map_err(|_| DbError::SomethingWentWrong("Get projects failed".to_string()))?;
+        let mut project_infos = Vec::new();
+        for pro in projects {
+            if let Some(user) = self.user_repo.get_by_user_id(pro.user_id).await {
+                let category = self.util_repo.get_category_by_ids(&pro.category).await;
+                project_infos.push(pro.to_info(user.to_info(), category));
+            }
+        }
+        Ok(project_infos)
     }
 }

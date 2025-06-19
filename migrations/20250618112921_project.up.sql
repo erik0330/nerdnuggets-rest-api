@@ -3,6 +3,7 @@
 CREATE TABLE
     IF NOT EXISTS project (
         id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+        nerd_id VARCHAR(255) NOT NULL,
         user_id UUID NOT NULL,
         title TEXT,
         description TEXT,
@@ -28,6 +29,10 @@ CREATE TABLE
         ai_budget SMALLINT,
         ai_expertise SMALLINT,
         ai_innovation SMALLINT,
+        funding_amount INT DEFAULT 0,
+        count_contributors INT DEFAULT 0,
         created_at TIMESTAMPTZ DEFAULT now(),
-        updated_at TIMESTAMPTZ DEFAULT now()
+        updated_at TIMESTAMPTZ DEFAULT now(),
+        dao_at TIMESTAMPTZ,
+        started_at TIMESTAMPTZ
     );
