@@ -286,4 +286,28 @@ impl ProjectRepository {
         .await?;
         Ok(row.rows_affected() == 1)
     }
+
+    pub async fn start_dao(&self, id: Uuid) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE project SET status = $1, update_at = $2, dao_at = $2 WHERE id = $3",
+        )
+        .bind(ProjectStatus::DaoVoting.to_i16())
+        .bind(Utc::now())
+        .bind(id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn publish(&self, id: Uuid) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE project SET status = $1, update_at = $2, started_at = $2 WHERE id = $3",
+        )
+        .bind(ProjectStatus::Funding.to_i16())
+        .bind(Utc::now())
+        .bind(id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
 }

@@ -133,3 +133,25 @@ pub async fn decide_review(
     }
     Err(UserError::RoleNotAllowed)?
 }
+
+pub async fn start_dao(
+    Extension(role): Extension<String>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+    Ok(Json(state.service.project.start_dao(&id).await?))
+}
+
+pub async fn publish(
+    Extension(role): Extension<String>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+    Ok(Json(state.service.project.publish(&id).await?))
+}
