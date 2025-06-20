@@ -4,6 +4,7 @@ use types::{
     dto::{ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request},
     error::{ApiError, DbError, UserError},
     models::{Project, ProjectInfo, ProjectItemInfo},
+    ProjectStatus,
 };
 use utils::commons::{generate_random_number, uuid_from_str};
 use uuid::Uuid;
@@ -163,9 +164,46 @@ impl ProjectService {
         for pro in projects {
             if let Some(user) = self.user_repo.get_by_user_id(pro.user_id).await {
                 let category = self.util_repo.get_category_by_ids(&pro.category).await;
-                project_infos.push(pro.to_info(user.to_info(), category));
+                project_infos.push(pro.to_info(user.to_info(), None, category));
             }
         }
         Ok(project_infos)
+    }
+
+    pub async fn assign_editor(&self, id: &str, editor_id: Uuid) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        let project = self
+            .project_repo
+            .get_project_by_id(id)
+            .await
+            .ok_or(DbError::SomethingWentWrong("Project not found".to_string()))?;
+        if project.status != ProjectStatus::PendingReview.to_i16() {
+            return Err(DbError::SomethingWentWrong(
+                "Project's status is not PendingReview".to_string(),
+            )
+            .into());
+        }
+        if !self
+            .project_repo
+            .create_project_editor(id, &project.nerd_id, editor_id)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(
+                DbError::SomethingWentWrong("Can't create a project editor".to_string()).into(),
+            );
+        }
+        if !self
+            .project_repo
+            .update_project_status(id, ProjectStatus::UnderReview)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::SomethingWentWrong(
+                "Can't update the status of the project when assigning an editor".to_string(),
+            )
+            .into());
+        }
+        Ok(true)
     }
 }

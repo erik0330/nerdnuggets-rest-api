@@ -204,11 +204,17 @@ pub struct ProjectItem {
 }
 
 impl ProjectItem {
-    pub fn to_info(&self, user: UserInfo, category: Vec<Category>) -> ProjectItemInfo {
+    pub fn to_info(
+        &self,
+        user: UserInfo,
+        editor: Option<ProjectEditorInfo>,
+        category: Vec<Category>,
+    ) -> ProjectItemInfo {
         ProjectItemInfo {
             id: self.id,
             nerd_id: self.nerd_id.clone(),
             user,
+            editor,
             title: self.title.clone().unwrap_or_default(),
             description: self.description.clone().unwrap_or_default(),
             cover_photo: self.cover_photo.clone(),
@@ -233,6 +239,7 @@ pub struct ProjectItemInfo {
     pub id: Uuid,
     pub nerd_id: String,
     pub user: UserInfo,
+    pub editor: Option<ProjectEditorInfo>,
     pub title: String,
     pub description: String,
     pub cover_photo: Option<String>,
@@ -249,4 +256,40 @@ pub struct ProjectItemInfo {
     pub updated_at: DateTime<Utc>,
     pub dao_at: Option<DateTime<Utc>>,
     pub started_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+pub struct ProjectEditor {
+    pub id: Uuid,
+    pub project_id: String,
+    pub nerd_id: String,
+    pub user_id: Uuid,
+    pub status: i16, // FeedbackStatus => 0: pending, 1: accepted, 2: request revision, 3: rejected
+    pub feedback: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl ProjectEditor {
+    pub fn to_info(&self, is_full: bool, user: UserInfo) -> ProjectEditorInfo {
+        ProjectEditorInfo {
+            id: self.id,
+            user,
+            status: self.status,
+            feedback: self.feedback.clone().filter(|_| is_full),
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        }
+    }
+}
+
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectEditorInfo {
+    pub id: Uuid,
+    pub user: UserInfo,
+    pub status: i16, // FeedbackStatus => 0: pending, 1: accepted, 2: request revision, 3: rejected
+    pub feedback: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }

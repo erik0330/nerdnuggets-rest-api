@@ -2,11 +2,12 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
-    GetProjectsOption, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+    AssignEditorRequest, GetProjectsOption, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
     ProjectUpdateStep3Request,
 };
-use types::error::{ApiError, ValidatedRequest};
+use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{ProjectInfo, ProjectItemInfo, User};
+use types::UserRoleType;
 
 pub async fn get_project_by_id(
     Path(id): Path<String>,
@@ -81,4 +82,22 @@ pub async fn get_projects(
         .get_projects(opts.title, opts.category_id, opts.offset, opts.limit)
         .await?;
     Ok(Json(res))
+}
+
+pub async fn assign_editor(
+    Extension(role): Extension<UserRoleType>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<AssignEditorRequest>,
+) -> Result<Json<bool>, ApiError> {
+    if role != UserRoleType::Admin {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+    Ok(Json(
+        state
+            .service
+            .project
+            .assign_editor(&id, payload.editor_id)
+            .await?,
+    ))
 }

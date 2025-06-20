@@ -1,4 +1,5 @@
 use crate::pool::DatabasePool;
+use chrono::Utc;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
@@ -177,7 +178,7 @@ impl ProjectRepository {
 
     pub async fn submit_project(&self, id: Uuid) -> Result<bool, SqlxError> {
         let row = sqlx::query("UPDATE project SET status = $1 WHERE id = $2")
-            .bind(ProjectStatus::Submitted.to_i16())
+            .bind(ProjectStatus::PendingReview.to_i16())
             .bind(id)
             .execute(self.db_conn.get_pool())
             .await?;
@@ -188,6 +189,7 @@ impl ProjectRepository {
         &self,
         title: Option<String>,
         category_id: Option<Uuid>,
+        // tab: Option<i16>,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<ProjectItem>, SqlxError> {
@@ -216,5 +218,36 @@ impl ProjectRepository {
         }
         let projects = query.fetch_all(self.db_conn.get_pool()).await?;
         Ok(projects)
+    }
+
+    pub async fn create_project_editor(
+        &self,
+        id: Uuid,
+        nerd_id: &str,
+        editor_id: Uuid,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "INSERT INTO project_editor (project_id, nerd_id, user_id) VALUES ($1, $2, $3)",
+        )
+        .bind(id)
+        .bind(nerd_id)
+        .bind(editor_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn update_project_status(
+        &self,
+        id: Uuid,
+        status: ProjectStatus,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE SET project SET status = $1, updated_at = $2 WHERE id = $3")
+            .bind(status.to_i16())
+            .bind(Utc::now())
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
     }
 }
