@@ -1,7 +1,10 @@
 use crate::{pool::DatabasePool, ProjectRepository, UserRepository, UtilRepository};
 use std::sync::Arc;
 use types::{
-    dto::{ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request},
+    dto::{
+        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+        UpdateMilestoneRequest,
+    },
     error::{ApiError, DbError, UserError},
     models::{Project, ProjectInfo, ProjectItemInfo},
     FeedbackStatus, ProjectStatus, UserRoleType,
@@ -302,6 +305,31 @@ impl ProjectService {
         }
         if !self.project_repo.publish(id).await.unwrap_or_default() {
             return Err(DbError::Str("Publish project failed".to_string()).into());
+        }
+        Ok(true)
+    }
+
+    pub async fn update_milestone(
+        &self,
+        id: &str,
+        payload: UpdateMilestoneRequest,
+    ) -> Result<bool, ApiError> {
+        let proof_status = if payload.is_draft { 0 } else { 1 };
+        if !self
+            .project_repo
+            .update_milestone(
+                uuid_from_str(id)?,
+                payload.description,
+                payload.deliverables,
+                payload.challenges,
+                payload.next_steps,
+                payload.file_urls.unwrap_or_default(),
+                proof_status,
+            )
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Update milestone failed".to_string()).into());
         }
         Ok(true)
     }

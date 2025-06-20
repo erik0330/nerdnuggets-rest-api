@@ -158,13 +158,18 @@ pub struct TeamMember {
 pub struct Milestone {
     pub id: Uuid,
     pub project_id: Uuid,
+    pub status: i16, // 0:pending, 1:in process, 2:success, 3:giveup, 4:failed
     pub number: i16,
     pub title: String,
     pub description: String,
+    // pub deliverables: Option<String>,
+    // pub challenges: Option<String>,
+    // pub next_steps: Option<String>,
+    // pub file_urls: Vec<String>,
+    pub proof_status: i16, // 0:empty, 1:submitted, 2:approved, 3:rejected
     pub funding_amount: i32,
     pub days_after_start: i32,
     pub days_of_prediction: i32,
-    pub status: i16,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

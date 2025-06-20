@@ -3,7 +3,7 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
     AssignEditorRequest, DecideEditorRequest, GetProjectsOption, ProjectUpdateStep1Request,
-    ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+    ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{ProjectInfo, ProjectItemInfo, User};
@@ -154,4 +154,14 @@ pub async fn publish(
         return Err(UserError::RoleNotAllowed)?;
     }
     Ok(Json(state.service.project.publish(&id).await?))
+}
+
+pub async fn update_milestone(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<UpdateMilestoneRequest>,
+) -> Result<Json<bool>, ApiError> {
+    Ok(Json(
+        state.service.project.update_milestone(&id, payload).await?,
+    ))
 }

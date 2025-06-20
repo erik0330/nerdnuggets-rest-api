@@ -78,3 +78,14 @@ pub struct DecideEditorRequest {
     pub status: i16,
     pub feedback: Option<String>,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateMilestoneRequest {
+    pub description: String,
+    pub deliverables: Option<String>,
+    pub challenges: Option<String>,
+    pub next_steps: Option<String>,
+    pub file_urls: Option<Vec<String>>,
+    pub is_draft: bool,
+}
