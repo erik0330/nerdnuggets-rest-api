@@ -1,4 +1,3 @@
-use crate::UserRoleType;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -14,5 +13,5 @@ pub struct TokenClaimsDto {
     pub sub: Uuid,
     pub iat: i64,
     pub exp: i64,
-    pub role: UserRoleType,
+    pub role: String,
 }

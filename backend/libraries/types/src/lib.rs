@@ -195,6 +195,21 @@ pub enum UserRoleType {
     Student,
 }
 
+impl fmt::Display for UserRoleType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            UserRoleType::Researcher => "Researcher",
+            UserRoleType::Editor => "Editor",
+            UserRoleType::Admin => "Admin",
+            UserRoleType::Funder => "Funder",
+            UserRoleType::Predictor => "Predictor",
+            UserRoleType::Member => "Member",
+            UserRoleType::Student => "Student",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
 pub enum UserTierType {
     #[default]

@@ -1,5 +1,5 @@
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
-use types::{dto::TokenClaimsDto, error::TokenError, models::User, UserRoleType};
+use types::{dto::TokenClaimsDto, error::TokenError, models::User};
 use utils::env::Env;
 
 #[derive(Clone)]
@@ -27,7 +27,7 @@ impl TokenService {
         )
     }
 
-    pub fn generate_token(&self, user: User, role: UserRoleType) -> Result<String, TokenError> {
+    pub fn generate_token(&self, user: User, role: String) -> Result<String, TokenError> {
         let iat = chrono::Utc::now().timestamp();
         let exp = chrono::Utc::now()
             .checked_add_signed(chrono::Duration::minutes(self.ttl_in_minutes))

@@ -1,7 +1,8 @@
 use crate::state::AppState;
 use axum::extract::{Path, State};
 use axum::{Extension, Json};
-use types::dto::UserOnboardingRequest;
+use types::dto::{ChangeRoleRequest, LoginAndRegisterResponse, UserOnboardingRequest};
+use types::error::UserError;
 use types::models::User;
 use types::{
     dto::UserReadDto,
@@ -25,33 +26,19 @@ pub async fn update_user_onboarding(
     return Ok(Json(UserReadDto::from(user)));
 }
 
-// pub async fn change_role(
-//     Extension(user): Extension<User>,
-//     State(state): State<AppState>,
-//     ValidatedRequest(payload): ValidatedRequest<UserChangeRoleRequest>,
-// ) -> Result<Json<UserLoginAndRegisterResponse>, ApiError> {
-//     let role = UserRoleType::from(payload.role.unwrap_or_default());
-//     if !user.role_is_allowed(role.to_owned()) {
-//         return Err(ApiError::UserError(UserError::RoleNotAllowed))?;
-//     }
-//     match role {
-//         UserRoleType::Author | UserRoleType::Editor | UserRoleType::CopyEditor => {
-//             if user.email.clone().unwrap_or_default().is_empty()
-//                 && user.gmail.clone().unwrap_or_default().is_empty()
-//             {
-//                 return Err(ApiError::UserError(UserError::SomethingWentWrong(
-//                     "Before changing roles, please enter your email on the settings page."
-//                         .to_string(),
-//                 )));
-//             }
-//         }
-//         _ => {}
-//     }
-//     return Ok(Json(UserLoginAndRegisterResponse {
-//         user: UserReadDto::from(user.to_owned()),
-//         token: state.service.token.generate_token(user, role)?,
-//     }));
-// }
+pub async fn change_role(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<ChangeRoleRequest>,
+) -> Result<Json<LoginAndRegisterResponse>, ApiError> {
+    if !user.roles.contains(&payload.role) {
+        return Err(ApiError::UserError(UserError::RoleNotAllowed))?;
+    }
+    return Ok(Json(LoginAndRegisterResponse {
+        user: UserReadDto::from(user.to_owned()),
+        token: state.service.token.generate_token(user, payload.role)?,
+    }));
+}
 
 // pub async fn check_username(
 //     Extension(user): Extension<User>,

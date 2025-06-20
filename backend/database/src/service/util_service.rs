@@ -172,17 +172,12 @@ impl UtilService {
     }
 
     pub async fn get_category_by_id(&self, id: &str) -> Result<Category, ApiError> {
-        let id = Uuid::from_str(id).map_err(|_| {
-            ApiError::DbError(DbError::SomethingWentWrong(
-                "Invalid UUID format".to_string(),
-            ))
-        })?;
+        let id = Uuid::from_str(id)
+            .map_err(|_| ApiError::DbError(DbError::Str("Invalid UUID format".to_string())))?;
         if let Some(category) = self.util_repo.get_category_by_id(id).await {
             Ok(category)
         } else {
-            Err(DbError::SomethingWentWrong(
-                "This category does not exist.".to_string(),
-            ))?
+            Err(DbError::Str("This category does not exist.".to_string()))?
         }
     }
 

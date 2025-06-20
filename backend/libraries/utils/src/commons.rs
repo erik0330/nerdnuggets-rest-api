@@ -16,7 +16,7 @@ use uuid::Uuid;
 
 pub fn uuid_from_str(id: &str) -> Result<Uuid, ApiError> {
     let id = Uuid::from_str(id).map_err(|_| {
-        ApiError::DbError(DbError::SomethingWentWrong(
+        ApiError::DbError(DbError::Str(
             "Invalid UUID format".to_string(),
         ))
     })?;

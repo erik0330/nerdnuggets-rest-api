@@ -98,7 +98,7 @@ impl UserService {
         self.user_repo
             .update_gmail(id, gmail)
             .await
-            .map_err(|_| DbError::SomethingWentWrong("Update gmail failed".to_string()).into())
+            .map_err(|_| DbError::Str("Update gmail failed".to_string()).into())
     }
 
     pub async fn update_user_onboarding(
@@ -106,11 +106,8 @@ impl UserService {
         id: &str,
         payload: UserOnboardingRequest,
     ) -> Result<User, ApiError> {
-        let id = Uuid::from_str(id).map_err(|_| {
-            ApiError::DbError(DbError::SomethingWentWrong(
-                "Invalid UUID format".to_string(),
-            ))
-        })?;
+        let id = Uuid::from_str(id)
+            .map_err(|_| ApiError::DbError(DbError::Str("Invalid UUID format".to_string())))?;
         self.user_repo
             .update_user_onboarding(
                 id,
@@ -122,16 +119,14 @@ impl UserService {
                 &payload.wallet_address,
             )
             .await
-            .map_err(|_| {
-                DbError::SomethingWentWrong("Update user onboarding failed".to_string()).into()
-            })
+            .map_err(|_| DbError::Str("Update user onboarding failed".to_string()).into())
     }
 
     pub async fn create_user_with_google(&self, gmail: &str) -> Result<User, ApiError> {
         self.user_repo
             .create_user_with_google(gmail)
             .await
-            .map_err(|err| DbError::SomethingWentWrong(err.to_string()).into())
+            .map_err(|err| DbError::Str(err.to_string()).into())
     }
 
     pub async fn check_email(&self, email: &str) -> Result<UserCheckResponse, ApiError> {
@@ -173,7 +168,7 @@ impl UserService {
             .await
         {
             Ok(user) => Ok(user),
-            Err(e) => Err(DbError::SomethingWentWrong(e.to_string()))?,
+            Err(e) => Err(DbError::Str(e.to_string()))?,
         }
     }
 

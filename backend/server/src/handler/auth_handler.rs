@@ -6,7 +6,7 @@ use axum::{
 use third_party_api::google_oauth::get_google_user;
 use types::{
     dto::{
-        UserCheckEmailOption, UserCheckResponse, UserLoginAndRegisterResponse,
+        LoginAndRegisterResponse, UserCheckEmailOption, UserCheckResponse,
         UserLoginWithEmailRequest, UserLoginWithGoogleRequest, UserReadDto,
         UserRegisterWithEmailRequest,
     },
@@ -18,7 +18,7 @@ use utils::commons::is_valid_email;
 pub async fn login_with_email(
     State(state): State<AppState>,
     ValidatedRequest(payload): ValidatedRequest<UserLoginWithEmailRequest>,
-) -> Result<Json<UserLoginAndRegisterResponse>, ApiError> {
+) -> Result<Json<LoginAndRegisterResponse>, ApiError> {
     if !is_valid_email(&payload.email) {
         return Err(ApiError::UserError(UserError::SomethingWentWrong(
             "The email is invalid".to_string(),
@@ -31,12 +31,12 @@ pub async fn login_with_email(
     }
 
     if state.service.user.verify_password(&user, &payload.password) {
-        Ok(Json(UserLoginAndRegisterResponse {
+        Ok(Json(LoginAndRegisterResponse {
             user: UserReadDto::from(user.to_owned()),
             token: state
                 .service
                 .token
-                .generate_token(user, UserRoleType::Member)?,
+                .generate_token(user, UserRoleType::Member.to_string())?,
         }))
     } else {
         Err(UserError::InvalidPassword)?
@@ -46,11 +46,11 @@ pub async fn login_with_email(
 pub async fn login_or_register_with_google(
     State(state): State<AppState>,
     ValidatedRequest(payload): ValidatedRequest<UserLoginWithGoogleRequest>,
-) -> Result<Json<UserLoginAndRegisterResponse>, ApiError> {
+) -> Result<Json<LoginAndRegisterResponse>, ApiError> {
     let google_user = get_google_user(&payload.access_token).await;
 
     if let Err(_) = google_user {
-        return Err(DbError::SomethingWentWrong(
+        return Err(DbError::Str(
             "An error occurred while trying to retrieve user information.".to_string(),
         ))?;
     }
@@ -58,12 +58,12 @@ pub async fn login_or_register_with_google(
     let google_user = google_user.unwrap();
     let email = google_user.email.to_lowercase();
     if let Ok(user) = state.service.user.find_by_gmail(&email).await {
-        return Ok(Json(UserLoginAndRegisterResponse {
+        return Ok(Json(LoginAndRegisterResponse {
             user: UserReadDto::from(user.to_owned()),
             token: state
                 .service
                 .token
-                .generate_token(user, UserRoleType::Member)?,
+                .generate_token(user, UserRoleType::Member.to_string())?,
         }));
     }
     if let Ok(user) = state.service.user.find_by_email(&email).await {
@@ -72,21 +72,21 @@ pub async fn login_or_register_with_google(
             .user
             .update_gmail(user.id, Some(email))
             .await?;
-        return Ok(Json(UserLoginAndRegisterResponse {
+        return Ok(Json(LoginAndRegisterResponse {
             user: UserReadDto::from(user.to_owned()),
             token: state
                 .service
                 .token
-                .generate_token(user, UserRoleType::Member)?,
+                .generate_token(user, UserRoleType::Member.to_string())?,
         }));
     }
     match state.service.user.create_user_with_google(&email).await {
-        Ok(user) => Ok(Json(UserLoginAndRegisterResponse {
+        Ok(user) => Ok(Json(LoginAndRegisterResponse {
             user: UserReadDto::from(user.to_owned()),
             token: state
                 .service
                 .token
-                .generate_token(user, UserRoleType::Member)?,
+                .generate_token(user, UserRoleType::Member.to_string())?,
         })),
         Err(_) => Err(ApiError::UserError(UserError::CantCreateUser)),
     }
@@ -258,7 +258,7 @@ pub async fn check_email(
 pub async fn register_with_email(
     State(state): State<AppState>,
     ValidatedRequest(payload): ValidatedRequest<UserRegisterWithEmailRequest>,
-) -> Result<Json<UserLoginAndRegisterResponse>, ApiError> {
+) -> Result<Json<LoginAndRegisterResponse>, ApiError> {
     if !is_valid_email(&payload.email) {
         return Err(ApiError::UserError(UserError::SomethingWentWrong(
             "The email is invalid".to_string(),
@@ -357,12 +357,12 @@ pub async fn register_with_email(
             &bcrypt::hash(payload.password, 12).unwrap(),
         )
         .await?;
-    Ok(Json(UserLoginAndRegisterResponse {
+    Ok(Json(LoginAndRegisterResponse {
         user: UserReadDto::from(user.to_owned()),
         token: state
             .service
             .token
-            .generate_token(user, UserRoleType::Member)?,
+            .generate_token(user, UserRoleType::Member.to_string())?,
     }))
 }
 
