@@ -1,9 +1,10 @@
 use crate::pool::DatabasePool;
+use chrono::Utc;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
     models::{Milestone, Project, ProjectItem, TeamMember},
-    ProjectStatus,
+    FeedbackStatus, ProjectStatus,
 };
 use uuid::Uuid;
 
@@ -177,7 +178,7 @@ impl ProjectRepository {
 
     pub async fn submit_project(&self, id: Uuid) -> Result<bool, SqlxError> {
         let row = sqlx::query("UPDATE project SET status = $1 WHERE id = $2")
-            .bind(ProjectStatus::Submitted.to_i16())
+            .bind(ProjectStatus::PendingReview.to_i16())
             .bind(id)
             .execute(self.db_conn.get_pool())
             .await?;
@@ -188,6 +189,7 @@ impl ProjectRepository {
         &self,
         title: Option<String>,
         category_id: Option<Uuid>,
+        // tab: Option<i16>,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<ProjectItem>, SqlxError> {
@@ -216,5 +218,119 @@ impl ProjectRepository {
         }
         let projects = query.fetch_all(self.db_conn.get_pool()).await?;
         Ok(projects)
+    }
+
+    pub async fn update_project_status(
+        &self,
+        id: Uuid,
+        status: &ProjectStatus,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE project SET status = $1, updated_at = $2 WHERE id = $3")
+            .bind(status.to_i16())
+            .bind(Utc::now())
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn create_project_editor(
+        &self,
+        id: Uuid,
+        nerd_id: &str,
+        editor_id: Uuid,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "INSERT INTO project_editor (project_id, nerd_id, user_id) VALUES ($1, $2, $3)",
+        )
+        .bind(id)
+        .bind(nerd_id)
+        .bind(editor_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn update_project_editor(
+        &self,
+        id: Uuid,
+        editor_id: Uuid,
+        status: &FeedbackStatus,
+        feedback: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE project_editor SET status = $1, feedback = $2, updated_at = $3 WHERE project_id = $4 AND user_id = $5")
+            .bind(status.to_i16())
+            .bind(feedback)
+            .bind(Utc::now())
+            .bind(id)
+            .bind(editor_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn decide_admin(
+        &self,
+        id: Uuid,
+        status: &ProjectStatus,
+        feedback: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE project SET status = $1, feedback = $2, updated_at = $3 WHERE id = $4",
+        )
+        .bind(status.to_i16())
+        .bind(feedback)
+        .bind(Utc::now())
+        .bind(id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn start_dao(&self, id: Uuid) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE project SET status = $1, update_at = $2, dao_at = $2 WHERE id = $3",
+        )
+        .bind(ProjectStatus::DaoVoting.to_i16())
+        .bind(Utc::now())
+        .bind(id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn publish(&self, id: Uuid) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE project SET status = $1, update_at = $2, started_at = $2 WHERE id = $3",
+        )
+        .bind(ProjectStatus::Funding.to_i16())
+        .bind(Utc::now())
+        .bind(id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn update_milestone(
+        &self,
+        id: Uuid,
+        description: String,
+        deliverables: Option<String>,
+        challenges: Option<String>,
+        next_steps: Option<String>,
+        file_urls: Vec<String>,
+        proof_status: i16,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE milestone SET description = $1, deliverables = $2, challenges = $3, next_steps = $4, file_urls = $5, proof_status = $6 WHERE id = $7")
+            .bind(description)
+            .bind(deliverables)
+            .bind(challenges)
+            .bind(next_steps)
+            .bind(file_urls)
+            .bind(proof_status)
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
     }
 }

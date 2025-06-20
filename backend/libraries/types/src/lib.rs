@@ -61,44 +61,6 @@ pub enum ShowerType {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub enum ArticleStatus {
-    #[default]
-    Creating,
-    Rejected,
-    Published,
-    Submitted,
-    EditorPending,
-    EditorDeclined,
-    EditorAccepted,
-    RecievedFeedback,
-    CopyEditorPending,
-    CopyEditorProcess,
-    CopyEditorDone,
-}
-
-#[allow(dead_code)]
-impl ArticleStatus {
-    pub fn from(status: i16) -> Self {
-        match status {
-            0 => Self::Creating,
-            1 => Self::Rejected,
-            2 => Self::Published,
-            3 => Self::Submitted,
-            4 => Self::EditorPending,
-            5 => Self::EditorDeclined,
-            6 => Self::EditorAccepted,
-            7 => Self::RecievedFeedback,
-            8 => Self::CopyEditorPending,
-            9 => Self::CopyEditorProcess,
-            10 | _ => Self::CopyEditorDone,
-        }
-    }
-    pub fn to_i16(&self) -> i16 {
-        self.to_owned() as i16
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub enum AIErrorCheckStatus {
     #[default]
     NotYet,
@@ -126,7 +88,16 @@ impl AIErrorCheckStatus {
 pub enum ProjectStatus {
     #[default]
     Creating,
-    Submitted,
+    PendingReview,
+    UnderReview,
+    RevisionEditor,
+    ApprovedEditor,
+    RevisionAdmin,
+    ApprovedAdmin,
+    DaoVoting,
+    Funding,
+    Completed,
+    Rejected,
 }
 
 #[allow(dead_code)]
@@ -134,7 +105,16 @@ impl ProjectStatus {
     pub fn from(status: i16) -> Self {
         match status {
             0 => Self::Creating,
-            1 | _ => Self::Submitted,
+            1 => Self::PendingReview,
+            2 => Self::UnderReview,
+            3 => Self::RevisionEditor,
+            4 => Self::ApprovedEditor,
+            5 => Self::RevisionAdmin,
+            6 => Self::ApprovedAdmin,
+            7 => Self::DaoVoting,
+            8 => Self::Funding,
+            9 => Self::Completed,
+            10 | _ => Self::Rejected,
         }
     }
     pub fn to_i16(&self) -> i16 {
@@ -192,30 +172,22 @@ impl ProjectResultStatus {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub enum ArticleReviewStyle {
-    #[default]
-    OpenPeerReview,
-    SingleBlindReview,
-    DoubleBlindReivew,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub enum ArticleInvitationStatus {
+pub enum FeedbackStatus {
     #[default]
     Pending,
     Accepted,
-    Declined,
-    ShortList,
+    RevisionRequired,
+    Rejected,
 }
 
 #[allow(dead_code)]
-impl ArticleInvitationStatus {
+impl FeedbackStatus {
     pub fn from(status: i16) -> Self {
         match status {
             0 => Self::Pending,
             1 => Self::Accepted,
-            2 => Self::Declined,
-            3 | _ => Self::ShortList,
+            2 => Self::RevisionRequired,
+            3 | _ => Self::Rejected,
         }
     }
     pub fn to_i16(&self) -> i16 {
@@ -233,6 +205,21 @@ pub enum UserRoleType {
     Predictor,
     Member,
     Student,
+}
+
+impl fmt::Display for UserRoleType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            UserRoleType::Researcher => "Researcher",
+            UserRoleType::Editor => "Editor",
+            UserRoleType::Admin => "Admin",
+            UserRoleType::Funder => "Funder",
+            UserRoleType::Predictor => "Predictor",
+            UserRoleType::Member => "Member",
+            UserRoleType::Student => "Student",
+        };
+        write!(f, "{}", s)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
@@ -306,24 +293,4 @@ pub struct Statistics {
     pub total_papers: i64,
     pub total_analyses: i64,
     pub error_statistics: ErrorStatistics,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub enum StripePayType {
-    #[default]
-    ArticleAIErrorCheck,
-    ArticleSubmit,
-}
-
-#[allow(dead_code)]
-impl StripePayType {
-    pub fn from(status: i16) -> Self {
-        match status {
-            0 => Self::ArticleAIErrorCheck,
-            1 | _ => Self::ArticleSubmit,
-        }
-    }
-    pub fn to_i16(&self) -> i16 {
-        self.to_owned() as i16
-    }
 }

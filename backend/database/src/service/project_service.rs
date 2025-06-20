@@ -1,9 +1,13 @@
 use crate::{pool::DatabasePool, ProjectRepository, UserRepository, UtilRepository};
 use std::sync::Arc;
 use types::{
-    dto::{ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request},
+    dto::{
+        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+        UpdateMilestoneRequest,
+    },
     error::{ApiError, DbError, UserError},
     models::{Project, ProjectInfo, ProjectItemInfo},
+    FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use utils::commons::{generate_random_number, uuid_from_str};
 use uuid::Uuid;
@@ -41,7 +45,7 @@ impl ProjectService {
             .project_repo
             .get_project_by_id(uuid_from_str(id)?)
             .await
-            .ok_or_else(|| DbError::SomethingWentWrong("Project not found".to_string()))?;
+            .ok_or_else(|| DbError::Str("Project not found".to_string()))?;
         self.project_to_info(&project).await
     }
 
@@ -51,7 +55,7 @@ impl ProjectService {
             .project_repo
             .create_project(user_id, &nerd_id)
             .await
-            .map_err(|err| DbError::SomethingWentWrong(err.to_string()))?;
+            .map_err(|err| DbError::Str(err.to_string()))?;
         self.project_to_info(&project).await
     }
 
@@ -75,7 +79,7 @@ impl ProjectService {
                 payload.youtube_link,
             )
             .await
-            .map_err(|_| DbError::SomethingWentWrong("Update project failed".to_string()))?;
+            .map_err(|_| DbError::Str("Update project failed".to_string()))?;
         Ok(res)
     }
 
@@ -97,7 +101,7 @@ impl ProjectService {
                 payload.tags.unwrap_or_default(),
             )
             .await
-            .map_err(|_| DbError::SomethingWentWrong("Update project failed".to_string()))?;
+            .map_err(|_| DbError::Str("Update project failed".to_string()))?;
         Ok(res)
     }
 
@@ -144,7 +148,7 @@ impl ProjectService {
         self.project_repo
             .submit_project(uuid_from_str(id)?)
             .await
-            .map_err(|_| DbError::SomethingWentWrong("Submit project failed".to_string()).into())
+            .map_err(|_| DbError::Str("Submit project failed".to_string()).into())
     }
 
     pub async fn get_projects(
@@ -158,14 +162,175 @@ impl ProjectService {
             .project_repo
             .get_projects(title, category_id, offset, limit)
             .await
-            .map_err(|_| DbError::SomethingWentWrong("Get projects failed".to_string()))?;
+            .map_err(|_| DbError::Str("Get projects failed".to_string()))?;
         let mut project_infos = Vec::new();
         for pro in projects {
             if let Some(user) = self.user_repo.get_by_user_id(pro.user_id).await {
                 let category = self.util_repo.get_category_by_ids(&pro.category).await;
-                project_infos.push(pro.to_info(user.to_info(), category));
+                project_infos.push(pro.to_info(user.to_info(), None, category));
             }
         }
         Ok(project_infos)
+    }
+
+    pub async fn assign_editor(&self, id: &str, editor_id: Uuid) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        let editor = self
+            .user_repo
+            .get_by_user_id(editor_id)
+            .await
+            .ok_or(DbError::Str("Editor not found".to_string()))?;
+        if !editor.roles.contains(&UserRoleType::Editor.to_string()) {
+            return Err(DbError::Str("This user has not an editor role".to_string()).into());
+        }
+        let project = self
+            .project_repo
+            .get_project_by_id(id)
+            .await
+            .ok_or(DbError::Str("Project not found".to_string()))?;
+        if project.status != ProjectStatus::PendingReview.to_i16() {
+            return Err(DbError::Str("Project's status is not PendingReview".to_string()).into());
+        }
+        if !self
+            .project_repo
+            .create_project_editor(id, &project.nerd_id, editor_id)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Can't create a project editor".to_string()).into());
+        }
+        if !self
+            .project_repo
+            .update_project_status(id, &ProjectStatus::UnderReview)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str(
+                "Can't update the status of the project when assigning an editor".to_string(),
+            )
+            .into());
+        }
+        Ok(true)
+    }
+
+    pub async fn decide_editor(
+        &self,
+        id: &str,
+        editor_id: Uuid,
+        status: FeedbackStatus,
+        feedback: Option<String>,
+    ) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        if !self
+            .project_repo
+            .update_project_editor(id, editor_id, &status, feedback)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Update project editor failed".to_string()).into());
+        }
+        let status = match status {
+            FeedbackStatus::Accepted => ProjectStatus::ApprovedEditor,
+            FeedbackStatus::RevisionRequired => ProjectStatus::RevisionEditor,
+            FeedbackStatus::Rejected => ProjectStatus::Rejected,
+            FeedbackStatus::Pending => {
+                return Err(DbError::Str("Status should not be Pending".to_string()).into());
+            }
+        };
+        if !self
+            .project_repo
+            .update_project_status(id, &status)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str(
+                "Can't update the status of the project when editor decision".to_string(),
+            )
+            .into());
+        }
+        Ok(true)
+    }
+
+    pub async fn decide_admin(
+        &self,
+        id: &str,
+        status: FeedbackStatus,
+        feedback: Option<String>,
+    ) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        let status = match status {
+            FeedbackStatus::Accepted => ProjectStatus::ApprovedAdmin,
+            FeedbackStatus::RevisionRequired => ProjectStatus::RevisionAdmin,
+            FeedbackStatus::Rejected => ProjectStatus::Rejected,
+            FeedbackStatus::Pending => {
+                return Err(DbError::Str("Status should not be Pending".to_string()).into());
+            }
+        };
+        if !self
+            .project_repo
+            .decide_admin(id, &status, feedback)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Admin decision failed".to_string()).into());
+        }
+        Ok(true)
+    }
+
+    pub async fn start_dao(&self, id: &str) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        let project = self
+            .project_repo
+            .get_project_by_id(id)
+            .await
+            .ok_or(DbError::Str("Project not found".to_string()))?;
+        if project.status != ProjectStatus::ApprovedAdmin.to_i16() {
+            return Err(DbError::Str("Status should be ApprovedAdmin".to_string()).into());
+        }
+        if !self.project_repo.start_dao(id).await.unwrap_or_default() {
+            return Err(DbError::Str("Dao start failed".to_string()).into());
+        }
+        Ok(true)
+    }
+
+    pub async fn publish(&self, id: &str) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        let project = self
+            .project_repo
+            .get_project_by_id(id)
+            .await
+            .ok_or(DbError::Str("Project not found".to_string()))?;
+        if project.status != ProjectStatus::ApprovedAdmin.to_i16() {
+            return Err(DbError::Str("Status should be ApprovedAdmin".to_string()).into());
+        }
+        if !self.project_repo.publish(id).await.unwrap_or_default() {
+            return Err(DbError::Str("Publish project failed".to_string()).into());
+        }
+        Ok(true)
+    }
+
+    pub async fn update_milestone(
+        &self,
+        id: &str,
+        payload: UpdateMilestoneRequest,
+    ) -> Result<bool, ApiError> {
+        let proof_status = if payload.is_draft { 0 } else { 1 };
+        if !self
+            .project_repo
+            .update_milestone(
+                uuid_from_str(id)?,
+                payload.description,
+                payload.deliverables,
+                payload.challenges,
+                payload.next_steps,
+                payload.file_urls.unwrap_or_default(),
+                proof_status,
+            )
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Update milestone failed".to_string()).into());
+        }
+        Ok(true)
     }
 }

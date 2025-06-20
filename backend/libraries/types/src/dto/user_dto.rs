@@ -161,7 +161,7 @@ impl UserReadDto {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct UserLoginAndRegisterResponse {
+pub struct LoginAndRegisterResponse {
     pub user: UserReadDto,
     pub token: String,
 }
@@ -237,8 +237,8 @@ pub struct UserResetPwdPwdRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
-pub struct UserChangeRoleRequest {
-    pub role: Option<u16>,
+pub struct ChangeRoleRequest {
+    pub role: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]

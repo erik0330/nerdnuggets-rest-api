@@ -2,11 +2,12 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
-    GetProjectsOption, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
-    ProjectUpdateStep3Request,
+    AssignEditorRequest, DecideEditorRequest, GetProjectsOption, ProjectUpdateStep1Request,
+    ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
 };
-use types::error::{ApiError, ValidatedRequest};
+use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{ProjectInfo, ProjectItemInfo, User};
+use types::{FeedbackStatus, UserRoleType};
 
 pub async fn get_project_by_id(
     Path(id): Path<String>,
@@ -81,4 +82,86 @@ pub async fn get_projects(
         .get_projects(opts.title, opts.category_id, opts.offset, opts.limit)
         .await?;
     Ok(Json(res))
+}
+
+pub async fn assign_editor(
+    Extension(role): Extension<String>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<AssignEditorRequest>,
+) -> Result<Json<bool>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+    Ok(Json(
+        state
+            .service
+            .project
+            .assign_editor(&id, payload.editor_id)
+            .await?,
+    ))
+}
+
+pub async fn decide_review(
+    Extension(user): Extension<User>,
+    Extension(role): Extension<String>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<DecideEditorRequest>,
+) -> Result<Json<bool>, ApiError> {
+    if role == UserRoleType::Editor.to_string() {
+        return Ok(Json(
+            state
+                .service
+                .project
+                .decide_editor(
+                    &id,
+                    user.id,
+                    FeedbackStatus::from(payload.status),
+                    payload.feedback,
+                )
+                .await?,
+        ));
+    } else if role == UserRoleType::Admin.to_string() {
+        return Ok(Json(
+            state
+                .service
+                .project
+                .decide_admin(&id, FeedbackStatus::from(payload.status), payload.feedback)
+                .await?,
+        ));
+    }
+    Err(UserError::RoleNotAllowed)?
+}
+
+pub async fn start_dao(
+    Extension(role): Extension<String>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+    Ok(Json(state.service.project.start_dao(&id).await?))
+}
+
+pub async fn publish(
+    Extension(role): Extension<String>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+    Ok(Json(state.service.project.publish(&id).await?))
+}
+
+pub async fn update_milestone(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<UpdateMilestoneRequest>,
+) -> Result<Json<bool>, ApiError> {
+    Ok(Json(
+        state.service.project.update_milestone(&id, payload).await?,
+    ))
 }
