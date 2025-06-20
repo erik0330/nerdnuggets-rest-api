@@ -227,8 +227,8 @@ impl ProjectService {
             return Err(DbError::Str("Update project editor failed".to_string()).into());
         }
         let status = match status {
-            FeedbackStatus::Accepted => ProjectStatus::ApprovedReview,
-            FeedbackStatus::RevisionRequired => ProjectStatus::RevisionRequired,
+            FeedbackStatus::Accepted => ProjectStatus::ApprovedEditor,
+            FeedbackStatus::RevisionRequired => ProjectStatus::RevisionEditor,
             FeedbackStatus::Rejected => ProjectStatus::Rejected,
             FeedbackStatus::Pending => {
                 return Err(DbError::Str("Status should not be Pending".to_string()).into());
@@ -244,6 +244,32 @@ impl ProjectService {
                 "Can't update the status of the project when editor decision".to_string(),
             )
             .into());
+        }
+        Ok(true)
+    }
+
+    pub async fn decide_admin(
+        &self,
+        id: &str,
+        status: FeedbackStatus,
+        feedback: Option<String>,
+    ) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        let status = match status {
+            FeedbackStatus::Accepted => ProjectStatus::ApprovedAdmin,
+            FeedbackStatus::RevisionRequired => ProjectStatus::RevisionAdmin,
+            FeedbackStatus::Rejected => ProjectStatus::Rejected,
+            FeedbackStatus::Pending => {
+                return Err(DbError::Str("Status should not be Pending".to_string()).into());
+            }
+        };
+        if !self
+            .project_repo
+            .decide_admin(id, &status, feedback)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Admin decision failed".to_string()).into());
         }
         Ok(true)
     }

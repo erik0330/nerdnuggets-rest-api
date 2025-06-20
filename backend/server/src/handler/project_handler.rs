@@ -102,27 +102,34 @@ pub async fn assign_editor(
     ))
 }
 
-pub async fn decide_editor(
+pub async fn decide_review(
     Extension(user): Extension<User>,
     Extension(role): Extension<String>,
     Path(id): Path<String>,
     State(state): State<AppState>,
     ValidatedRequest(payload): ValidatedRequest<DecideEditorRequest>,
 ) -> Result<Json<bool>, ApiError> {
-    if role != UserRoleType::Editor.to_string() {
-        return Err(UserError::RoleNotAllowed)?;
+    if role == UserRoleType::Editor.to_string() {
+        return Ok(Json(
+            state
+                .service
+                .project
+                .decide_editor(
+                    &id,
+                    user.id,
+                    FeedbackStatus::from(payload.status),
+                    payload.feedback,
+                )
+                .await?,
+        ));
+    } else if role == UserRoleType::Admin.to_string() {
+        return Ok(Json(
+            state
+                .service
+                .project
+                .decide_admin(&id, FeedbackStatus::from(payload.status), payload.feedback)
+                .await?,
+        ));
     }
-
-    Ok(Json(
-        state
-            .service
-            .project
-            .decide_editor(
-                &id,
-                user.id,
-                FeedbackStatus::from(payload.status),
-                payload.feedback,
-            )
-            .await?,
-    ))
+    Err(UserError::RoleNotAllowed)?
 }

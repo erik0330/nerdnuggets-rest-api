@@ -268,4 +268,22 @@ impl ProjectRepository {
             .await?;
         Ok(row.rows_affected() == 1)
     }
+
+    pub async fn decide_admin(
+        &self,
+        id: Uuid,
+        status: &ProjectStatus,
+        feedback: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE project SET status = $1, feedback = $2, updated_at = $3 WHERE id = $4",
+        )
+        .bind(status.to_i16())
+        .bind(feedback)
+        .bind(Utc::now())
+        .bind(id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
 }

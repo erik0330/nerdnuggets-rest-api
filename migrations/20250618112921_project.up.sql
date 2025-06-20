@@ -29,6 +29,7 @@ CREATE TABLE
         ai_budget SMALLINT,
         ai_expertise SMALLINT,
         ai_innovation SMALLINT,
+        feedback TEXT,
         funding_amount INT DEFAULT 0,
         count_contributors INT DEFAULT 0,
         created_at TIMESTAMPTZ DEFAULT now(),
