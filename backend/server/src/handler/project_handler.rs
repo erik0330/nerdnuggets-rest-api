@@ -2,12 +2,12 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
-    AssignEditorRequest, GetProjectsOption, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
-    ProjectUpdateStep3Request,
+    AssignEditorRequest, DecideEditorRequest, GetProjectsOption, ProjectUpdateStep1Request,
+    ProjectUpdateStep2Request, ProjectUpdateStep3Request,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{ProjectInfo, ProjectItemInfo, User};
-use types::UserRoleType;
+use types::{FeedbackStatus, UserRoleType};
 
 pub async fn get_project_by_id(
     Path(id): Path<String>,
@@ -85,12 +85,12 @@ pub async fn get_projects(
 }
 
 pub async fn assign_editor(
-    Extension(role): Extension<UserRoleType>,
+    Extension(role): Extension<String>,
     Path(id): Path<String>,
     State(state): State<AppState>,
     ValidatedRequest(payload): ValidatedRequest<AssignEditorRequest>,
 ) -> Result<Json<bool>, ApiError> {
-    if role != UserRoleType::Admin {
+    if role != UserRoleType::Admin.to_string() {
         return Err(UserError::RoleNotAllowed)?;
     }
     Ok(Json(
@@ -102,7 +102,27 @@ pub async fn assign_editor(
     ))
 }
 
-// pub async fn decide_editor(
-//     Extension(user): Extension<User>,
-//     E
-// )
+pub async fn decide_editor(
+    Extension(user): Extension<User>,
+    Extension(role): Extension<String>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<DecideEditorRequest>,
+) -> Result<Json<bool>, ApiError> {
+    if role != UserRoleType::Editor.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+
+    Ok(Json(
+        state
+            .service
+            .project
+            .decide_editor(
+                &id,
+                user.id,
+                FeedbackStatus::from(payload.status),
+                payload.feedback,
+            )
+            .await?,
+    ))
+}

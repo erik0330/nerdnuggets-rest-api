@@ -13,7 +13,6 @@ use jsonwebtoken::errors::ErrorKind;
 use types::{
     error::{ApiError, TokenError, UserError},
     models::User,
-    UserRoleType,
 };
 
 pub async fn auth<B>(
@@ -79,7 +78,7 @@ pub async fn public<B>(
         Ok(head) => head,
         Err(_) => {
             let user: Option<User> = None;
-            let role: Option<UserRoleType> = None;
+            let role: Option<String> = None;
             req.extensions_mut().insert(user);
             req.extensions_mut().insert(role);
             return Ok(next.run(req).await);

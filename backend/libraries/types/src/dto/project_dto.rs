@@ -71,3 +71,10 @@ pub struct GetProjectsOption {
 pub struct AssignEditorRequest {
     pub editor_id: Uuid,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct DecideEditorRequest {
+    pub status: i16,
+    pub feedback: Option<String>,
+}

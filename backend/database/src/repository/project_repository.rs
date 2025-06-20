@@ -4,7 +4,7 @@ use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
     models::{Milestone, Project, ProjectItem, TeamMember},
-    ProjectStatus,
+    FeedbackStatus, ProjectStatus,
 };
 use uuid::Uuid;
 
@@ -220,6 +220,20 @@ impl ProjectRepository {
         Ok(projects)
     }
 
+    pub async fn update_project_status(
+        &self,
+        id: Uuid,
+        status: &ProjectStatus,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE project SET status = $1, updated_at = $2 WHERE id = $3")
+            .bind(status.to_i16())
+            .bind(Utc::now())
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
     pub async fn create_project_editor(
         &self,
         id: Uuid,
@@ -237,15 +251,19 @@ impl ProjectRepository {
         Ok(row.rows_affected() == 1)
     }
 
-    pub async fn update_project_status(
+    pub async fn update_project_editor(
         &self,
         id: Uuid,
-        status: ProjectStatus,
+        editor_id: Uuid,
+        status: &FeedbackStatus,
+        feedback: Option<String>,
     ) -> Result<bool, SqlxError> {
-        let row = sqlx::query("UPDATE SET project SET status = $1, updated_at = $2 WHERE id = $3")
+        let row = sqlx::query("UPDATE project_editor SET status = $1, feedback = $2, updated_at = $3 WHERE project_id = $4 AND user_id = $5")
             .bind(status.to_i16())
+            .bind(feedback)
             .bind(Utc::now())
             .bind(id)
+            .bind(editor_id)
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)

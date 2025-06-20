@@ -4,7 +4,7 @@ use types::{
     dto::{ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request},
     error::{ApiError, DbError, UserError},
     models::{Project, ProjectInfo, ProjectItemInfo},
-    ProjectStatus, UserRoleType,
+    FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use utils::commons::{generate_random_number, uuid_from_str};
 use uuid::Uuid;
@@ -198,12 +198,50 @@ impl ProjectService {
         }
         if !self
             .project_repo
-            .update_project_status(id, ProjectStatus::UnderReview)
+            .update_project_status(id, &ProjectStatus::UnderReview)
             .await
             .unwrap_or_default()
         {
             return Err(DbError::Str(
                 "Can't update the status of the project when assigning an editor".to_string(),
+            )
+            .into());
+        }
+        Ok(true)
+    }
+
+    pub async fn decide_editor(
+        &self,
+        id: &str,
+        editor_id: Uuid,
+        status: FeedbackStatus,
+        feedback: Option<String>,
+    ) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        if !self
+            .project_repo
+            .update_project_editor(id, editor_id, &status, feedback)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Update project editor failed".to_string()).into());
+        }
+        let status = match status {
+            FeedbackStatus::Accepted => ProjectStatus::ApprovedReview,
+            FeedbackStatus::RevisionRequired => ProjectStatus::RevisionRequired,
+            FeedbackStatus::Rejected => ProjectStatus::Rejected,
+            FeedbackStatus::Pending => {
+                return Err(DbError::Str("Status should not be Pending".to_string()).into());
+            }
+        };
+        if !self
+            .project_repo
+            .update_project_status(id, &status)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str(
+                "Can't update the status of the project when editor decision".to_string(),
             )
             .into());
         }

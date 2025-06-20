@@ -172,12 +172,20 @@ pub enum FeedbackStatus {
     #[default]
     Pending,
     Accepted,
-    RequestRevision,
+    RevisionRequired,
     Rejected,
 }
 
 #[allow(dead_code)]
 impl FeedbackStatus {
+    pub fn from(status: i16) -> Self {
+        match status {
+            0 => Self::Pending,
+            1 => Self::Accepted,
+            2 => Self::RevisionRequired,
+            3 | _ => Self::Rejected,
+        }
+    }
     pub fn to_i16(&self) -> i16 {
         self.to_owned() as i16
     }
