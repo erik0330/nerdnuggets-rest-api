@@ -28,6 +28,26 @@ impl ProjectRepository {
             .unwrap_or(None)
     }
 
+    pub async fn get_project_by_nerd_id(&self, nerd_id: &str) -> Option<Project> {
+        sqlx::query_as::<_, Project>("SELECT * FROM project WHERE nerd_id = $1")
+            .bind(nerd_id)
+            .fetch_optional(self.db_conn.get_pool())
+            .await
+            .unwrap_or(None)
+    }
+
+    pub async fn check_nerd_id(&self, nerd_id: &str) -> bool {
+        let count = sqlx::query!(
+            "SELECT COUNT(*) as count FROM project WHERE nerd_id = $1",
+            nerd_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await
+        .map(|row| row.count.unwrap_or(0))
+        .unwrap_or(0);
+        count == 0
+    }
+
     pub async fn create_project(&self, user_id: Uuid, nerd_id: &str) -> Result<Project, SqlxError> {
         let project = sqlx::query_as::<_, Project>(
             "INSERT INTO project (user_id, nerd_id)

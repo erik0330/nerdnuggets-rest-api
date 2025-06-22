@@ -1,4 +1,5 @@
 use crate::{pool::DatabasePool, ProjectRepository, UserRepository, UtilRepository};
+use chrono::{Datelike, Utc};
 use std::sync::Arc;
 use types::{
     dto::{
@@ -41,16 +42,33 @@ impl ProjectService {
     }
 
     pub async fn get_project_by_id(&self, id: &str) -> Result<ProjectInfo, ApiError> {
-        let project = self
-            .project_repo
-            .get_project_by_id(uuid_from_str(id)?)
-            .await
-            .ok_or_else(|| DbError::Str("Project not found".to_string()))?;
+        let project = if let Ok(id) = uuid_from_str(id) {
+            self.project_repo
+                .get_project_by_id(id)
+                .await
+                .ok_or_else(|| DbError::Str("Project not found".to_string()))?
+        } else if id.starts_with("RP-") {
+            self.project_repo
+                .get_project_by_nerd_id(id)
+                .await
+                .ok_or_else(|| DbError::Str("Project not found".to_string()))?
+        } else {
+            return Err(DbError::Str("Invalid id format".to_string()).into());
+        };
         self.project_to_info(&project).await
     }
 
     pub async fn create_project(&self, user_id: Uuid) -> Result<ProjectInfo, ApiError> {
-        let nerd_id = format!("RP-2025-{}", generate_random_number(1000, 9999));
+        let nerd_id = loop {
+            let nerd_id = format!(
+                "RP-{}-{}",
+                Utc::now().year(),
+                generate_random_number(1000, 9999)
+            );
+            if self.project_repo.check_nerd_id(&nerd_id).await {
+                break nerd_id;
+            }
+        };
         let project = self
             .project_repo
             .create_project(user_id, &nerd_id)
