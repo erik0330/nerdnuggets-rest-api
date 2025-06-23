@@ -2,7 +2,7 @@ use crate::pool::DatabasePool;
 use chrono::Utc;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::{models::User, UserTierType};
+use types::{models::User, UserRoleType, UserTierType};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -85,7 +85,7 @@ impl UserRepository {
     //     return Ok(update.rows_affected() >= 1);
     // }
 
-    pub async fn find_by_email(&self, email: &str) -> Option<User> {
+    pub async fn get_user_by_email(&self, email: &str) -> Option<User> {
         sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
             .bind(email)
             .fetch_optional(self.db_conn.get_pool())
@@ -93,7 +93,7 @@ impl UserRepository {
             .unwrap_or(None)
     }
 
-    pub async fn find_by_gmail(&self, gmail: &str) -> Option<User> {
+    pub async fn get_user_by_gmail(&self, gmail: &str) -> Option<User> {
         sqlx::query_as::<_, User>("SELECT * FROM users WHERE gmail = $1")
             .bind(gmail)
             .fetch_optional(self.db_conn.get_pool())
@@ -175,6 +175,22 @@ impl UserRepository {
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_editors(
+        &self,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<User>, SqlxError> {
+        let users = sqlx::query_as::<_, User>(
+            "SELECT * FROM users WHERE $1 = ANY(roles) LIMIT $2 OFFSET $3",
+        )
+        .bind(UserRoleType::Editor.to_string())
+        .bind(limit.unwrap_or(10))
+        .bind(offset.unwrap_or(0))
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(users)
     }
 
     pub async fn update_user_onboarding(

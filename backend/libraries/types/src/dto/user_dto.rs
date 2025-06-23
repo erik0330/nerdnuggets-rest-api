@@ -192,6 +192,13 @@ pub struct UserRegisterWithEmailRequest {
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct GetEditorsOption {
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserOnboardingRequest {
     pub name: String,
     pub institution: String,

@@ -3,7 +3,7 @@ use std::{str::FromStr, sync::Arc};
 use types::{
     dto::{UserCheckResponse, UserOnboardingRequest},
     error::{ApiError, DbError, UserError},
-    models::User,
+    models::{User, UserInfo},
 };
 use uuid::Uuid;
 
@@ -21,84 +21,45 @@ impl UserService {
         }
     }
 
-    pub async fn find_by_user_id(&self, user_id: Uuid) -> Result<User, ApiError> {
+    pub async fn get_by_user_id(&self, user_id: Uuid) -> Result<User, ApiError> {
         self.user_repo
             .get_by_user_id(user_id)
             .await
             .ok_or_else(|| UserError::UserNotFound.into())
     }
 
-    pub async fn find_by_email(&self, email: &str) -> Result<User, ApiError> {
+    pub async fn get_user_by_email(&self, email: &str) -> Result<User, ApiError> {
         self.user_repo
-            .find_by_email(email)
+            .get_user_by_email(email)
             .await
             .ok_or_else(|| UserError::UserNotFound.into())
     }
 
-    pub async fn find_by_gmail(&self, gmail: &str) -> Result<User, ApiError> {
+    pub async fn get_user_by_gmail(&self, gmail: &str) -> Result<User, ApiError> {
         self.user_repo
-            .find_by_gmail(gmail)
+            .get_user_by_gmail(gmail)
             .await
             .ok_or_else(|| UserError::UserNotFound.into())
     }
-
-    pub async fn find_by_website(&self, web_site: &str) -> Result<User, ApiError> {
-        self.user_repo
-            .find_by_website(web_site)
-            .await
-            .ok_or_else(|| UserError::UserNotFound.into())
-    }
-
-    pub async fn find_by_linkedin(&self, linkedin: &str) -> Result<User, ApiError> {
-        self.user_repo
-            .find_by_linkedin(linkedin)
-            .await
-            .ok_or_else(|| UserError::UserNotFound.into())
-    }
-
-    pub async fn find_by_orc_id(&self, orc_id: &str) -> Result<User, ApiError> {
-        self.user_repo
-            .find_by_orc_id(orc_id)
-            .await
-            .ok_or_else(|| UserError::UserNotFound.into())
-    }
-
-    // pub async fn find_by_google_scholar(&self, google_scholar: &str) -> Result<User, ApiError> {
-    //     self.user_repo
-    //         .find_by_google_scholar(google_scholar)
-    //         .await
-    //         .ok_or_else(|| UserError::UserNotFound.into())
-    // }
-
-    // pub async fn update_twitter(
-    //     &self,
-    //     id: Uuid,
-    //     twitter_id: Option<String>,
-    //     twitter_username: Option<String>,
-    // ) -> Result<bool, ApiError> {
-    //     self.user_repo
-    //         .update_twitter(id, twitter_id, twitter_username)
-    //         .await
-    //         .map_err(|_| DbError::SomethingWentWrong("Update twitter failed".to_string()).into())
-    // }
-
-    // pub async fn create_user_with_twitter(
-    //     &self,
-    //     twitter_id: &str,
-    //     twitter_username: &str,
-    // ) -> Result<bool, ApiError> {
-    //     let noble_id = self.generate_available_noble_id().await;
-    //     self.user_repo
-    //         .create_user_with_twitter(twitter_id, twitter_username, &noble_id)
-    //         .await
-    //         .map_err(|err| DbError::SomethingWentWrong(err.to_string()).into())
-    // }
 
     pub async fn update_gmail(&self, id: Uuid, gmail: Option<String>) -> Result<bool, ApiError> {
         self.user_repo
             .update_gmail(id, gmail)
             .await
             .map_err(|_| DbError::Str("Update gmail failed".to_string()).into())
+    }
+
+    pub async fn get_editors(
+        &self,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<UserInfo>, ApiError> {
+        let users = self
+            .user_repo
+            .get_editors(offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Get editors failed".to_string()))?;
+        Ok(users.iter().map(|u| u.to_info()).collect())
     }
 
     pub async fn update_user_onboarding(
@@ -131,22 +92,9 @@ impl UserService {
 
     pub async fn check_email(&self, email: &str) -> Result<UserCheckResponse, ApiError> {
         Ok(UserCheckResponse {
-            is_available: self.user_repo.find_by_email(email).await.is_none(),
+            is_available: self.user_repo.get_user_by_email(email).await.is_none(),
         })
     }
-
-    // pub async fn check_username(
-    //     &self,
-    //     id: Uuid,
-    //     username: &str,
-    // ) -> Result<UserCheckResponse, ApiError> {
-    //     let is_available = if let Some(user) = self.user_repo.find_by_username(username).await {
-    //         user.id == id
-    //     } else {
-    //         true
-    //     };
-    //     Ok(UserCheckResponse { is_available })
-    // }
 
     pub fn verify_password(&self, user: &User, password: &str) -> bool {
         bcrypt::verify(password, user.password.clone().unwrap().as_str()).unwrap_or(false)
@@ -159,7 +107,7 @@ impl UserService {
         email: &str,
         password: &str,
     ) -> Result<User, ApiError> {
-        if self.user_repo.find_by_email(email).await.is_some() {
+        if self.user_repo.get_user_by_email(email).await.is_some() {
             return Err(UserError::UserAlreadyExists)?;
         }
         match self

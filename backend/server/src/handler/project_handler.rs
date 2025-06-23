@@ -2,7 +2,7 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
-    AssignEditorRequest, DecideEditorRequest, GetProjectsOption, ProjectUpdateStep1Request,
+    AssignEditorRequest, GetProjectsOption, MakeDecisionRequest, ProjectUpdateStep1Request,
     ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
@@ -109,12 +109,12 @@ pub async fn assign_editor(
     ))
 }
 
-pub async fn decide_review(
+pub async fn make_decision(
     Extension(user): Extension<User>,
     Extension(role): Extension<String>,
     Path(id): Path<String>,
     State(state): State<AppState>,
-    ValidatedRequest(payload): ValidatedRequest<DecideEditorRequest>,
+    ValidatedRequest(payload): ValidatedRequest<MakeDecisionRequest>,
 ) -> Result<Json<bool>, ApiError> {
     if role == UserRoleType::Editor.to_string() {
         return Ok(Json(
@@ -134,33 +134,16 @@ pub async fn decide_review(
             state
                 .service
                 .project
-                .decide_admin(&id, FeedbackStatus::from(payload.status), payload.feedback)
+                .decide_admin(
+                    &id,
+                    FeedbackStatus::from(payload.status),
+                    payload.feedback,
+                    payload.to_dao.unwrap_or_default(),
+                )
                 .await?,
         ));
     }
     Err(UserError::RoleNotAllowed)?
-}
-
-pub async fn start_dao(
-    Extension(role): Extension<String>,
-    Path(id): Path<String>,
-    State(state): State<AppState>,
-) -> Result<Json<bool>, ApiError> {
-    if role != UserRoleType::Admin.to_string() {
-        return Err(UserError::RoleNotAllowed)?;
-    }
-    Ok(Json(state.service.project.start_dao(&id).await?))
-}
-
-pub async fn publish(
-    Extension(role): Extension<String>,
-    Path(id): Path<String>,
-    State(state): State<AppState>,
-) -> Result<Json<bool>, ApiError> {
-    if role != UserRoleType::Admin.to_string() {
-        return Err(UserError::RoleNotAllowed)?;
-    }
-    Ok(Json(state.service.project.publish(&id).await?))
 }
 
 pub async fn update_milestone(
