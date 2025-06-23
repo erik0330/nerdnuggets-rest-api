@@ -3,7 +3,7 @@ use chrono::Utc;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
-    models::{Milestone, Project, ProjectItem, TeamMember},
+    models::{Milestone, Project, ProjectIds, ProjectItem, TeamMember},
     FeedbackStatus, ProjectStatus,
 };
 use uuid::Uuid;
@@ -203,6 +203,13 @@ impl ProjectRepository {
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_project_ids(&self) -> Result<Vec<ProjectIds>, SqlxError> {
+        let ids = sqlx::query_as::<_, ProjectIds>("SELECT id, nerd_id FROM project")
+            .fetch_all(self.db_conn.get_pool())
+            .await?;
+        Ok(ids)
     }
 
     pub async fn get_projects(

@@ -6,7 +6,7 @@ use types::dto::{
     ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
-use types::models::{ProjectInfo, ProjectItemInfo, User};
+use types::models::{ProjectIds, ProjectInfo, ProjectItemInfo, User};
 use types::{FeedbackStatus, UserRoleType};
 
 pub async fn get_project_by_id(
@@ -69,6 +69,13 @@ pub async fn submit_project(
     State(state): State<AppState>,
 ) -> Result<Json<bool>, ApiError> {
     let res = state.service.project.submit_project(&id).await?;
+    Ok(Json(res))
+}
+
+pub async fn get_project_ids(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ProjectIds>>, ApiError> {
+    let res = state.service.project.get_project_ids().await?;
     Ok(Json(res))
 }
 

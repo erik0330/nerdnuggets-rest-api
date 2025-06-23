@@ -1,6 +1,6 @@
 use crate::{
     handler::{
-        project_handler::get_projects,
+        project_handler::{get_project_ids, get_projects},
         util_handler::{get_categories, get_category_by_id},
     },
     state::AppState,
@@ -12,4 +12,5 @@ pub fn routes() -> Router<AppState> {
         .route("/util/category", get(get_categories))
         .route("/util/category/:id", get(get_category_by_id))
         .route("/project", get(get_projects))
+        .route("/project/ids", get(get_project_ids))
 }
