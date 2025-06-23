@@ -1,9 +1,11 @@
 use crate::state::AppState;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
-use types::dto::{ChangeRoleRequest, LoginAndRegisterResponse, UserOnboardingRequest};
+use types::dto::{
+    ChangeRoleRequest, GetEditorsOption, LoginAndRegisterResponse, UserOnboardingRequest,
+};
 use types::error::UserError;
-use types::models::User;
+use types::models::{User, UserInfo};
 use types::{
     dto::UserReadDto,
     error::{ApiError, ValidatedRequest},
@@ -11,6 +13,18 @@ use types::{
 
 pub async fn get_user(Extension(user): Extension<User>) -> Result<Json<UserReadDto>, ApiError> {
     Ok(Json(UserReadDto::from(user)))
+}
+
+pub async fn get_editors(
+    Query(opts): Query<GetEditorsOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<UserInfo>>, ApiError> {
+    let users = state
+        .service
+        .user
+        .get_editors(opts.offset, opts.limit)
+        .await?;
+    Ok(Json(users))
 }
 
 pub async fn update_user_onboarding(

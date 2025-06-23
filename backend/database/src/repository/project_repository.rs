@@ -1,5 +1,5 @@
 use crate::pool::DatabasePool;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
@@ -301,37 +301,17 @@ impl ProjectRepository {
         id: Uuid,
         status: &ProjectStatus,
         feedback: Option<String>,
+        dao_at: Option<DateTime<Utc>>,
+        started_at: Option<DateTime<Utc>>,
     ) -> Result<bool, SqlxError> {
         let row = sqlx::query(
-            "UPDATE project SET status = $1, feedback = $2, updated_at = $3 WHERE id = $4",
+            "UPDATE project SET status = $1, feedback = $2, updated_at = $3, dao_at = $4, started_at = $5 WHERE id = $6",
         )
         .bind(status.to_i16())
         .bind(feedback)
         .bind(Utc::now())
-        .bind(id)
-        .execute(self.db_conn.get_pool())
-        .await?;
-        Ok(row.rows_affected() == 1)
-    }
-
-    pub async fn start_dao(&self, id: Uuid) -> Result<bool, SqlxError> {
-        let row = sqlx::query(
-            "UPDATE project SET status = $1, update_at = $2, dao_at = $2 WHERE id = $3",
-        )
-        .bind(ProjectStatus::DaoVoting.to_i16())
-        .bind(Utc::now())
-        .bind(id)
-        .execute(self.db_conn.get_pool())
-        .await?;
-        Ok(row.rows_affected() == 1)
-    }
-
-    pub async fn publish(&self, id: Uuid) -> Result<bool, SqlxError> {
-        let row = sqlx::query(
-            "UPDATE project SET status = $1, update_at = $2, started_at = $2 WHERE id = $3",
-        )
-        .bind(ProjectStatus::Funding.to_i16())
-        .bind(Utc::now())
+        .bind(dao_at)
+        .bind(started_at)
         .bind(id)
         .execute(self.db_conn.get_pool())
         .await?;

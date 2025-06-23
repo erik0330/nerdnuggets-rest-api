@@ -93,7 +93,6 @@ pub enum ProjectStatus {
     RevisionEditor,
     ApprovedEditor,
     RevisionAdmin,
-    ApprovedAdmin,
     DaoVoting,
     Funding,
     Completed,
@@ -110,11 +109,10 @@ impl ProjectStatus {
             3 => Self::RevisionEditor,
             4 => Self::ApprovedEditor,
             5 => Self::RevisionAdmin,
-            6 => Self::ApprovedAdmin,
-            7 => Self::DaoVoting,
-            8 => Self::Funding,
-            9 => Self::Completed,
-            10 | _ => Self::Rejected,
+            6 => Self::DaoVoting,
+            7 => Self::Funding,
+            8 => Self::Completed,
+            9 | _ => Self::Rejected,
         }
     }
     pub fn to_i16(&self) -> i16 {

@@ -39,7 +39,7 @@ pub async fn auth<B>(
             let user = state
                 .service
                 .user
-                .find_by_user_id(token_data.claims.sub)
+                .get_by_user_id(token_data.claims.sub)
                 .await;
             match user {
                 Ok(user) => {
@@ -91,7 +91,7 @@ pub async fn public<B>(
             let user = state
                 .service
                 .user
-                .find_by_user_id(token_data.claims.sub)
+                .get_by_user_id(token_data.claims.sub)
                 .await;
             match user {
                 Ok(user) => {

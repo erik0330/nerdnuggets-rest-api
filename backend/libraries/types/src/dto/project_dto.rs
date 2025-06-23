@@ -74,8 +74,9 @@ pub struct AssignEditorRequest {
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct DecideEditorRequest {
+pub struct MakeDecisionRequest {
     pub status: i16,
+    pub to_dao: Option<bool>,
     pub feedback: Option<String>,
 }
 

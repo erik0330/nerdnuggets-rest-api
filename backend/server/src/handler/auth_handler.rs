@@ -24,7 +24,7 @@ pub async fn login_with_email(
             "The email is invalid".to_string(),
         )));
     }
-    let user = state.service.user.find_by_email(&payload.email).await?;
+    let user = state.service.user.get_user_by_email(&payload.email).await?;
 
     if !user.verified_email {
         return Err(UserError::EmailNotVerified)?;
@@ -57,7 +57,7 @@ pub async fn login_or_register_with_google(
 
     let google_user = google_user.unwrap();
     let email = google_user.email.to_lowercase();
-    if let Ok(user) = state.service.user.find_by_gmail(&email).await {
+    if let Ok(user) = state.service.user.get_user_by_gmail(&email).await {
         return Ok(Json(LoginAndRegisterResponse {
             user: UserReadDto::from(user.to_owned()),
             token: state
@@ -66,7 +66,7 @@ pub async fn login_or_register_with_google(
                 .generate_token(user, UserRoleType::Member.to_string())?,
         }));
     }
-    if let Ok(user) = state.service.user.find_by_email(&email).await {
+    if let Ok(user) = state.service.user.get_user_by_email(&email).await {
         state
             .service
             .user
@@ -267,7 +267,7 @@ pub async fn register_with_email(
     if state
         .service
         .user
-        .find_by_email(&payload.email)
+        .get_user_by_email(&payload.email)
         .await
         .is_ok()
     {
@@ -276,7 +276,7 @@ pub async fn register_with_email(
     if state
         .service
         .user
-        .find_by_gmail(&payload.email)
+        .get_user_by_gmail(&payload.email)
         .await
         .is_ok()
     {

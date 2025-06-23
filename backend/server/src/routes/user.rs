@@ -1,5 +1,5 @@
 use crate::{
-    handler::user_handler::{change_role, get_user, update_user_onboarding},
+    handler::user_handler::{change_role, get_editors, get_user, update_user_onboarding},
     state::AppState,
 };
 use axum::{
@@ -10,6 +10,7 @@ use axum::{
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/user", get(get_user))
+        .route("/user/editors", get(get_editors))
         .route("/user/onboarding/:id", post(update_user_onboarding))
         .route("/user/relogin", post(change_role))
     // .route("/user/check_username", get(check_username))

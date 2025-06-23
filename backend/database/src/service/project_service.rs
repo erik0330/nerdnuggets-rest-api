@@ -282,55 +282,27 @@ impl ProjectService {
         id: &str,
         status: FeedbackStatus,
         feedback: Option<String>,
+        to_dao: bool,
     ) -> Result<bool, ApiError> {
         let id = uuid_from_str(id)?;
-        let status = match status {
-            FeedbackStatus::Accepted => ProjectStatus::ApprovedAdmin,
-            FeedbackStatus::RevisionRequired => ProjectStatus::RevisionAdmin,
-            FeedbackStatus::Rejected => ProjectStatus::Rejected,
+        let (status, dao_at, started_at) = match status {
+            FeedbackStatus::Accepted if to_dao => {
+                (ProjectStatus::DaoVoting, Some(Utc::now()), None)
+            }
+            FeedbackStatus::Accepted => (ProjectStatus::Funding, None, Some(Utc::now())),
+            FeedbackStatus::RevisionRequired => (ProjectStatus::RevisionAdmin, None, None),
+            FeedbackStatus::Rejected => (ProjectStatus::Rejected, None, None),
             FeedbackStatus::Pending => {
                 return Err(DbError::Str("Status should not be Pending".to_string()).into());
             }
         };
         if !self
             .project_repo
-            .decide_admin(id, &status, feedback)
+            .decide_admin(id, &status, feedback, dao_at, started_at)
             .await
             .unwrap_or_default()
         {
             return Err(DbError::Str("Admin decision failed".to_string()).into());
-        }
-        Ok(true)
-    }
-
-    pub async fn start_dao(&self, id: &str) -> Result<bool, ApiError> {
-        let id = uuid_from_str(id)?;
-        let project = self
-            .project_repo
-            .get_project_by_id(id)
-            .await
-            .ok_or(DbError::Str("Project not found".to_string()))?;
-        if project.status != ProjectStatus::ApprovedAdmin.to_i16() {
-            return Err(DbError::Str("Status should be ApprovedAdmin".to_string()).into());
-        }
-        if !self.project_repo.start_dao(id).await.unwrap_or_default() {
-            return Err(DbError::Str("Dao start failed".to_string()).into());
-        }
-        Ok(true)
-    }
-
-    pub async fn publish(&self, id: &str) -> Result<bool, ApiError> {
-        let id = uuid_from_str(id)?;
-        let project = self
-            .project_repo
-            .get_project_by_id(id)
-            .await
-            .ok_or(DbError::Str("Project not found".to_string()))?;
-        if project.status != ProjectStatus::ApprovedAdmin.to_i16() {
-            return Err(DbError::Str("Status should be ApprovedAdmin".to_string()).into());
-        }
-        if !self.project_repo.publish(id).await.unwrap_or_default() {
-            return Err(DbError::Str("Publish project failed".to_string()).into());
         }
         Ok(true)
     }
