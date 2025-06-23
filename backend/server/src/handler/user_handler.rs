@@ -16,14 +16,16 @@ pub async fn get_user(Extension(user): Extension<User>) -> Result<Json<UserReadD
 }
 
 pub async fn get_editors(
+    Extension(user): Extension<User>,
     Query(opts): Query<GetEditorsOption>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<UserInfo>>, ApiError> {
-    let users = state
+    let mut users = state
         .service
         .user
         .get_editors(opts.offset, opts.limit)
         .await?;
+    users.retain(|u| u.id != user.id);
     Ok(Json(users))
 }
 
