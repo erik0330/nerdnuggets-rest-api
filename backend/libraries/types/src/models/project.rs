@@ -298,3 +298,10 @@ pub struct ProjectEditorInfo {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
+
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectIds {
+    pub id: Uuid,
+    pub nerd_id: String,
+}

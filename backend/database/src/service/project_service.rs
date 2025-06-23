@@ -7,7 +7,7 @@ use types::{
         UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
-    models::{Project, ProjectInfo, ProjectItemInfo},
+    models::{Project, ProjectIds, ProjectInfo, ProjectItemInfo},
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -167,6 +167,14 @@ impl ProjectService {
             .submit_project(uuid_from_str(id)?)
             .await
             .map_err(|_| DbError::Str("Submit project failed".to_string()).into())
+    }
+
+    pub async fn get_project_ids(&self) -> Result<Vec<ProjectIds>, ApiError> {
+        Ok(self
+            .project_repo
+            .get_project_ids()
+            .await
+            .unwrap_or_default())
     }
 
     pub async fn get_projects(
