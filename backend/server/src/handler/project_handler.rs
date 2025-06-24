@@ -80,13 +80,25 @@ pub async fn get_project_ids(
 }
 
 pub async fn get_projects(
+    Extension(user): Extension<Option<User>>,
+    Extension(role): Extension<Option<String>>,
     Query(opts): Query<GetProjectsOption>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<ProjectItemInfo>>, ApiError> {
     let res = state
         .service
         .project
-        .get_projects(opts.title, opts.category_id, opts.offset, opts.limit)
+        .get_projects(
+            opts.title,
+            opts.status,
+            opts.category_id,
+            role,
+            user.map(|u| u.id),
+            opts.is_mine,
+            opts.is_public,
+            opts.offset,
+            opts.limit,
+        )
         .await?;
     Ok(Json(res))
 }
