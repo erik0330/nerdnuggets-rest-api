@@ -180,13 +180,29 @@ impl ProjectService {
     pub async fn get_projects(
         &self,
         title: Option<String>,
+        status: Option<i16>,
         category_id: Option<Uuid>,
+        role: Option<String>,
+        user_id: Option<Uuid>,
+        is_mine: Option<bool>,
+        is_public: Option<bool>,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<ProjectItemInfo>, ApiError> {
+        let status = status.map(|s| ProjectStatus::from(s).to_i16());
         let projects = self
             .project_repo
-            .get_projects(title, category_id, offset, limit)
+            .get_projects(
+                title,
+                status,
+                category_id,
+                role,
+                user_id,
+                is_mine,
+                is_public,
+                offset,
+                limit,
+            )
             .await
             .map_err(|_| DbError::Str("Get projects failed".to_string()))?;
         let mut project_infos = Vec::new();

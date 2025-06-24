@@ -4,7 +4,7 @@ use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
     models::{Milestone, Project, ProjectIds, ProjectItem, TeamMember},
-    FeedbackStatus, ProjectStatus,
+    FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use uuid::Uuid;
 
@@ -215,8 +215,12 @@ impl ProjectRepository {
     pub async fn get_projects(
         &self,
         title: Option<String>,
+        status: Option<i16>,
         category_id: Option<Uuid>,
-        // tab: Option<i16>,
+        role: Option<String>,
+        user_id: Option<Uuid>,
+        is_mine: Option<bool>,
+        is_public: Option<bool>,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<ProjectItem>, SqlxError> {
@@ -226,6 +230,61 @@ impl ProjectRepository {
         if title.as_ref().map_or(false, |s| !s.is_empty()) {
             filters.push(format!("p.title ILIKE ${index}"));
             index += 1;
+        }
+        if is_mine.unwrap_or_default() {
+            if user_id.is_some() {
+                filters.push(format!("p.user_id = ${index}"));
+                index += 1;
+            } else {
+                return Ok(Vec::new());
+            }
+        } else {
+            if is_public.unwrap_or_default() {
+                if status.is_some() {
+                    filters.push(format!("p.status = ${index}"));
+                    index += 1;
+                } else {
+                    filters.push(format!("p.status = {}", ProjectStatus::Funding.to_i16()));
+                    filters.push(format!("p.status = {}", ProjectStatus::Completed.to_i16()));
+                }
+            } else {
+                match role.clone() {
+                    Some(r) if r == UserRoleType::Admin.to_string() => {
+                        if status.is_some() {
+                            filters.push(format!("p.status = ${index}"));
+                            index += 1;
+                        } else {
+                            filters
+                                .push(format!("p.status != {}", ProjectStatus::Creating.to_i16()));
+                        }
+                    }
+                    Some(r) if r == UserRoleType::Editor.to_string() => {
+                        if user_id.is_some() {
+                            query = format!("{} LEFT JOIN project_editor pe ON p.id = pe.project_id AND pe.user_id = ${index} ", &query);
+                            index += 1;
+                            if let Some(s) = status {
+                                match ProjectStatus::from(s) {
+                                    ProjectStatus::UnderReview => {
+                                        filters.push(format!(
+                                            "p.status = {}",
+                                            ProjectStatus::UnderReview.to_i16()
+                                        ));
+                                    }
+                                    _ => {
+                                        filters.push(format!(
+                                            "p.status > {}",
+                                            ProjectStatus::UnderReview.to_i16()
+                                        ));
+                                    }
+                                }
+                            }
+                        } else {
+                            return Ok(Vec::new());
+                        }
+                    }
+                    _ => {}
+                }
+            }
         }
         if category_id.is_some() {
             filters.push(format!("${index} = ANY(p.category)"));
@@ -239,6 +298,31 @@ impl ProjectRepository {
             .bind(offset.unwrap_or(0));
         if let Some(title) = title.as_ref().filter(|s| !s.is_empty()) {
             query = query.bind(format!("%{}%", title));
+        }
+        if is_mine.unwrap_or_default() {
+            if let Some(user_id) = user_id {
+                query = query.bind(user_id);
+            }
+        } else {
+            if is_public.unwrap_or_default() {
+                if let Some(s) = status {
+                    query = query.bind(s);
+                }
+            } else {
+                match role {
+                    Some(r) if r == UserRoleType::Admin.to_string() => {
+                        if let Some(s) = status {
+                            query = query.bind(s);
+                        }
+                    }
+                    Some(r) if r == UserRoleType::Editor.to_string() => {
+                        if let Some(user_id) = user_id {
+                            query = query.bind(user_id);
+                        }
+                    }
+                    _ => {}
+                }
+            }
         }
         if let Some(category_id) = category_id {
             query = query.bind(category_id)

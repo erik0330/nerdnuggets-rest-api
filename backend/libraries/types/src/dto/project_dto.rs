@@ -61,7 +61,10 @@ pub struct ProjectMilestoneRequest {
 #[serde(rename_all = "camelCase")]
 pub struct GetProjectsOption {
     pub title: Option<String>,
+    pub status: Option<i16>,
     pub category_id: Option<Uuid>,
+    pub is_mine: Option<bool>,
+    pub is_public: Option<bool>,
     pub offset: Option<i32>,
     pub limit: Option<i32>,
 }
