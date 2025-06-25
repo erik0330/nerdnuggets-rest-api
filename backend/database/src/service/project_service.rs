@@ -7,7 +7,7 @@ use types::{
         UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
-    models::{Project, ProjectIds, ProjectInfo, ProjectItemInfo},
+    models::{Milestone, Project, ProjectIds, ProjectInfo, ProjectItemInfo},
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -346,5 +346,9 @@ impl ProjectService {
             return Err(DbError::Str("Update milestone failed".to_string()).into());
         }
         Ok(true)
+    }
+
+    pub async fn get_milestones(&self, id: &str) -> Result<Vec<Milestone>, ApiError> {
+        Ok(self.project_repo.get_milestones(uuid_from_str(id)?).await)
     }
 }
