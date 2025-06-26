@@ -8,6 +8,7 @@ use super::UserInfo;
 pub struct Project {
     pub id: Uuid,
     pub nerd_id: String,
+    pub proposal_id: i64,
     pub user_id: Uuid,
     pub title: Option<String>,
     pub description: Option<String>,
