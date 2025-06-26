@@ -96,6 +96,19 @@ pub struct UpdateMilestoneRequest {
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct GetProjectCommentsOption {
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitProjectCommentRequest {
+    pub comment: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GetDaosOption {
     pub title: Option<String>,
     pub status: Option<i16>,

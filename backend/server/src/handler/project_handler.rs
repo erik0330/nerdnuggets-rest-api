@@ -2,12 +2,15 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
-    AssignEditorRequest, GetDaosOption, GetProjectsOption, MakeDecisionRequest,
-    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-    SubmitVoteRequest, UpdateMilestoneRequest,
+    AssignEditorRequest, GetDaosOption, GetProjectCommentsOption, GetProjectsOption,
+    MakeDecisionRequest, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+    ProjectUpdateStep3Request, SubmitProjectCommentRequest, SubmitVoteRequest,
+    UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
-use types::models::{Dao, DaoVote, Milestone, ProjectIds, ProjectInfo, ProjectItemInfo, User};
+use types::models::{
+    Dao, DaoVote, Milestone, ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo, User,
+};
 use types::{FeedbackStatus, UserRoleType};
 
 pub async fn get_project_by_id(
@@ -174,6 +177,35 @@ pub async fn get_milestones(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Milestone>>, ApiError> {
     Ok(Json(state.service.project.get_milestones(&id).await?))
+}
+
+pub async fn get_project_comments(
+    Path(id): Path<String>,
+    Query(opts): Query<GetProjectCommentsOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ProjectCommentInfo>>, ApiError> {
+    Ok(Json(
+        state
+            .service
+            .project
+            .get_project_comments(&id, opts.offset, opts.limit)
+            .await?,
+    ))
+}
+
+pub async fn submit_project_comment(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SubmitProjectCommentRequest>,
+) -> Result<Json<bool>, ApiError> {
+    Ok(Json(
+        state
+            .service
+            .project
+            .submit_project_comment(&id, user.id, &payload.comment)
+            .await?,
+    ))
 }
 
 pub async fn get_daos(

@@ -306,3 +306,34 @@ pub struct ProjectIds {
     pub id: Uuid,
     pub nerd_id: String,
 }
+
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+pub struct ProjectComment {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub project_id: Uuid,
+    pub nerd_id: String,
+    pub comment: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl ProjectComment {
+    pub fn to_info(&self, user: UserInfo) -> ProjectCommentInfo {
+        ProjectCommentInfo {
+            id: self.id,
+            user,
+            comment: self.comment.clone(),
+            updated_at: self.updated_at,
+        }
+    }
+}
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectCommentInfo {
+    pub id: Uuid,
+    pub user: UserInfo,
+    pub comment: String,
+    pub updated_at: DateTime<Utc>,
+}
