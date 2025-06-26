@@ -391,4 +391,13 @@ impl ProjectService {
             .map_err(|_| DbError::Str("Get daos failed".to_string()))?;
         Ok(daos)
     }
+
+    pub async fn get_dao_by_id(&self, id: &str) -> Result<Dao, ApiError> {
+        let dao = self
+            .project_repo
+            .get_dao_by_id(uuid_from_str(id)?)
+            .await
+            .map_err(|_| DbError::Str("Get dao by id failed".to_string()))?;
+        Ok(dao)
+    }
 }

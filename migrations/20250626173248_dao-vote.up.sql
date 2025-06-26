@@ -11,5 +11,6 @@ CREATE TABLE
         status SMALLINT DEFAULT 0,
         comment TEXT,
         created_at TIMESTAMPTZ DEFAULT now(),
-        updated_at TIMESTAMPTZ DEFAULT now()
+        updated_at TIMESTAMPTZ DEFAULT now(),
+        FOREIGN KEY (dao_id) REFERENCES dao(id) ON DELETE CASCADE
     );

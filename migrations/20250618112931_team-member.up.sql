@@ -11,5 +11,6 @@ CREATE TABLE
         twitter VARCHAR(255),
         github VARCHAR(255),
         created_at TIMESTAMPTZ DEFAULT now(),
-        updated_at TIMESTAMPTZ DEFAULT now()
+        updated_at TIMESTAMPTZ DEFAULT now(),
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
     );

@@ -196,3 +196,10 @@ pub async fn get_daos(
             .await?,
     ))
 }
+
+pub async fn get_dao_by_id(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Dao>, ApiError> {
+    Ok(Json(state.service.project.get_dao_by_id(&id).await?))
+}

@@ -509,4 +509,12 @@ impl ProjectRepository {
         let daos = query.fetch_all(self.db_conn.get_pool()).await?;
         Ok(daos)
     }
+
+    pub async fn get_dao_by_id(&self, id: Uuid) -> Result<Dao, SqlxError> {
+        let dao = sqlx::query_as::<_, Dao>("SELECT * FROM dao WHERE id = $1")
+            .bind(id)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(dao)
+    }
 }
