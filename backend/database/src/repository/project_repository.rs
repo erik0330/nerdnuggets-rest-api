@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
-    models::{Dao, Milestone, Project, ProjectIds, ProjectItem, TeamMember},
+    models::{Dao, DaoVote, Milestone, Project, ProjectIds, ProjectItem, TeamMember},
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use uuid::Uuid;
@@ -516,5 +516,17 @@ impl ProjectRepository {
             .fetch_one(self.db_conn.get_pool())
             .await?;
         Ok(dao)
+    }
+
+    pub async fn get_my_dao_vote(&self, id: Uuid, user_id: Uuid) -> Option<DaoVote> {
+        let dao_vote = sqlx::query_as::<_, DaoVote>(
+            "SELECT * FROM dao_vote WHERE dao_id = $1 AND user_id = $2",
+        )
+        .bind(id)
+        .bind(user_id)
+        .fetch_optional(self.db_conn.get_pool())
+        .await
+        .unwrap_or_default();
+        dao_vote
     }
 }

@@ -7,7 +7,7 @@ use types::dto::{
     UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
-use types::models::{Dao, Milestone, ProjectIds, ProjectInfo, ProjectItemInfo, User};
+use types::models::{Dao, DaoVote, Milestone, ProjectIds, ProjectInfo, ProjectItemInfo, User};
 use types::{FeedbackStatus, UserRoleType};
 
 pub async fn get_project_by_id(
@@ -202,4 +202,14 @@ pub async fn get_dao_by_id(
     State(state): State<AppState>,
 ) -> Result<Json<Dao>, ApiError> {
     Ok(Json(state.service.project.get_dao_by_id(&id).await?))
+}
+
+pub async fn get_my_dao_vote(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Option<DaoVote>>, ApiError> {
+    Ok(Json(
+        state.service.project.get_my_dao_vote(&id, user.id).await?,
+    ))
 }

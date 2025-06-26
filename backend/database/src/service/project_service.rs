@@ -7,7 +7,7 @@ use types::{
         UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
-    models::{Dao, Milestone, Project, ProjectIds, ProjectInfo, ProjectItemInfo},
+    models::{Dao, DaoVote, Milestone, Project, ProjectIds, ProjectInfo, ProjectItemInfo},
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -399,5 +399,17 @@ impl ProjectService {
             .await
             .map_err(|_| DbError::Str("Get dao by id failed".to_string()))?;
         Ok(dao)
+    }
+
+    pub async fn get_my_dao_vote(
+        &self,
+        id: &str,
+        user_id: Uuid,
+    ) -> Result<Option<DaoVote>, ApiError> {
+        let dao_vote = self
+            .project_repo
+            .get_my_dao_vote(uuid_from_str(id)?, user_id)
+            .await;
+        Ok(dao_vote)
     }
 }
