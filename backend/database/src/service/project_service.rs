@@ -59,19 +59,17 @@ impl ProjectService {
     }
 
     pub async fn create_project(&self, user_id: Uuid) -> Result<ProjectInfo, ApiError> {
-        let nerd_id = loop {
-            let nerd_id = format!(
-                "RP-{}-{}",
-                Utc::now().year(),
-                generate_random_number(1000, 9999)
-            );
+        let (nerd_id, proposal_id) = loop {
+            let year = Utc::now().year();
+            let rand = generate_random_number(1000, 9999);
+            let nerd_id = format!("RP-{}-{}", year, rand);
             if self.project_repo.check_nerd_id(&nerd_id).await {
-                break nerd_id;
+                break (nerd_id, year * 1000 + rand as i32);
             }
         };
         let project = self
             .project_repo
-            .create_project(user_id, &nerd_id)
+            .create_project(user_id, &nerd_id, proposal_id as i64)
             .await
             .map_err(|err| DbError::Str(err.to_string()))?;
         self.project_to_info(&project).await
@@ -312,12 +310,37 @@ impl ProjectService {
                 return Err(DbError::Str("Status should not be Pending".to_string()).into());
             }
         };
-        if !self
+        if let Ok(project) = self
             .project_repo
             .decide_admin(id, &status, feedback, dao_at, started_at)
             .await
-            .unwrap_or_default()
         {
+            if project.status == ProjectStatus::DaoVoting.to_i16() {
+                if !self
+                    .project_repo
+                    .create_dao(&project)
+                    .await
+                    .unwrap_or_default()
+                {
+                    return Err(DbError::Str("Create dao failed".to_string()).into());
+                }
+            } else if project.status == ProjectStatus::Funding.to_i16() {
+                let milestones = self.project_repo.get_milestones(project.id).await;
+                if !milestones.is_empty() {
+                    if !self
+                        .project_repo
+                        .update_milestone_status(milestones[0].id, 1i16)
+                        .await
+                        .unwrap_or_default()
+                    {
+                        return Err(DbError::Str(
+                            "Update milestone.0 status to 'In Progress' failed".to_string(),
+                        )
+                        .into());
+                    }
+                }
+            }
+        } else {
             return Err(DbError::Str("Admin decision failed".to_string()).into());
         }
         Ok(true)

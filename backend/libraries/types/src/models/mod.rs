@@ -1,5 +1,6 @@
 mod affiliation;
 mod city_list;
+mod dao;
 mod degree;
 mod employments;
 mod hashtags;
@@ -15,6 +16,7 @@ mod wallpaper;
 
 pub use affiliation::*;
 pub use city_list::*;
+pub use dao::*;
 pub use degree::*;
 pub use employments::*;
 pub use hashtags::*;

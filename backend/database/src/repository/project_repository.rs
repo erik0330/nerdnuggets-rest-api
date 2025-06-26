@@ -48,13 +48,19 @@ impl ProjectRepository {
         count == 0
     }
 
-    pub async fn create_project(&self, user_id: Uuid, nerd_id: &str) -> Result<Project, SqlxError> {
+    pub async fn create_project(
+        &self,
+        user_id: Uuid,
+        nerd_id: &str,
+        proposal_id: i64,
+    ) -> Result<Project, SqlxError> {
         let project = sqlx::query_as::<_, Project>(
-            "INSERT INTO project (user_id, nerd_id)
-            VALUES ($1, $2) RETURNING *",
+            "INSERT INTO project (user_id, nerd_id, proposal_id)
+            VALUES ($1, $2, $3) RETURNING *",
         )
         .bind(user_id)
         .bind(nerd_id)
+        .bind(proposal_id)
         .fetch_one(self.db_conn.get_pool())
         .await?;
         Ok(project)
@@ -394,9 +400,9 @@ impl ProjectRepository {
         feedback: Option<String>,
         dao_at: Option<DateTime<Utc>>,
         started_at: Option<DateTime<Utc>>,
-    ) -> Result<bool, SqlxError> {
-        let row = sqlx::query(
-            "UPDATE project SET status = $1, feedback = $2, updated_at = $3, dao_at = $4, started_at = $5 WHERE id = $6",
+    ) -> Result<Project, SqlxError> {
+        let project = sqlx::query_as::<_, Project>(
+            "UPDATE project SET status = $1, feedback = $2, updated_at = $3, dao_at = $4, started_at = $5 WHERE id = $6 RETURNING *",
         )
         .bind(status.to_i16())
         .bind(feedback)
@@ -404,8 +410,31 @@ impl ProjectRepository {
         .bind(dao_at)
         .bind(started_at)
         .bind(id)
-        .execute(self.db_conn.get_pool())
+        .fetch_one(self.db_conn.get_pool())
         .await?;
+        Ok(project)
+    }
+
+    pub async fn create_dao(&self, project: &Project) -> Result<bool, SqlxError> {
+        let row = sqlx::query("INSERT INTO dao (project_id, nerd_id, proposal_id, user_id, title, description, funding_goal) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+            .bind(project.id)
+            .bind(&project.nerd_id)
+            .bind(project.proposal_id)
+            .bind(project.user_id)
+            .bind(&project.title)
+            .bind(&project.description)
+            .bind(project.funding_goal)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn update_milestone_status(&self, id: Uuid, status: i16) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE milestone SET status = $1 WHERE id = $2")
+            .bind(status)
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
         Ok(row.rows_affected() == 1)
     }
 
