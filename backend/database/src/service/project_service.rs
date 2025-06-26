@@ -7,7 +7,7 @@ use types::{
         UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
-    models::{Milestone, Project, ProjectIds, ProjectInfo, ProjectItemInfo},
+    models::{Dao, Milestone, Project, ProjectIds, ProjectInfo, ProjectItemInfo},
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -373,5 +373,22 @@ impl ProjectService {
 
     pub async fn get_milestones(&self, id: &str) -> Result<Vec<Milestone>, ApiError> {
         Ok(self.project_repo.get_milestones(uuid_from_str(id)?).await)
+    }
+
+    pub async fn get_daos(
+        &self,
+        title: Option<String>,
+        status: Option<i16>,
+        user_id: Option<Uuid>,
+        is_mine: Option<bool>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<Dao>, ApiError> {
+        let daos = self
+            .project_repo
+            .get_daos(title, status, user_id, is_mine, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Get daos failed".to_string()))?;
+        Ok(daos)
     }
 }

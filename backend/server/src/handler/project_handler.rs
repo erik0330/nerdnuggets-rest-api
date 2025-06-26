@@ -2,11 +2,12 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
-    AssignEditorRequest, GetProjectsOption, MakeDecisionRequest, ProjectUpdateStep1Request,
-    ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
+    AssignEditorRequest, GetDaosOption, GetProjectsOption, MakeDecisionRequest,
+    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+    UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
-use types::models::{Milestone, ProjectIds, ProjectInfo, ProjectItemInfo, User};
+use types::models::{Dao, Milestone, ProjectIds, ProjectInfo, ProjectItemInfo, User};
 use types::{FeedbackStatus, UserRoleType};
 
 pub async fn get_project_by_id(
@@ -173,4 +174,25 @@ pub async fn get_milestones(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Milestone>>, ApiError> {
     Ok(Json(state.service.project.get_milestones(&id).await?))
+}
+
+pub async fn get_daos(
+    Extension(user): Extension<Option<User>>,
+    Query(opts): Query<GetDaosOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<Dao>>, ApiError> {
+    Ok(Json(
+        state
+            .service
+            .project
+            .get_daos(
+                opts.title,
+                opts.status,
+                user.map(|u| u.id),
+                opts.is_mine,
+                opts.offset,
+                opts.limit,
+            )
+            .await?,
+    ))
 }

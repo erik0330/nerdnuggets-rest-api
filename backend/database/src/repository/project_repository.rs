@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
-    models::{Milestone, Project, ProjectIds, ProjectItem, TeamMember},
+    models::{Dao, Milestone, Project, ProjectIds, ProjectItem, TeamMember},
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use uuid::Uuid;
@@ -459,5 +459,54 @@ impl ProjectRepository {
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_daos(
+        &self,
+        title: Option<String>,
+        status: Option<i16>,
+        user_id: Option<Uuid>,
+        is_mine: Option<bool>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<Dao>, SqlxError> {
+        let mut filters = Vec::new();
+        let mut index = 3;
+        let mut query = format!("SELECT d.* FROM dao d");
+        if title.as_ref().map_or(false, |s| !s.is_empty()) {
+            filters.push(format!("d.title ILIKE ${index}"));
+            index += 1;
+        }
+        if is_mine.unwrap_or_default() {
+            if user_id.is_some() {
+                query = format!(
+                    "{} LEFT JOIN dao_vote dv ON d.id = dv.dao_id AND dv.user_id = ${index} ",
+                    &query
+                );
+            } else {
+                return Ok(Vec::new());
+            }
+        } else if status.is_some() {
+            filters.push(format!("d.status = ${index}"));
+        }
+        if !filters.is_empty() {
+            query = format!("{} WHERE {}", &query, &filters.join(" AND "));
+        }
+        query = format!("{} ORDER BY d.updated_at DESC LIMIT $1 OFFSET $2", &query);
+        let mut query = sqlx::query_as::<_, Dao>(&query)
+            .bind(limit.unwrap_or(5))
+            .bind(offset.unwrap_or(0));
+        if let Some(title) = title.as_ref().filter(|s| !s.is_empty()) {
+            query = query.bind(format!("%{}%", title));
+        }
+        if is_mine.unwrap_or_default() {
+            if let Some(user_id) = user_id {
+                query = query.bind(user_id);
+            }
+        } else if let Some(s) = status {
+            query = query.bind(s);
+        }
+        let daos = query.fetch_all(self.db_conn.get_pool()).await?;
+        Ok(daos)
     }
 }
