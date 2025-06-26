@@ -93,3 +93,33 @@ pub struct UpdateMilestoneRequest {
     pub file_urls: Option<Vec<String>>,
     pub is_draft: bool,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetProjectCommentsOption {
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitProjectCommentRequest {
+    pub comment: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetDaosOption {
+    pub title: Option<String>,
+    pub status: Option<i16>,
+    pub is_mine: Option<bool>,
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitVoteRequest {
+    pub status: i16, // 1:For, 2:Against
+    pub comment: Option<String>,
+}

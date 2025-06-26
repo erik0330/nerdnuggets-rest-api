@@ -125,7 +125,7 @@ impl UserRepository {
             .unwrap_or(None)
     }
 
-    pub async fn get_by_user_id(&self, id: Uuid) -> Option<User> {
+    pub async fn get_user_by_id(&self, id: Uuid) -> Option<User> {
         sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
             .bind(id)
             .fetch_optional(self.db_conn.get_pool())

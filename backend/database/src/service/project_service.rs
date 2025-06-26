@@ -7,7 +7,10 @@ use types::{
         UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
-    models::{Milestone, Project, ProjectIds, ProjectInfo, ProjectItemInfo},
+    models::{
+        Dao, DaoVote, Milestone, Project, ProjectCommentInfo, ProjectIds, ProjectInfo,
+        ProjectItemInfo,
+    },
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -32,7 +35,7 @@ impl ProjectService {
     pub async fn project_to_info(&self, project: &Project) -> Result<ProjectInfo, ApiError> {
         let user = self
             .user_repo
-            .get_by_user_id(project.user_id)
+            .get_user_by_id(project.user_id)
             .await
             .ok_or_else(|| ApiError::UserError(UserError::UserNotFound))?;
         let category = self.util_repo.get_category_by_ids(&project.category).await;
@@ -205,7 +208,7 @@ impl ProjectService {
             .map_err(|_| DbError::Str("Get projects failed".to_string()))?;
         let mut project_infos = Vec::new();
         for pro in projects {
-            if let Some(user) = self.user_repo.get_by_user_id(pro.user_id).await {
+            if let Some(user) = self.user_repo.get_user_by_id(pro.user_id).await {
                 let category = self.util_repo.get_category_by_ids(&pro.category).await;
                 project_infos.push(pro.to_info(user.to_info(), None, category));
             }
@@ -217,7 +220,7 @@ impl ProjectService {
         let id = uuid_from_str(id)?;
         let editor = self
             .user_repo
-            .get_by_user_id(editor_id)
+            .get_user_by_id(editor_id)
             .await
             .ok_or(DbError::Str("Editor not found".to_string()))?;
         if !editor.roles.contains(&UserRoleType::Editor.to_string()) {
@@ -373,5 +376,105 @@ impl ProjectService {
 
     pub async fn get_milestones(&self, id: &str) -> Result<Vec<Milestone>, ApiError> {
         Ok(self.project_repo.get_milestones(uuid_from_str(id)?).await)
+    }
+
+    pub async fn get_project_comments(
+        &self,
+        id: &str,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<ProjectCommentInfo>, ApiError> {
+        let project_comments = self
+            .project_repo
+            .get_project_comments(uuid_from_str(id)?, offset, limit)
+            .await
+            .unwrap_or_default();
+        let mut pc_infos = Vec::new();
+        for pc in project_comments {
+            if let Some(user) = self.user_repo.get_user_by_id(pc.user_id).await {
+                pc_infos.push(pc.to_info(user.to_info()));
+            }
+        }
+        Ok(pc_infos)
+    }
+
+    pub async fn submit_project_comment(
+        &self,
+        id: &str,
+        user_id: Uuid,
+        comment: &str,
+    ) -> Result<bool, ApiError> {
+        let res = if let Some(project) = self
+            .project_repo
+            .get_project_by_id(uuid_from_str(id)?)
+            .await
+        {
+            self.project_repo
+                .submit_project_comment(user_id, project.id, &project.nerd_id, comment)
+                .await
+                .unwrap_or_default()
+        } else {
+            false
+        };
+        Ok(res)
+    }
+
+    pub async fn get_daos(
+        &self,
+        title: Option<String>,
+        status: Option<i16>,
+        user_id: Option<Uuid>,
+        is_mine: Option<bool>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<Dao>, ApiError> {
+        let daos = self
+            .project_repo
+            .get_daos(title, status, user_id, is_mine, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Get daos failed".to_string()))?;
+        Ok(daos)
+    }
+
+    pub async fn get_dao_by_id(&self, id: &str) -> Result<Dao, ApiError> {
+        let dao = self
+            .project_repo
+            .get_dao_by_id(uuid_from_str(id)?)
+            .await
+            .map_err(|_| DbError::Str("Get dao by id failed".to_string()))?;
+        Ok(dao)
+    }
+
+    pub async fn get_my_dao_vote(
+        &self,
+        id: &str,
+        user_id: Uuid,
+    ) -> Result<Option<DaoVote>, ApiError> {
+        let dao_vote = self
+            .project_repo
+            .get_my_dao_vote(uuid_from_str(id)?, user_id)
+            .await;
+        Ok(dao_vote)
+    }
+
+    pub async fn submit_dao_vote(
+        &self,
+        id: &str,
+        user_id: Uuid,
+        status: i16,
+        comment: Option<String>,
+    ) -> Result<bool, ApiError> {
+        if status != 1 && status != 2 {
+            return Err(DbError::Str("Status invalid".to_string()))?;
+        }
+        if !self
+            .project_repo
+            .submit_dao_vote(uuid_from_str(id)?, user_id, status, comment)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Submit vote failed".to_string()).into());
+        }
+        Ok(true)
     }
 }

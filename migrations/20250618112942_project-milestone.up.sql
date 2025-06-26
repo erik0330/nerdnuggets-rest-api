@@ -17,5 +17,6 @@ CREATE TABLE
         days_after_start INT,
         days_of_prediction INT,
         created_at TIMESTAMPTZ DEFAULT now(),
-        updated_at TIMESTAMPTZ DEFAULT now()
+        updated_at TIMESTAMPTZ DEFAULT now(),
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
     );

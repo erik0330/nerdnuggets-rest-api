@@ -23,7 +23,7 @@ impl UserService {
 
     pub async fn get_by_user_id(&self, user_id: Uuid) -> Result<User, ApiError> {
         self.user_repo
-            .get_by_user_id(user_id)
+            .get_user_by_id(user_id)
             .await
             .ok_or_else(|| UserError::UserNotFound.into())
     }

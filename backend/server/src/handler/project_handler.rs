@@ -2,11 +2,15 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
-    AssignEditorRequest, GetProjectsOption, MakeDecisionRequest, ProjectUpdateStep1Request,
-    ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
+    AssignEditorRequest, GetDaosOption, GetProjectCommentsOption, GetProjectsOption,
+    MakeDecisionRequest, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+    ProjectUpdateStep3Request, SubmitProjectCommentRequest, SubmitVoteRequest,
+    UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
-use types::models::{Milestone, ProjectIds, ProjectInfo, ProjectItemInfo, User};
+use types::models::{
+    Dao, DaoVote, Milestone, ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo, User,
+};
 use types::{FeedbackStatus, UserRoleType};
 
 pub async fn get_project_by_id(
@@ -173,4 +177,86 @@ pub async fn get_milestones(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Milestone>>, ApiError> {
     Ok(Json(state.service.project.get_milestones(&id).await?))
+}
+
+pub async fn get_project_comments(
+    Path(id): Path<String>,
+    Query(opts): Query<GetProjectCommentsOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ProjectCommentInfo>>, ApiError> {
+    Ok(Json(
+        state
+            .service
+            .project
+            .get_project_comments(&id, opts.offset, opts.limit)
+            .await?,
+    ))
+}
+
+pub async fn submit_project_comment(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SubmitProjectCommentRequest>,
+) -> Result<Json<bool>, ApiError> {
+    Ok(Json(
+        state
+            .service
+            .project
+            .submit_project_comment(&id, user.id, &payload.comment)
+            .await?,
+    ))
+}
+
+pub async fn get_daos(
+    Extension(user): Extension<Option<User>>,
+    Query(opts): Query<GetDaosOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<Dao>>, ApiError> {
+    Ok(Json(
+        state
+            .service
+            .project
+            .get_daos(
+                opts.title,
+                opts.status,
+                user.map(|u| u.id),
+                opts.is_mine,
+                opts.offset,
+                opts.limit,
+            )
+            .await?,
+    ))
+}
+
+pub async fn get_dao_by_id(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Dao>, ApiError> {
+    Ok(Json(state.service.project.get_dao_by_id(&id).await?))
+}
+
+pub async fn get_my_dao_vote(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Option<DaoVote>>, ApiError> {
+    Ok(Json(
+        state.service.project.get_my_dao_vote(&id, user.id).await?,
+    ))
+}
+
+pub async fn submit_dao_vote(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SubmitVoteRequest>,
+) -> Result<Json<bool>, ApiError> {
+    Ok(Json(
+        state
+            .service
+            .project
+            .submit_dao_vote(&id, user.id, payload.status, payload.comment)
+            .await?,
+    ))
 }

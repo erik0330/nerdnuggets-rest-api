@@ -9,5 +9,7 @@ CREATE TABLE
         status SMALLINT DEFAULT 0,
         feedback TEXT,
         created_at TIMESTAMPTZ DEFAULT now(),
-        updated_at TIMESTAMPTZ DEFAULT now()
+        updated_at TIMESTAMPTZ DEFAULT now(),
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );

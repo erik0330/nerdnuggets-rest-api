@@ -3,7 +3,9 @@ use chrono::{DateTime, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
-    models::{Milestone, Project, ProjectIds, ProjectItem, TeamMember},
+    models::{
+        Dao, DaoVote, Milestone, Project, ProjectComment, ProjectIds, ProjectItem, TeamMember,
+    },
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
 use uuid::Uuid;
@@ -458,6 +460,128 @@ impl ProjectRepository {
             .bind(id)
             .execute(self.db_conn.get_pool())
             .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_project_comments(
+        &self,
+        id: Uuid,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<ProjectComment>, SqlxError> {
+        let project_comments = sqlx::query_as::<_, ProjectComment>(
+            "SELECT * FROM project_comment WHERE project_id = $1 ORDER BY updated_at LIMIT $2 OFFSET $3",
+        )
+        .bind(id)
+        .bind(limit.unwrap_or(10))
+        .bind(offset.unwrap_or(0))
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(project_comments)
+    }
+
+    pub async fn submit_project_comment(
+        &self,
+        user_id: Uuid,
+        project_id: Uuid,
+        nerd_id: &str,
+        comment: &str,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("INSERT INTO project_comment (user_id, project_id, nerd_id, comment) VALUES ($1, $2, $3, $4)")
+            .bind(user_id)
+            .bind(project_id)
+            .bind(nerd_id)
+            .bind(comment)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_daos(
+        &self,
+        title: Option<String>,
+        status: Option<i16>,
+        user_id: Option<Uuid>,
+        is_mine: Option<bool>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<Dao>, SqlxError> {
+        let mut filters = Vec::new();
+        let mut index = 3;
+        let mut query = format!("SELECT d.* FROM dao d");
+        if title.as_ref().map_or(false, |s| !s.is_empty()) {
+            filters.push(format!("d.title ILIKE ${index}"));
+            index += 1;
+        }
+        if is_mine.unwrap_or_default() {
+            if user_id.is_some() {
+                query = format!(
+                    "{} LEFT JOIN dao_vote dv ON d.id = dv.dao_id AND dv.user_id = ${index} ",
+                    &query
+                );
+            } else {
+                return Ok(Vec::new());
+            }
+        } else if status.is_some() {
+            filters.push(format!("d.status = ${index}"));
+        }
+        if !filters.is_empty() {
+            query = format!("{} WHERE {}", &query, &filters.join(" AND "));
+        }
+        query = format!("{} ORDER BY d.updated_at DESC LIMIT $1 OFFSET $2", &query);
+        let mut query = sqlx::query_as::<_, Dao>(&query)
+            .bind(limit.unwrap_or(5))
+            .bind(offset.unwrap_or(0));
+        if let Some(title) = title.as_ref().filter(|s| !s.is_empty()) {
+            query = query.bind(format!("%{}%", title));
+        }
+        if is_mine.unwrap_or_default() {
+            if let Some(user_id) = user_id {
+                query = query.bind(user_id);
+            }
+        } else if let Some(s) = status {
+            query = query.bind(s);
+        }
+        let daos = query.fetch_all(self.db_conn.get_pool()).await?;
+        Ok(daos)
+    }
+
+    pub async fn get_dao_by_id(&self, id: Uuid) -> Result<Dao, SqlxError> {
+        let dao = sqlx::query_as::<_, Dao>("SELECT * FROM dao WHERE id = $1")
+            .bind(id)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(dao)
+    }
+
+    pub async fn get_my_dao_vote(&self, id: Uuid, user_id: Uuid) -> Option<DaoVote> {
+        let dao_vote = sqlx::query_as::<_, DaoVote>(
+            "SELECT * FROM dao_vote WHERE dao_id = $1 AND user_id = $2",
+        )
+        .bind(id)
+        .bind(user_id)
+        .fetch_optional(self.db_conn.get_pool())
+        .await
+        .unwrap_or_default();
+        dao_vote
+    }
+
+    pub async fn submit_dao_vote(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+        status: i16,
+        comment: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE dao_vote SET status = $1, comment = $2 WHERE dao_id = $3 AND user_id = $4",
+        )
+        .bind(status)
+        .bind(comment)
+        .bind(id)
+        .bind(user_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
         Ok(row.rows_affected() == 1)
     }
 }
