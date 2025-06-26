@@ -1,7 +1,8 @@
 use crate::{
     handler::project_handler::{
-        assign_editor, create_project, get_project_by_id, make_decision, submit_project,
-        update_milestone, update_project_step_1, update_project_step_2, update_project_step_3,
+        assign_editor, create_project, get_milestones, get_project_by_id, make_decision,
+        submit_project, update_milestone, update_project_step_1, update_project_step_2,
+        update_project_step_3,
     },
     state::AppState,
 };
@@ -21,4 +22,5 @@ pub fn routes() -> Router<AppState> {
         .route("/project/:id/editor", post(assign_editor))
         .route("/project/:id/decide", patch(make_decision))
         .route("/milestone/:id", patch(update_milestone))
+        .route("/project/:id/milestone", get(get_milestones))
 }

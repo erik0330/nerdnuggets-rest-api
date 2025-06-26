@@ -6,7 +6,7 @@ use types::dto::{
     ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
-use types::models::{ProjectIds, ProjectInfo, ProjectItemInfo, User};
+use types::models::{Milestone, ProjectIds, ProjectInfo, ProjectItemInfo, User};
 use types::{FeedbackStatus, UserRoleType};
 
 pub async fn get_project_by_id(
@@ -166,4 +166,11 @@ pub async fn update_milestone(
     Ok(Json(
         state.service.project.update_milestone(&id, payload).await?,
     ))
+}
+
+pub async fn get_milestones(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<Milestone>>, ApiError> {
+    Ok(Json(state.service.project.get_milestones(&id).await?))
 }
