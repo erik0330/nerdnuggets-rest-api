@@ -235,6 +235,10 @@ impl ProjectRepository {
             if user_id.is_some() {
                 filters.push(format!("p.user_id = ${index}"));
                 index += 1;
+                if status.is_some() {
+                    filters.push(format!("p.status = ${index}"));
+                    index += 1;
+                }
             } else {
                 return Ok(Vec::new());
             }
@@ -302,6 +306,9 @@ impl ProjectRepository {
         if is_mine.unwrap_or_default() {
             if let Some(user_id) = user_id {
                 query = query.bind(user_id);
+                if let Some(s) = status {
+                    query = query.bind(s);
+                }
             }
         } else {
             if is_public.unwrap_or_default() {
