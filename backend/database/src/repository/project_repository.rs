@@ -529,4 +529,23 @@ impl ProjectRepository {
         .unwrap_or_default();
         dao_vote
     }
+
+    pub async fn submit_dao_vote(
+        &self,
+        id: Uuid,
+        user_id: Uuid,
+        status: i16,
+        comment: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE dao_vote SET status = $1, comment = $2 WHERE dao_id = $3 AND user_id = $4",
+        )
+        .bind(status)
+        .bind(comment)
+        .bind(id)
+        .bind(user_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
 }

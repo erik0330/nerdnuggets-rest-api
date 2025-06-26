@@ -1,8 +1,8 @@
 use crate::{
     handler::project_handler::{
         assign_editor, create_project, get_dao_by_id, get_milestones, get_my_dao_vote,
-        get_project_by_id, make_decision, submit_project, update_milestone, update_project_step_1,
-        update_project_step_2, update_project_step_3,
+        get_project_by_id, make_decision, submit_dao_vote, submit_project, update_milestone,
+        update_project_step_1, update_project_step_2, update_project_step_3,
     },
     state::AppState,
 };
@@ -25,4 +25,5 @@ pub fn routes() -> Router<AppState> {
         .route("/project/:id/milestone", get(get_milestones))
         .route("/dao/:id", get(get_dao_by_id))
         .route("/dao/:id/vote", get(get_my_dao_vote))
+        .route("/dao/:id/vote", post(submit_dao_vote))
 }

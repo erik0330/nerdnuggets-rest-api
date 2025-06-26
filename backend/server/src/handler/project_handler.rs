@@ -4,7 +4,7 @@ use axum::{Extension, Json};
 use types::dto::{
     AssignEditorRequest, GetDaosOption, GetProjectsOption, MakeDecisionRequest,
     ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-    UpdateMilestoneRequest,
+    SubmitVoteRequest, UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{Dao, DaoVote, Milestone, ProjectIds, ProjectInfo, ProjectItemInfo, User};
@@ -211,5 +211,20 @@ pub async fn get_my_dao_vote(
 ) -> Result<Json<Option<DaoVote>>, ApiError> {
     Ok(Json(
         state.service.project.get_my_dao_vote(&id, user.id).await?,
+    ))
+}
+
+pub async fn submit_dao_vote(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SubmitVoteRequest>,
+) -> Result<Json<bool>, ApiError> {
+    Ok(Json(
+        state
+            .service
+            .project
+            .submit_dao_vote(&id, user.id, payload.status, payload.comment)
+            .await?,
     ))
 }

@@ -412,4 +412,25 @@ impl ProjectService {
             .await;
         Ok(dao_vote)
     }
+
+    pub async fn submit_dao_vote(
+        &self,
+        id: &str,
+        user_id: Uuid,
+        status: i16,
+        comment: Option<String>,
+    ) -> Result<bool, ApiError> {
+        if status != 1 && status != 2 {
+            return Err(DbError::Str("Status invalid".to_string()))?;
+        }
+        if !self
+            .project_repo
+            .submit_dao_vote(uuid_from_str(id)?, user_id, status, comment)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Submit vote failed".to_string()).into());
+        }
+        Ok(true)
+    }
 }
