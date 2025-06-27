@@ -88,6 +88,8 @@ pub async fn public<B>(
     let token = header.token();
     match state.service.token.retrieve_token_claims(token) {
         Ok(token_data) => {
+            // println!("{:?}", token_data.claims.sub);
+            // println!("{:?}", token_data.claims.role);
             let user = state
                 .service
                 .user
