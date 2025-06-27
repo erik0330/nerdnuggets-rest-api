@@ -516,7 +516,7 @@ impl ProjectRepository {
         if is_mine.unwrap_or_default() {
             if user_id.is_some() {
                 query = format!(
-                    "{} LEFT JOIN dao_vote dv ON d.id = dv.dao_id AND dv.user_id = ${index} ",
+                    "{} JOIN dao_vote dv ON d.id = dv.dao_id AND dv.user_id = ${index} ",
                     &query
                 );
             } else {
