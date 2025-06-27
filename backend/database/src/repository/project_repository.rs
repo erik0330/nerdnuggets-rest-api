@@ -272,7 +272,7 @@ impl ProjectRepository {
                     }
                     Some(r) if r == UserRoleType::Editor.to_string() => {
                         if user_id.is_some() {
-                            query = format!("{} LEFT JOIN project_editor pe ON p.id = pe.project_id AND pe.user_id = ${index} ", &query);
+                            query = format!("{} JOIN project_editor pe ON p.id = pe.project_id AND pe.user_id = ${index} ", &query);
                             index += 1;
                             if let Some(s) = status {
                                 match ProjectStatus::from(s) {
