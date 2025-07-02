@@ -1,14 +1,8 @@
-use chrono::{DateTime, NaiveDate, Utc};
-use serde::{Deserialize, Serialize};
-use sqlx::{
-    encode::IsNull,
-    error::BoxDynError,
-    postgres::{PgTypeInfo, PgValueRef},
-    Decode, Encode, Postgres, Type,
-};
-use uuid::Uuid;
-
 use crate::models::{Category, UserInfo};
+use chrono::{DateTime, NaiveDate, Utc};
+use postgres_macro::define_pg_enum;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Debug)]
 pub struct Bounty {
@@ -169,59 +163,15 @@ pub enum BountyStatus {
     Cancelled,
 }
 
-impl From<BountyStatus> for i16 {
-    fn from(gender: BountyStatus) -> Self {
-        match gender {
-            BountyStatus::PendingApproval => 0,
-            BountyStatus::Open => 1,
-            BountyStatus::Rejected => 2,
-            BountyStatus::InProgress => 3,
-            BountyStatus::UnderReview => 4,
-            BountyStatus::Completed => 5,
-            BountyStatus::Cancelled => 6,
-        }
-    }
-}
-
-impl TryFrom<i16> for BountyStatus {
-    type Error = &'static str;
-
-    fn try_from(value: i16) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(BountyStatus::PendingApproval),
-            1 => Ok(BountyStatus::Open),
-            2 => Ok(BountyStatus::Rejected),
-            3 => Ok(BountyStatus::InProgress),
-            4 => Ok(BountyStatus::UnderReview),
-            5 => Ok(BountyStatus::Completed),
-            6 => Ok(BountyStatus::Cancelled),
-            _ => Err("Invalid value for BountyStatus"),
-        }
-    }
-}
-
-impl Type<Postgres> for BountyStatus {
-    fn type_info() -> PgTypeInfo {
-        <i16 as Type<Postgres>>::type_info()
-    }
-}
-
-impl Encode<'_, Postgres> for BountyStatus {
-    fn encode_by_ref(
-        &self,
-        buf: &mut sqlx::postgres::PgArgumentBuffer,
-    ) -> Result<IsNull, BoxDynError> {
-        let val: i16 = (*self).into();
-        <i16 as sqlx::Encode<'_, sqlx::Postgres>>::encode_by_ref(&val, buf)
-    }
-}
-
-impl<'r> Decode<'r, Postgres> for BountyStatus {
-    fn decode(value: PgValueRef<'r>) -> Result<Self, BoxDynError> {
-        let val = <i16 as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
-        BountyStatus::try_from(val).map_err(|e| e.into())
-    }
-}
+define_pg_enum!(BountyStatus {
+    PendingApproval = 0,
+    Open = 1,
+    Rejected = 2,
+    InProgress = 3,
+    UnderReview = 4,
+    Completed = 5,
+    Cancelled = 6,
+});
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
 pub enum BountyDifficulty {
@@ -231,53 +181,12 @@ pub enum BountyDifficulty {
     Expert,
 }
 
-impl From<BountyDifficulty> for i16 {
-    fn from(gender: BountyDifficulty) -> Self {
-        match gender {
-            BountyDifficulty::Beginner => 0,
-            BountyDifficulty::Intermediate => 1,
-            BountyDifficulty::Advanced => 2,
-            BountyDifficulty::Expert => 3,
-        }
-    }
-}
-
-impl TryFrom<i16> for BountyDifficulty {
-    type Error = &'static str;
-
-    fn try_from(value: i16) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(BountyDifficulty::Beginner),
-            1 => Ok(BountyDifficulty::Intermediate),
-            2 => Ok(BountyDifficulty::Advanced),
-            3 => Ok(BountyDifficulty::Expert),
-            _ => Err("Invalid value for BountyDifficulty"),
-        }
-    }
-}
-
-impl Type<Postgres> for BountyDifficulty {
-    fn type_info() -> PgTypeInfo {
-        <i16 as Type<Postgres>>::type_info()
-    }
-}
-
-impl Encode<'_, Postgres> for BountyDifficulty {
-    fn encode_by_ref(
-        &self,
-        buf: &mut sqlx::postgres::PgArgumentBuffer,
-    ) -> Result<IsNull, BoxDynError> {
-        let val: i16 = (*self).into();
-        <i16 as sqlx::Encode<'_, sqlx::Postgres>>::encode_by_ref(&val, buf)
-    }
-}
-
-impl<'r> Decode<'r, Postgres> for BountyDifficulty {
-    fn decode(value: PgValueRef<'r>) -> Result<Self, BoxDynError> {
-        let val = <i16 as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
-        BountyDifficulty::try_from(val).map_err(|e| e.into())
-    }
-}
+define_pg_enum!(BountyDifficulty {
+    Beginner = 0,
+    Intermediate = 1,
+    Advanced = 2,
+    Expert = 3,
+});
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
 pub enum BidStatus {
@@ -290,56 +199,12 @@ pub enum BidStatus {
     Cancelled,
 }
 
-impl From<BidStatus> for i16 {
-    fn from(gender: BidStatus) -> Self {
-        match gender {
-            BidStatus::Submitted => 0,
-            BidStatus::UnderReview => 1,
-            BidStatus::Accepted => 2,
-            BidStatus::Rejected => 3,
-            BidStatus::InProgress => 4,
-            BidStatus::Completed => 5,
-            BidStatus::Cancelled => 6,
-        }
-    }
-}
-
-impl TryFrom<i16> for BidStatus {
-    type Error = &'static str;
-
-    fn try_from(value: i16) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(BidStatus::Submitted),
-            1 => Ok(BidStatus::UnderReview),
-            2 => Ok(BidStatus::Accepted),
-            3 => Ok(BidStatus::Rejected),
-            4 => Ok(BidStatus::InProgress),
-            5 => Ok(BidStatus::Completed),
-            6 => Ok(BidStatus::Cancelled),
-            _ => Err("Invalid value for BidStatus"),
-        }
-    }
-}
-
-impl Type<Postgres> for BidStatus {
-    fn type_info() -> PgTypeInfo {
-        <i16 as Type<Postgres>>::type_info()
-    }
-}
-
-impl Encode<'_, Postgres> for BidStatus {
-    fn encode_by_ref(
-        &self,
-        buf: &mut sqlx::postgres::PgArgumentBuffer,
-    ) -> Result<IsNull, BoxDynError> {
-        let val: i16 = (*self).into();
-        <i16 as sqlx::Encode<'_, sqlx::Postgres>>::encode_by_ref(&val, buf)
-    }
-}
-
-impl<'r> Decode<'r, Postgres> for BidStatus {
-    fn decode(value: PgValueRef<'r>) -> Result<Self, BoxDynError> {
-        let val = <i16 as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
-        BidStatus::try_from(val).map_err(|e| e.into())
-    }
-}
+define_pg_enum!(BidStatus {
+    Submitted = 0,
+    UnderReview = 1,
+    Accepted = 2,
+    Rejected = 3,
+    InProgress = 4,
+    Completed = 5,
+    Cancelled = 6,
+});

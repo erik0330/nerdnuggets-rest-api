@@ -32,8 +32,8 @@ impl BountyService {
             .await
             .ok_or_else(|| ApiError::UserError(UserError::UserNotFound))?;
         let category = self.util_repo.get_category_by_id(bounty.category).await;
-        // let milestones = self.bounty_repo.get_milestones(bounty.id).await;
-        Ok(bounty.to_info(user.to_info(), category, Vec::new()))
+        let milestones = self.bounty_repo.get_milestones(bounty.id).await;
+        Ok(bounty.to_info(user.to_info(), category, milestones))
     }
 
     pub async fn get_bounty_by_id(&self, id: &str) -> Result<BountyInfo, ApiError> {
@@ -90,6 +90,29 @@ impl BountyService {
             )
             .await
             .map_err(|err| DbError::Str(err.to_string()))?;
+        if payload.by_milestone {
+            let mut number = 1;
+            for milestone in payload.milestones.unwrap_or_default() {
+                match self
+                    .bounty_repo
+                    .create_milestone(
+                        bounty.id,
+                        number,
+                        milestone.title,
+                        milestone.description,
+                        milestone.reward_amount,
+                        milestone.timeline,
+                        milestone.requirements.unwrap_or_default(),
+                        milestone.deliverables.unwrap_or_default(),
+                    )
+                    .await
+                {
+                    Ok(f) if f => number += 1,
+                    Ok(f) => println!("{f}"),
+                    Err(e) => println!("{:?}", e),
+                }
+            }
+        }
         self.bounty_to_info(&bounty).await
     }
 

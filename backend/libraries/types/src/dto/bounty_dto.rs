@@ -26,7 +26,6 @@ pub struct BountyCreateRequest {
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct BountyMilestoneRequest {
-    pub number: i16,
     pub title: String,
     pub description: String,
     pub reward_amount: i32,

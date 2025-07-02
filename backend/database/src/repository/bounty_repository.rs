@@ -2,7 +2,7 @@ use crate::pool::DatabasePool;
 use chrono::NaiveDate;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::models::{Bounty, BountyDifficulty, BountyStatus};
+use types::models::{Bounty, BountyDifficulty, BountyMilestone, BountyStatus};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -90,37 +90,39 @@ impl BountyRepository {
         Ok(bounty)
     }
 
-    // pub async fn get_milestones(&self, bounty_id: Uuid) -> Vec<Milestone> {
-    //     sqlx::query_as::<_, Milestone>(
-    //         "SELECT * FROM milestone WHERE bounty_id = $1 ORDER BY created_at",
-    //     )
-    //     .bind(bounty_id)
-    //     .fetch_all(self.db_conn.get_pool())
-    //     .await
-    //     .unwrap_or(Vec::new())
-    // }
-
     pub async fn create_milestone(
         &self,
         bounty_id: Uuid,
         number: i16,
         title: String,
         description: String,
-        funding_amount: i32,
-        days_after_start: i32,
-        days_of_prediction: i32,
+        reward_amount: i32,
+        timeline: Option<String>,
+        requirements: Vec<String>,
+        deliverables: Vec<String>,
     ) -> Result<bool, SqlxError> {
-        let row = sqlx::query("INSERT INTO milestone (bounty_id, number, title, description, funding_amount, days_after_start, days_of_prediction) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+        let row = sqlx::query("INSERT INTO bounty_milestone (bounty_id, number, title, description, reward_amount, timeline, requirements, deliverables) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *")
             .bind(bounty_id)
             .bind(number)
             .bind(title)
             .bind(description)
-            .bind(funding_amount)
-            .bind(days_after_start)
-            .bind(days_of_prediction)
+            .bind(reward_amount)
+            .bind(timeline)
+            .bind(requirements)
+            .bind(deliverables)
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_milestones(&self, bounty_id: Uuid) -> Vec<BountyMilestone> {
+        sqlx::query_as::<_, BountyMilestone>(
+            "SELECT * FROM bounty_milestone WHERE bounty_id = $1 ORDER BY number, created_at",
+        )
+        .bind(bounty_id)
+        .fetch_all(self.db_conn.get_pool())
+        .await
+        .unwrap_or(Vec::new())
     }
 
     pub async fn delete_milestones(&self, bounty_id: Uuid) -> Result<bool, SqlxError> {
