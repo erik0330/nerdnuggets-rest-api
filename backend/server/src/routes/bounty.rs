@@ -1,14 +1,11 @@
 use crate::{
-    handler::bounty_handler::{create_bounty, get_bounty_by_id},
+    handler::bounty_handler::{create_bounty, submit_bid},
     state::AppState,
 };
-use axum::{
-    routing::{get, post},
-    Router,
-};
+use axum::{routing::post, Router};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/bounty/:id", get(get_bounty_by_id))
         .route("/bounty", post(create_bounty))
+        .route("/bounty/:id/bid", post(submit_bid))
 }

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::models::BountyDifficulty;
+use crate::models::{BountyDifficulty, BountyStatus};
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -38,12 +38,35 @@ pub struct BountyMilestoneRequest {
 #[serde(rename_all = "camelCase")]
 pub struct GetBountysOption {
     pub title: Option<String>,
-    pub status: Option<i16>,
+    pub status: Option<BountyStatus>,
     pub category_id: Option<Uuid>,
+    pub difficulty: Option<BountyDifficulty>,
     pub is_mine: Option<bool>,
-    pub is_public: Option<bool>,
     pub offset: Option<i32>,
     pub limit: Option<i32>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitBidRequest {
+    pub title: String,
+    pub description: String,
+    pub bid_amount: i32,
+    pub timeline: String,
+    pub technical_approach: String,
+    pub relevant_experience: String,
+    pub budget_breakdown: String,
+    pub milestones: Vec<BidMilestoneRequest>,
+    pub upload_files: Vec<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BidMilestoneRequest {
+    pub title: String,
+    pub description: String,
+    pub amount: i32,
+    pub timeline: String,
 }
 
 // #[derive(Clone, Serialize, Deserialize, Validate, Debug)]

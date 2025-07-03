@@ -23,14 +23,6 @@ pub fn routes() -> Router<AppState> {
     // .route("/user/wallpaper/remove", post(remove_wallpaper))
     // .route("/user/setting", get(get_settings))
     // .route("/user/setting_profile", post(update_setting_profile))
-    // .route("/user/affiliation", get(get_affiliations))
-    // .route("/user/affiliation/add", post(add_affiliation))
-    // .route("/user/affiliation/edit", post(edit_affiliation))
-    // .route("/user/affiliation/delete", post(delete_affiliation))
-    // .route(
-    //     "/user/domain_expertise/update",
-    //     post(update_domain_expertise),
-    // )
     // .route(
     //     "/user/nobleblocks_role/update",
     //     post(update_nobleblocks_role),

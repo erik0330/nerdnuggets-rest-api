@@ -1,10 +1,10 @@
 use crate::state::AppState;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
-use types::dto::BountyCreateRequest;
+use types::dto::{BountyCreateRequest, GetBountysOption, SubmitBidRequest};
 use types::error::{ApiError, ValidatedRequest};
-use types::models::{BountyInfo, User};
+use types::models::{BidInfo, BountyInfo, User};
 
 pub async fn get_bounty_by_id(
     Path(id): Path<String>,
@@ -23,57 +23,39 @@ pub async fn create_bounty(
     Ok(Json(bounty))
 }
 
-// pub async fn update_bounty_step_3(
-//     Path(id): Path<String>,
-//     State(state): State<AppState>,
-//     ValidatedRequest(payload): ValidatedRequest<BountyUpdateStep3Request>,
-// ) -> Result<Json<bool>, ApiError> {
-//     let res = state
-//         .service
-//         .bounty
-//         .update_bounty_step_3(&id, payload)
-//         .await?;
-//     Ok(Json(res))
-// }
+pub async fn get_bounties(
+    Extension(user): Extension<Option<User>>,
+    Extension(role): Extension<Option<String>>,
+    Query(opts): Query<GetBountysOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<BountyInfo>>, ApiError> {
+    let res = state
+        .service
+        .bounty
+        .get_bounties(
+            opts.title,
+            opts.status,
+            opts.category_id,
+            opts.difficulty,
+            role,
+            user.map(|u| u.id),
+            opts.is_mine,
+            opts.offset,
+            opts.limit,
+        )
+        .await?;
+    Ok(Json(res))
+}
 
-// pub async fn submit_bounty(
-//     Path(id): Path<String>,
-//     State(state): State<AppState>,
-// ) -> Result<Json<bool>, ApiError> {
-//     let res = state.service.bounty.submit_bounty(&id).await?;
-//     Ok(Json(res))
-// }
-
-// pub async fn get_bounty_ids(
-//     State(state): State<AppState>,
-// ) -> Result<Json<Vec<BountyIds>>, ApiError> {
-//     let res = state.service.bounty.get_bounty_ids().await?;
-//     Ok(Json(res))
-// }
-
-// pub async fn get_bountys(
-//     Extension(user): Extension<Option<User>>,
-//     Extension(role): Extension<Option<String>>,
-//     Query(opts): Query<GetBountysOption>,
-//     State(state): State<AppState>,
-// ) -> Result<Json<Vec<BountyItemInfo>>, ApiError> {
-//     let res = state
-//         .service
-//         .bounty
-//         .get_bountys(
-//             opts.title,
-//             opts.status,
-//             opts.category_id,
-//             role,
-//             user.map(|u| u.id),
-//             opts.is_mine,
-//             opts.is_public,
-//             opts.offset,
-//             opts.limit,
-//         )
-//         .await?;
-//     Ok(Json(res))
-// }
+pub async fn submit_bid(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SubmitBidRequest>,
+) -> Result<Json<BidInfo>, ApiError> {
+    let bid = state.service.bounty.submit_bid(&id, user, payload).await?;
+    Ok(Json(bid))
+}
 
 // pub async fn assign_editor(
 //     Extension(role): Extension<String>,

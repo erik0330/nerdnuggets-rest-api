@@ -2,9 +2,9 @@ use crate::{pool::DatabasePool, BountyRepository, UserRepository, UtilRepository
 use chrono::{Datelike, NaiveDate, Utc};
 use std::sync::Arc;
 use types::{
-    dto::BountyCreateRequest,
+    dto::{BountyCreateRequest, SubmitBidRequest},
     error::{ApiError, DbError, UserError},
-    models::{Bounty, BountyInfo},
+    models::{BidInfo, Bounty, BountyDifficulty, BountyInfo, BountyStatus, User},
 };
 use utils::commons::{generate_random_number, uuid_from_str};
 use uuid::Uuid;
@@ -116,133 +116,101 @@ impl BountyService {
         self.bounty_to_info(&bounty).await
     }
 
-    //     pub async fn update_bounty_step_3(
-    //         &self,
-    //         id: &str,
-    //         payload: BountyUpdateStep3Request,
-    //     ) -> Result<bool, ApiError> {
-    //         let bounty_id = uuid_from_str(id)?;
-    //         self.bounty_repo.delete_team_members(bounty_id).await.ok();
-    //         self.bounty_repo.delete_milestones(bounty_id).await.ok();
-    //         for tm in payload.team_members {
-    //             self.bounty_repo
-    //                 .create_team_member(
-    //                     bounty_id,
-    //                     tm.name,
-    //                     tm.role,
-    //                     tm.bio,
-    //                     tm.linkedin,
-    //                     tm.twitter,
-    //                     tm.github,
-    //                 )
-    //                 .await
-    //                 .ok();
-    //         }
-    //         for ms in payload.milestones {
-    //             self.bounty_repo
-    //                 .create_milestone(
-    //                     bounty_id,
-    //                     ms.number,
-    //                     ms.title,
-    //                     ms.description,
-    //                     ms.funding_amount,
-    //                     ms.days_after_start,
-    //                     ms.days_of_prediction,
-    //                 )
-    //                 .await
-    //                 .ok();
-    //         }
-    //         Ok(true)
-    //     }
+    pub async fn get_bounties(
+        &self,
+        title: Option<String>,
+        status: Option<BountyStatus>,
+        category_id: Option<Uuid>,
+        difficulty: Option<BountyDifficulty>,
+        role: Option<String>,
+        user_id: Option<Uuid>,
+        is_mine: Option<bool>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyInfo>, ApiError> {
+        let bounties = self
+            .bounty_repo
+            .get_bounties(
+                title,
+                status,
+                category_id,
+                difficulty,
+                role,
+                user_id,
+                is_mine,
+                offset,
+                limit,
+            )
+            .await
+            .map_err(|_| DbError::Str("Get bounties failed".to_string()))?;
+        let mut bounty_infos = Vec::new();
+        for bounty in bounties {
+            if let Some(user) = self.user_repo.get_user_by_id(bounty.user_id).await {
+                let category = self.util_repo.get_category_by_id(bounty.category).await;
+                bounty_infos.push(bounty.to_info(user.to_info(), category, Vec::new()));
+            }
+        }
+        Ok(bounty_infos)
+    }
 
-    //     pub async fn submit_bounty(&self, id: &str) -> Result<bool, ApiError> {
-    //         self.bounty_repo
-    //             .submit_bounty(uuid_from_str(id)?)
-    //             .await
-    //             .map_err(|_| DbError::Str("Submit bounty failed".to_string()).into())
-    //     }
-
-    //     pub async fn get_bounty_ids(&self) -> Result<Vec<BountyIds>, ApiError> {
-    //         Ok(self.bounty_repo.get_bounty_ids().await.unwrap_or_default())
-    //     }
-
-    //     pub async fn get_bountys(
-    //         &self,
-    //         title: Option<String>,
-    //         status: Option<i16>,
-    //         category_id: Option<Uuid>,
-    //         role: Option<String>,
-    //         user_id: Option<Uuid>,
-    //         is_mine: Option<bool>,
-    //         is_public: Option<bool>,
-    //         offset: Option<i32>,
-    //         limit: Option<i32>,
-    //     ) -> Result<Vec<BountyItemInfo>, ApiError> {
-    //         let status = status.map(|s| BountyStatus::from(s).to_i16());
-    //         let bountys = self
-    //             .bounty_repo
-    //             .get_bountys(
-    //                 title,
-    //                 status,
-    //                 category_id,
-    //                 role,
-    //                 user_id,
-    //                 is_mine,
-    //                 is_public,
-    //                 offset,
-    //                 limit,
-    //             )
-    //             .await
-    //             .map_err(|_| DbError::Str("Get bountys failed".to_string()))?;
-    //         let mut bounty_infos = Vec::new();
-    //         for pro in bountys {
-    //             if let Some(user) = self.user_repo.get_user_by_id(pro.user_id).await {
-    //                 let category = self.util_repo.get_category_by_ids(&pro.category).await;
-    //                 bounty_infos.push(pro.to_info(user.to_info(), None, category));
-    //             }
-    //         }
-    //         Ok(bounty_infos)
-    //     }
-
-    //     pub async fn assign_editor(&self, id: &str, editor_id: Uuid) -> Result<bool, ApiError> {
-    //         let id = uuid_from_str(id)?;
-    //         let editor = self
-    //             .user_repo
-    //             .get_user_by_id(editor_id)
-    //             .await
-    //             .ok_or(DbError::Str("Editor not found".to_string()))?;
-    //         if !editor.roles.contains(&UserRoleType::Editor.to_string()) {
-    //             return Err(DbError::Str("This user has not an editor role".to_string()).into());
-    //         }
-    //         let bounty = self
-    //             .bounty_repo
-    //             .get_bounty_by_id(id)
-    //             .await
-    //             .ok_or(DbError::Str("Bounty not found".to_string()))?;
-    //         if bounty.status != BountyStatus::PendingReview.to_i16() {
-    //             return Err(DbError::Str("Bounty's status is not PendingReview".to_string()).into());
-    //         }
-    //         if !self
-    //             .bounty_repo
-    //             .create_bounty_editor(id, &bounty.nerd_id, editor_id)
-    //             .await
-    //             .unwrap_or_default()
-    //         {
-    //             return Err(DbError::Str("Can't create a bounty editor".to_string()).into());
-    //         }
-    //         if !self
-    //             .bounty_repo
-    //             .update_bounty_status(id, &BountyStatus::UnderReview)
-    //             .await
-    //             .unwrap_or_default()
-    //         {
-    //             return Err(DbError::Str(
-    //                 "Can't update the status of the bounty when assigning an editor".to_string(),
-    //             )
-    //             .into());
-    //         }
-    //         Ok(true)
-    //     }
+    pub async fn submit_bid(
+        &self,
+        id: &str,
+        user: User,
+        payload: SubmitBidRequest,
+    ) -> Result<BidInfo, ApiError> {
+        let id = uuid_from_str(id)?;
+        let bounty = self
+            .bounty_repo
+            .get_bounty_by_id(id)
+            .await
+            .ok_or(DbError::Str("Bounty not found".to_string()))?;
+        if bounty.status != BountyStatus::Open {
+            return Err(DbError::Str(format!(
+                "Can't bid on this bounty because its status is not opened"
+            ))
+            .into());
+        }
+        let bid = self
+            .bounty_repo
+            .create_bid(
+                id,
+                &bounty.nerd_id,
+                user.id,
+                payload.title,
+                payload.description,
+                payload.bid_amount,
+                payload.timeline,
+                payload.technical_approach,
+                payload.relevant_experience,
+                payload.budget_breakdown,
+                payload.upload_files,
+            )
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+        let mut number = 1;
+        let mut milestones = Vec::new();
+        for m in payload.milestones {
+            if let Ok(res) = self
+                .bounty_repo
+                .create_bid_milestone(
+                    bid.id,
+                    bounty.id,
+                    &bounty.nerd_id,
+                    number,
+                    m.title,
+                    m.description,
+                    m.amount,
+                    m.timeline,
+                )
+                .await
+            {
+                milestones.push(res);
+                number += 1;
+            }
+        }
+        Ok(bid.to_info(user.to_info(), milestones))
+    }
 
     //     pub async fn decide_editor(
     //         &self,

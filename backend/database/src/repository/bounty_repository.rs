@@ -2,7 +2,7 @@ use crate::pool::DatabasePool;
 use chrono::NaiveDate;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::models::{Bounty, BountyDifficulty, BountyMilestone, BountyStatus};
+use types::{models::{Bid, BidMilestone, BidStatus, Bounty, BountyDifficulty, BountyMilestone, BountyStatus}, UserRoleType};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -133,131 +133,132 @@ impl BountyRepository {
         Ok(true)
     }
 
-    // pub async fn get_bountys(
-    //     &self,
-    //     title: Option<String>,
-    //     status: Option<i16>,
-    //     category_id: Option<Uuid>,
-    //     role: Option<String>,
-    //     user_id: Option<Uuid>,
-    //     is_mine: Option<bool>,
-    //     is_public: Option<bool>,
-    //     offset: Option<i32>,
-    //     limit: Option<i32>,
-    // ) -> Result<Vec<BountyItem>, SqlxError> {
-    //     let mut filters = Vec::new();
-    //     let mut index = 3;
-    //     let mut query = format!("SELECT p.id, p.nerd_id, p.user_id, p.title, p.description, p.cover_photo, p.category, p.status, p.funding_goal, p.duration, p.tags, p.funding_amount, p.count_contributors, p.created_at, p.updated_at, p.dao_at, p.started_at FROM bounty p");
-    //     if title.as_ref().map_or(false, |s| !s.is_empty()) {
-    //         filters.push(format!("p.title ILIKE ${index}"));
-    //         index += 1;
-    //     }
-    //     if is_mine.unwrap_or_default() {
-    //         if user_id.is_some() {
-    //             filters.push(format!("p.user_id = ${index}"));
-    //             index += 1;
-    //             if status.is_some() {
-    //                 filters.push(format!("p.status = ${index}"));
-    //                 index += 1;
-    //             }
-    //         } else {
-    //             return Ok(Vec::new());
-    //         }
-    //     } else {
-    //         if is_public.unwrap_or_default() {
-    //             if status.is_some() {
-    //                 filters.push(format!("p.status = ${index}"));
-    //                 index += 1;
-    //             } else {
-    //                 filters.push(format!("p.status = {}", BountyStatus::Funding.to_i16()));
-    //                 filters.push(format!("p.status = {}", BountyStatus::Completed.to_i16()));
-    //             }
-    //         } else {
-    //             match role.clone() {
-    //                 Some(r) if r == UserRoleType::Admin.to_string() => {
-    //                     if status.is_some() {
-    //                         filters.push(format!("p.status = ${index}"));
-    //                         index += 1;
-    //                     } else {
-    //                         filters
-    //                             .push(format!("p.status != {}", BountyStatus::Creating.to_i16()));
-    //                     }
-    //                 }
-    //                 Some(r) if r == UserRoleType::Editor.to_string() => {
-    //                     if user_id.is_some() {
-    //                         query = format!("{} JOIN bounty_editor pe ON p.id = pe.bounty_id AND pe.user_id = ${index} ", &query);
-    //                         index += 1;
-    //                         if let Some(s) = status {
-    //                             match BountyStatus::from(s) {
-    //                                 BountyStatus::UnderReview => {
-    //                                     filters.push(format!(
-    //                                         "p.status = {}",
-    //                                         BountyStatus::UnderReview.to_i16()
-    //                                     ));
-    //                                 }
-    //                                 _ => {
-    //                                     filters.push(format!(
-    //                                         "p.status > {}",
-    //                                         BountyStatus::UnderReview.to_i16()
-    //                                     ));
-    //                                 }
-    //                             }
-    //                         }
-    //                     } else {
-    //                         return Ok(Vec::new());
-    //                     }
-    //                 }
-    //                 _ => {}
-    //             }
-    //         }
-    //     }
-    //     if category_id.is_some() {
-    //         filters.push(format!("${index} = ANY(p.category)"));
-    //     }
-    //     if !filters.is_empty() {
-    //         query = format!("{} WHERE {}", &query, &filters.join(" AND "));
-    //     }
-    //     query = format!("{} ORDER BY p.updated_at DESC LIMIT $1 OFFSET $2", &query);
-    //     let mut query = sqlx::query_as::<_, BountyItem>(&query)
-    //         .bind(limit.unwrap_or(5))
-    //         .bind(offset.unwrap_or(0));
-    //     if let Some(title) = title.as_ref().filter(|s| !s.is_empty()) {
-    //         query = query.bind(format!("%{}%", title));
-    //     }
-    //     if is_mine.unwrap_or_default() {
-    //         if let Some(user_id) = user_id {
-    //             query = query.bind(user_id);
-    //             if let Some(s) = status {
-    //                 query = query.bind(s);
-    //             }
-    //         }
-    //     } else {
-    //         if is_public.unwrap_or_default() {
-    //             if let Some(s) = status {
-    //                 query = query.bind(s);
-    //             }
-    //         } else {
-    //             match role {
-    //                 Some(r) if r == UserRoleType::Admin.to_string() => {
-    //                     if let Some(s) = status {
-    //                         query = query.bind(s);
-    //                     }
-    //                 }
-    //                 Some(r) if r == UserRoleType::Editor.to_string() => {
-    //                     if let Some(user_id) = user_id {
-    //                         query = query.bind(user_id);
-    //                     }
-    //                 }
-    //                 _ => {}
-    //             }
-    //         }
-    //     }
-    //     if let Some(category_id) = category_id {
-    //         query = query.bind(category_id)
-    //     }
-    //     let bountys = query.fetch_all(self.db_conn.get_pool()).await?;
-    //     Ok(bountys)
-    // }
+    pub async fn get_bounties(
+        &self,
+        title: Option<String>,
+        status: Option<BountyStatus>,
+        category_id: Option<Uuid>,
+        difficulty: Option<BountyDifficulty>,
+        role: Option<String>,
+        user_id: Option<Uuid>,
+        is_mine: Option<bool>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<Bounty>, SqlxError> {
+        let mut filters = Vec::new();
+        let mut index = 3;
+        let mut query = format!("SELECT b.* FROM bounty b");
+        if title.as_ref().map_or(false, |s| !s.is_empty()) {
+            filters.push(format!("b.title ILIKE ${index}"));
+            index += 1;
+        }
+        if status.is_some() {
+            filters.push(format!("b.status = ${index}"));
+            index += 1;
+        }
+        if category_id.is_some() {
+            filters.push(format!("b.category = ${index}"));
+            index += 1;
+        }
+        if difficulty.is_some() {
+            filters.push(format!("b.difficulty = ${index}"));
+            index += 1;
+        }
+        if role.as_deref().unwrap_or_default() == UserRoleType::Funder.to_string() {
+            if is_mine.unwrap_or_default() {
+                if user_id.is_some() {
+                    filters.push(format!("b.user_id = ${index}"));
+                } else {
+                    return Ok(Vec::new());
+                }
+            }
+        }
+        if !filters.is_empty() {
+            query = format!("{} WHERE {}", &query, &filters.join(" AND "));
+        }
+        query = format!("{} ORDER BY b.updated_at DESC LIMIT $1 OFFSET $2", &query);
+        let mut query = sqlx::query_as::<_, Bounty>(&query)
+            .bind(limit.unwrap_or(5))
+            .bind(offset.unwrap_or(0));
+        if let Some(t) = title.as_ref().filter(|s| !s.is_empty()) {
+            query = query.bind(format!("%{}%", t));
+        }
+        if let Some(s) = status {
+            query = query.bind(s);
+        }
+        if let Some(c) = category_id {
+            query = query.bind(c)
+        }
+        if let Some(d) = difficulty {
+            query = query.bind(d)
+        }
+        if role.as_deref().unwrap_or_default() == UserRoleType::Funder.to_string() {
+            if is_mine.unwrap_or_default() {
+                if let Some(user_id) = user_id {
+                    query = query.bind(user_id);
+                }
+            }
+        }
+        let bounties = query.fetch_all(self.db_conn.get_pool()).await?;
+        Ok(bounties)
+    }
+
+    pub async fn create_bid(
+        &self,
+        bounty_id: Uuid,
+        nerd_id: &str,
+        user_id: Uuid,
+        title: String,
+        description: String,
+        bid_amount: i32,
+        timeline: String,
+        technical_approach: String,
+        relevant_experience: String,
+        budget_breakdown: String,
+        upload_files: Vec<String>,
+    ) -> Result<Bid, SqlxError> {
+        let bid = sqlx::query_as::<_, Bid>("INSERT INTO bid (bounty_id, nerd_id, user_id, status, title, description, bid_amount, timeline, technical_approach, relevant_experience, budget_breakdown, upload_files) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *")
+            .bind(bounty_id)
+            .bind(nerd_id)
+            .bind(user_id)
+            .bind(BidStatus::Submitted)
+            .bind(title)
+            .bind(description)
+            .bind(bid_amount)
+            .bind(timeline)
+            .bind(technical_approach)
+            .bind(relevant_experience)
+            .bind(budget_breakdown)
+            .bind(upload_files)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(bid)
+    }
+
+    pub async fn create_bid_milestone(
+        &self,
+        bid_id: Uuid,
+        bounty_id: Uuid,
+        nerd_id: &str,
+        number: i16,
+        title: String,
+        description: String,
+        amount: i32,
+        timeline: String,
+    ) -> Result<BidMilestone, SqlxError> {
+        let bid_milestone = sqlx::query_as::<_, BidMilestone>("INSERT INTO bid_milestone (bid_id, bounty_id, nerd_id, number, title, description, amount, timeline) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *")
+            .bind(bid_id)
+            .bind(bounty_id)
+            .bind(nerd_id)
+            .bind(number)
+            .bind(title)
+            .bind(description)
+            .bind(amount)
+            .bind(timeline)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(bid_milestone)
+    }
 
     // pub async fn update_bounty_status(
     //     &self,
