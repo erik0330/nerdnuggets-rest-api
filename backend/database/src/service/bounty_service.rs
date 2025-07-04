@@ -117,6 +117,22 @@ impl BountyService {
         self.bounty_to_info(&bounty).await
     }
 
+    pub async fn delete_bounty(&self, id: &str, user_id: Uuid) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        let bounty = self
+            .bounty_repo
+            .get_bounty_by_id(id)
+            .await
+            .ok_or(DbError::Str("Bounty not found".to_string()))?;
+        if bounty.user_id != user_id {
+            return Err(DbError::Str("No permission".to_string()).into());
+        }
+        if !self.bounty_repo.delete_bounty(id).await.unwrap_or_default() {
+            return Err(DbError::Str("Delete bounty failed".to_string()).into());
+        }
+        Ok(true)
+    }
+
     pub async fn get_bounties(
         &self,
         title: Option<String>,
@@ -146,9 +162,8 @@ impl BountyService {
             .map_err(|_| DbError::Str("Get bounties failed".to_string()))?;
         let mut bounty_infos = Vec::new();
         for bounty in bounties {
-            if let Some(user) = self.user_repo.get_user_by_id(bounty.user_id).await {
-                let category = self.util_repo.get_category_by_id(bounty.category).await;
-                bounty_infos.push(bounty.to_info(user.to_info(), category, Vec::new()));
+            if let Ok(bounty_info) = self.bounty_to_info(&bounty).await {
+                bounty_infos.push(bounty_info);
             }
         }
         Ok(bounty_infos)
