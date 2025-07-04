@@ -92,6 +92,17 @@ impl BountyRepository {
         Ok(bounty)
     }
 
+    pub async fn delete_bounty(
+        &self,
+        id: Uuid,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("DELETE FROM bounty WHERE id = $1")
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
     pub async fn create_milestone(
         &self,
         bounty_id: Uuid,

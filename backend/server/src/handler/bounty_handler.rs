@@ -23,6 +23,15 @@ pub async fn create_bounty(
     Ok(Json(bounty))
 }
 
+pub async fn delete_bounty(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    let res = state.service.bounty.delete_bounty(&id, user.id).await?;
+    Ok(Json(res))
+}
+
 pub async fn get_bounties(
     Extension(user): Extension<Option<User>>,
     Extension(role): Extension<Option<String>>,
