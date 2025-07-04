@@ -1,6 +1,7 @@
 use crate::{
     handler::{
         bounty_handler::{get_bounties, get_bounty_by_id},
+        prediction_handler::{get_prediction_by_id, get_predictions},
         project_handler::{get_daos, get_project_ids, get_projects},
         util_handler::{get_categories, get_category_by_id},
     },
@@ -17,4 +18,6 @@ pub fn routes() -> Router<AppState> {
         .route("/dao", get(get_daos))
         .route("/bounty", get(get_bounties))
         .route("/bounty/:id", get(get_bounty_by_id))
+        .route("/prediction", get(get_predictions))
+        .route("/prediction/:id", get(get_prediction_by_id))
 }
