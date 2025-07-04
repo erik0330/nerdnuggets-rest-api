@@ -10,6 +10,7 @@ CREATE TABLE
         title TEXT,
         description TEXT,
         upload_file VARCHAR(255),
+        cover_photo VARCHAR(255),
         category UUID NOT NULL,
         difficulty SMALLINT DEFAULT 0,
         tags TEXT[] DEFAULT ARRAY[]::TEXT[],
