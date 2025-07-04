@@ -1,4 +1,5 @@
 mod affiliation;
+mod bounty;
 mod city_list;
 mod dao;
 mod degree;
@@ -15,6 +16,7 @@ mod values;
 mod wallpaper;
 
 pub use affiliation::*;
+pub use bounty::*;
 pub use city_list::*;
 pub use dao::*;
 pub use degree::*;

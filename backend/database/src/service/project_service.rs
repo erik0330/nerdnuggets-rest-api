@@ -67,7 +67,7 @@ impl ProjectService {
             let rand = generate_random_number(1000, 9999);
             let nerd_id = format!("RP-{}-{}", year, rand);
             if self.project_repo.check_nerd_id(&nerd_id).await {
-                break (nerd_id, year * 1000 + rand as i32);
+                break (nerd_id, year * 10000 + rand as i32);
             }
         };
         let project = self

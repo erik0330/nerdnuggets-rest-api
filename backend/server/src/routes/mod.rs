@@ -1,4 +1,5 @@
 mod auth;
+mod bounty;
 mod project;
 mod public;
 mod user;
@@ -50,6 +51,7 @@ pub async fn routes(db_conn: Arc<DatabasePool>, env: Env) -> IntoMakeService<Rou
 
         let app_state = AppState::init(&db_conn, env, s3_client, ses_client);
         Router::new()
+            .merge(bounty::routes())
             .merge(project::routes())
             .merge(user::routes())
             .merge(util::routes())
@@ -70,16 +72,13 @@ pub async fn routes(db_conn: Arc<DatabasePool>, env: Env) -> IntoMakeService<Rou
     let cors = CorsLayer::new()
         .allow_origin(if production {
             vec![
-                "https://www.nerdnuggets.com"
+                "https://www.nerdnuggets.org"
                     .parse::<HeaderValue>()
                     .unwrap(),
                 "https://www.nerdbunny.com".parse::<HeaderValue>().unwrap(),
             ]
         } else {
             vec![
-                "https://nerdnuggets.vercel.app"
-                    .parse::<HeaderValue>()
-                    .unwrap(),
                 "http://localhost:3000".parse::<HeaderValue>().unwrap(),
                 "http://localhost:3001".parse::<HeaderValue>().unwrap(),
                 "http://localhost:3002".parse::<HeaderValue>().unwrap(),

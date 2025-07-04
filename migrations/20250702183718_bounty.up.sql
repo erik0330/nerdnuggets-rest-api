@@ -1,0 +1,34 @@
+-- Add up migration script here
+
+CREATE TABLE
+    IF NOT EXISTS bounty (
+        id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+        nerd_id VARCHAR(255) NOT NULL,
+        contract_id BIGINT NOT NULL,
+        user_id UUID NOT NULL,
+        status SMALLINT DEFAULT 0,
+        title TEXT,
+        description TEXT,
+        upload_file VARCHAR(255),
+        category UUID NOT NULL,
+        difficulty SMALLINT DEFAULT 0,
+        tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+        reward_amount INT,
+        reward_currency VARCHAR(255),
+        deadline DATE NOT NULL,
+        requirements TEXT[] DEFAULT ARRAY[]::TEXT[],
+        deliverables TEXT[] DEFAULT ARRAY[]::TEXT[],
+        evaluation_criteria TEXT[] DEFAULT ARRAY[]::TEXT[],
+        by_milestone BOOLEAN DEFAULT false,
+        admin_notes TEXT,
+        cancellation_reason TEXT,
+        count_view INT DEFAULT 0,
+        count_comment INT DEFAULT 0,
+        count_bid INT DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now(),
+        approved_at TIMESTAMPTZ,
+        rejected_at TIMESTAMPTZ,
+        canceled_at TIMESTAMPTZ,
+        started_at TIMESTAMPTZ
+    );

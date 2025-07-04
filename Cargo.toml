@@ -6,7 +6,7 @@ members = [
     "backend/libraries/types",
     "backend/libraries/utils",
     "backend/server",
-    "backend/notification_websockets",
+    "backend/notification_websockets", "backend/libraries/postgres_macro",
 ]
 resolver = "2"
 
