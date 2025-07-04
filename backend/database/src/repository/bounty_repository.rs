@@ -53,6 +53,7 @@ impl BountyRepository {
         title: String,
         description: String,
         upload_file: Option<String>,
+        cover_photo: Option<String>,
         category: Uuid,
         difficulty: BountyDifficulty,
         tags: Option<Vec<String>>,
@@ -65,8 +66,8 @@ impl BountyRepository {
         by_milestone: bool,
     ) -> Result<Bounty, SqlxError> {
         let bounty = sqlx::query_as::<_, Bounty>(
-            "INSERT INTO bounty (user_id, nerd_id, contract_id, status, title, description, upload_file, category, difficulty, tags, reward_amount, reward_currency, deadline, requirements, deliverables, evaluation_criteria, by_milestone)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *",
+            "INSERT INTO bounty (user_id, nerd_id, contract_id, status, title, description, upload_file, cover_photo, category, difficulty, tags, reward_amount, reward_currency, deadline, requirements, deliverables, evaluation_criteria, by_milestone)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *",
         )
         .bind(user_id)
         .bind(nerd_id)
@@ -75,6 +76,7 @@ impl BountyRepository {
         .bind(title)
         .bind(description)
         .bind(upload_file)
+        .bind(cover_photo)
         .bind(category)
         .bind(difficulty)
         .bind(tags)

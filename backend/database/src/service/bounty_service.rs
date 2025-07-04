@@ -77,6 +77,7 @@ impl BountyService {
                 payload.title,
                 payload.description,
                 payload.upload_file,
+                payload.cover_photo,
                 payload.category,
                 payload.difficulty,
                 payload.tags,

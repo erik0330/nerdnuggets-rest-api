@@ -10,6 +10,7 @@ pub struct BountyCreateRequest {
     pub title: String,
     pub description: String,
     pub upload_file: Option<String>,
+    pub cover_photo: Option<String>,
     pub category: Uuid,
     pub difficulty: BountyDifficulty,
     pub tags: Option<Vec<String>>,
