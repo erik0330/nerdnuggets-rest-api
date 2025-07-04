@@ -10,6 +10,6 @@ use axum::{
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/bounty", post(create_bounty))
-        .route("/bounty", delete(delete_bounty))
+        .route("/bounty/:id", delete(delete_bounty))
         .route("/bounty/:id/bid", post(submit_bid))
 }
