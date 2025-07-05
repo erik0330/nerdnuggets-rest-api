@@ -1,10 +1,11 @@
 use crate::pool::DatabasePool;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
     models::{
-        Dao, DaoVote, Milestone, Project, ProjectComment, ProjectIds, ProjectItem, TeamMember,
+        Dao, DaoVote, Milestone, Prediction, PredictionStatus, Project, ProjectComment, ProjectIds,
+        ProjectItem, TeamMember,
     },
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
@@ -38,9 +39,21 @@ impl ProjectRepository {
             .unwrap_or(None)
     }
 
-    pub async fn check_nerd_id(&self, nerd_id: &str) -> bool {
+    pub async fn check_project_nerd_id(&self, nerd_id: &str) -> bool {
         let count = sqlx::query!(
             "SELECT COUNT(*) as count FROM project WHERE nerd_id = $1",
+            nerd_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await
+        .map(|row| row.count.unwrap_or(0))
+        .unwrap_or(0);
+        count == 0
+    }
+
+    pub async fn check_prediction_nerd_id(&self, nerd_id: &str) -> bool {
+        let count = sqlx::query!(
+            "SELECT COUNT(*) as count FROM prediction WHERE nerd_id = $1",
             nerd_id
         )
         .fetch_one(self.db_conn.get_pool())
@@ -583,5 +596,42 @@ impl ProjectRepository {
         .execute(self.db_conn.get_pool())
         .await?;
         Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn create_predictions(
+        &self,
+        nerd_id: &str,
+        contract_id: i64,
+        milestone: &Milestone,
+        project_id: Uuid,
+        project_nerd_id: &str,
+        project_title: &str,
+        user_id: Uuid,
+        cover_photo: Option<String>,
+        category: Vec<Uuid>,
+        tags: Vec<String>,
+        started_at: NaiveDate,
+        ended_at: NaiveDate,
+    ) -> Result<Prediction, SqlxError> {
+        let prediction = sqlx::query_as::<_, Prediction>("INSERT INTO prediction (nerd_id, contract_id, status, milestone_id, title, description, funding_amount, project_id, project_nerd_id, project_title, user_id, cover_photo, category, tags, started_at, ended_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)")
+            .bind(nerd_id)
+            .bind(contract_id)
+            .bind(PredictionStatus::Active)
+            .bind(milestone.id)
+            .bind(&milestone.title)
+            .bind(&milestone.description)
+            .bind(milestone.funding_amount)
+            .bind(project_id)
+            .bind(project_nerd_id)
+            .bind(project_title)
+            .bind(user_id)
+            .bind(cover_photo)
+            .bind(category)
+            .bind(tags)
+            .bind(started_at)
+            .bind(ended_at)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(prediction)
     }
 }
