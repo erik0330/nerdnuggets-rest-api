@@ -2,9 +2,12 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
-use types::dto::{BountyCreateRequest, GetBountysOption, SubmitBidRequest};
+use types::dto::{
+    BountyCreateRequest, GetBountyCommentsOption, GetBountysOption, SubmitBidRequest,
+    SubmitBountyCommentRequest,
+};
 use types::error::{ApiError, ValidatedRequest};
-use types::models::{BidInfo, BountyInfo, User};
+use types::models::{BidInfo, BountyCommentInfo, BountyInfo, User};
 
 pub async fn get_bounty_by_id(
     Path(id): Path<String>,
@@ -138,34 +141,34 @@ pub async fn submit_bid(
 //     Ok(Json(state.service.bounty.get_milestones(&id).await?))
 // }
 
-// pub async fn get_bounty_comments(
-//     Path(id): Path<String>,
-//     Query(opts): Query<GetBountyCommentsOption>,
-//     State(state): State<AppState>,
-// ) -> Result<Json<Vec<BountyCommentInfo>>, ApiError> {
-//     Ok(Json(
-//         state
-//             .service
-//             .bounty
-//             .get_bounty_comments(&id, opts.offset, opts.limit)
-//             .await?,
-//     ))
-// }
+pub async fn get_bounty_comments(
+    Path(id): Path<String>,
+    Query(opts): Query<GetBountyCommentsOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<BountyCommentInfo>>, ApiError> {
+    Ok(Json(
+        state
+            .service
+            .bounty
+            .get_bounty_comments(&id, opts.offset, opts.limit)
+            .await?,
+    ))
+}
 
-// pub async fn submit_bounty_comment(
-//     Extension(user): Extension<User>,
-//     Path(id): Path<String>,
-//     State(state): State<AppState>,
-//     ValidatedRequest(payload): ValidatedRequest<SubmitBountyCommentRequest>,
-// ) -> Result<Json<bool>, ApiError> {
-//     Ok(Json(
-//         state
-//             .service
-//             .bounty
-//             .submit_bounty_comment(&id, user.id, &payload.comment)
-//             .await?,
-//     ))
-// }
+pub async fn submit_bounty_comment(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SubmitBountyCommentRequest>,
+) -> Result<Json<bool>, ApiError> {
+    Ok(Json(
+        state
+            .service
+            .bounty
+            .submit_bounty_comment(&id, user.id, &payload.comment)
+            .await?,
+    ))
+}
 
 // pub async fn get_daos(
 //     Extension(user): Extension<Option<User>>,

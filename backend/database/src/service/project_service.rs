@@ -1,5 +1,5 @@
 use crate::{pool::DatabasePool, ProjectRepository, UserRepository, UtilRepository};
-use chrono::{Datelike, Utc};
+use chrono::{Datelike, Duration, Utc};
 use std::sync::Arc;
 use types::{
     dto::{
@@ -66,7 +66,7 @@ impl ProjectService {
             let year = Utc::now().year();
             let rand = generate_random_number(1000, 9999);
             let nerd_id = format!("RP-{}-{}", year, rand);
-            if self.project_repo.check_nerd_id(&nerd_id).await {
+            if self.project_repo.check_project_nerd_id(&nerd_id).await {
                 break (nerd_id, year * 10000 + rand as i32);
             }
         };
@@ -341,6 +341,38 @@ impl ProjectService {
                         )
                         .into());
                     }
+                }
+                let mut started_at = Utc::now().date_naive();
+                for milestone in milestones {
+                    let (nerd_id, contract_id) = loop {
+                        let year = Utc::now().year();
+                        let rand = generate_random_number(1000, 9999);
+                        let nerd_id = format!("PN-{}-{}", year, rand);
+                        if self.project_repo.check_prediction_nerd_id(&nerd_id).await {
+                            break (nerd_id, year * 10000 + rand as i32);
+                        }
+                    };
+                    let ended_at =
+                        Utc::now().date_naive() + Duration::days(milestone.days_after_start as i64);
+                    let _ = self
+                        .project_repo
+                        .create_predictions(
+                            &nerd_id,
+                            contract_id as i64,
+                            &milestone,
+                            project.id,
+                            &project.nerd_id,
+                            &project.title.clone().unwrap_or_default(),
+                            project.user_id,
+                            project.cover_photo.clone(),
+                            project.category.clone(),
+                            project.tags.clone(),
+                            started_at,
+                            ended_at,
+                        )
+                        .await
+                        .map_err(|e| DbError::Str(e.to_string()));
+                    started_at = ended_at + Duration::days(1);
                 }
             }
         } else {
