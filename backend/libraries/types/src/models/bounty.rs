@@ -156,6 +156,26 @@ pub struct BidMilestone {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+pub struct BountyComment {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub bounty_id: Uuid,
+    pub nerd_id: String,
+    pub comment: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyCommentInfo {
+    pub id: Uuid,
+    pub user: UserInfo,
+    pub comment: String,
+    pub created_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
 pub enum BountyStatus {
     PendingApproval,
@@ -279,6 +299,17 @@ impl Bid {
             rejected_at: self.rejected_at,
             canceled_at: self.canceled_at,
             completed_at: self.completed_at,
+        }
+    }
+}
+
+impl BountyComment {
+    pub fn to_info(&self, user: UserInfo) -> BountyCommentInfo {
+        BountyCommentInfo {
+            id: self.id,
+            user,
+            comment: self.comment.clone(),
+            created_at: self.created_at,
         }
     }
 }

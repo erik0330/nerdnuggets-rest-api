@@ -2,7 +2,7 @@ use crate::pool::DatabasePool;
 use chrono::NaiveDate;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::{models::{Bid, BidMilestone, BidStatus, Bounty, BountyDifficulty, BountyMilestone, BountyStatus}, UserRoleType};
+use types::{models::{Bid, BidMilestone, BidStatus, Bounty, BountyComment, BountyDifficulty, BountyMilestone, BountyStatus}, UserRoleType};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -390,39 +390,39 @@ impl BountyRepository {
     //     Ok(row.rows_affected() == 1)
     // }
 
-    // pub async fn get_bounty_comments(
-    //     &self,
-    //     id: Uuid,
-    //     offset: Option<i32>,
-    //     limit: Option<i32>,
-    // ) -> Result<Vec<BountyComment>, SqlxError> {
-    //     let bounty_comments = sqlx::query_as::<_, BountyComment>(
-    //         "SELECT * FROM bounty_comment WHERE bounty_id = $1 ORDER BY updated_at LIMIT $2 OFFSET $3",
-    //     )
-    //     .bind(id)
-    //     .bind(limit.unwrap_or(10))
-    //     .bind(offset.unwrap_or(0))
-    //     .fetch_all(self.db_conn.get_pool())
-    //     .await?;
-    //     Ok(bounty_comments)
-    // }
+    pub async fn get_bounty_comments(
+        &self,
+        id: Uuid,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyComment>, SqlxError> {
+        let bounty_comments = sqlx::query_as::<_, BountyComment>(
+            "SELECT * FROM bounty_comment WHERE bounty_id = $1 ORDER BY created_at LIMIT $2 OFFSET $3",
+        )
+        .bind(id)
+        .bind(limit.unwrap_or(10))
+        .bind(offset.unwrap_or(0))
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(bounty_comments)
+    }
 
-    // pub async fn submit_bounty_comment(
-    //     &self,
-    //     user_id: Uuid,
-    //     bounty_id: Uuid,
-    //     nerd_id: &str,
-    //     comment: &str,
-    // ) -> Result<bool, SqlxError> {
-    //     let row = sqlx::query("INSERT INTO bounty_comment (user_id, bounty_id, nerd_id, comment) VALUES ($1, $2, $3, $4)")
-    //         .bind(user_id)
-    //         .bind(bounty_id)
-    //         .bind(nerd_id)
-    //         .bind(comment)
-    //         .execute(self.db_conn.get_pool())
-    //         .await?;
-    //     Ok(row.rows_affected() == 1)
-    // }
+    pub async fn submit_bounty_comment(
+        &self,
+        user_id: Uuid,
+        bounty_id: Uuid,
+        nerd_id: &str,
+        comment: &str,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("INSERT INTO bounty_comment (user_id, bounty_id, nerd_id, comment) VALUES ($1, $2, $3, $4)")
+            .bind(user_id)
+            .bind(bounty_id)
+            .bind(nerd_id)
+            .bind(comment)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
 
     // pub async fn get_daos(
     //     &self,

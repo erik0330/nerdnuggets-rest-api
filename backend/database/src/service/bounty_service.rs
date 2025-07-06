@@ -4,7 +4,9 @@ use std::sync::Arc;
 use types::{
     dto::{BountyCreateRequest, SubmitBidRequest},
     error::{ApiError, DbError, UserError},
-    models::{BidInfo, Bounty, BountyDifficulty, BountyInfo, BountyStatus, User},
+    models::{
+        BidInfo, Bounty, BountyCommentInfo, BountyDifficulty, BountyInfo, BountyStatus, User,
+    },
 };
 use utils::commons::{generate_random_number, uuid_from_str};
 use uuid::Uuid;
@@ -348,43 +350,43 @@ impl BountyService {
     //         Ok(self.bounty_repo.get_milestones(uuid_from_str(id)?).await)
     //     }
 
-    //     pub async fn get_bounty_comments(
-    //         &self,
-    //         id: &str,
-    //         offset: Option<i32>,
-    //         limit: Option<i32>,
-    //     ) -> Result<Vec<BountyCommentInfo>, ApiError> {
-    //         let bounty_comments = self
-    //             .bounty_repo
-    //             .get_bounty_comments(uuid_from_str(id)?, offset, limit)
-    //             .await
-    //             .unwrap_or_default();
-    //         let mut pc_infos = Vec::new();
-    //         for pc in bounty_comments {
-    //             if let Some(user) = self.user_repo.get_user_by_id(pc.user_id).await {
-    //                 pc_infos.push(pc.to_info(user.to_info()));
-    //             }
-    //         }
-    //         Ok(pc_infos)
-    //     }
+    pub async fn get_bounty_comments(
+        &self,
+        id: &str,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyCommentInfo>, ApiError> {
+        let bounty_comments = self
+            .bounty_repo
+            .get_bounty_comments(uuid_from_str(id)?, offset, limit)
+            .await
+            .unwrap_or_default();
+        let mut pc_infos = Vec::new();
+        for pc in bounty_comments {
+            if let Some(user) = self.user_repo.get_user_by_id(pc.user_id).await {
+                pc_infos.push(pc.to_info(user.to_info()));
+            }
+        }
+        Ok(pc_infos)
+    }
 
-    //     pub async fn submit_bounty_comment(
-    //         &self,
-    //         id: &str,
-    //         user_id: Uuid,
-    //         comment: &str,
-    //     ) -> Result<bool, ApiError> {
-    //         let res = if let Some(bounty) = self.bounty_repo.get_bounty_by_id(uuid_from_str(id)?).await
-    //         {
-    //             self.bounty_repo
-    //                 .submit_bounty_comment(user_id, bounty.id, &bounty.nerd_id, comment)
-    //                 .await
-    //                 .unwrap_or_default()
-    //         } else {
-    //             false
-    //         };
-    //         Ok(res)
-    //     }
+    pub async fn submit_bounty_comment(
+        &self,
+        id: &str,
+        user_id: Uuid,
+        comment: &str,
+    ) -> Result<bool, ApiError> {
+        let res = if let Some(bounty) = self.bounty_repo.get_bounty_by_id(uuid_from_str(id)?).await
+        {
+            self.bounty_repo
+                .submit_bounty_comment(user_id, bounty.id, &bounty.nerd_id, comment)
+                .await
+                .unwrap_or_default()
+        } else {
+            false
+        };
+        Ok(res)
+    }
 
     //     pub async fn get_daos(
     //         &self,
