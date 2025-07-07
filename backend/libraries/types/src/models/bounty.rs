@@ -185,6 +185,7 @@ pub enum BountyStatus {
     UnderReview,
     Completed,
     Cancelled,
+    RequestRevision,
 }
 
 define_pg_enum!(BountyStatus {
@@ -195,6 +196,20 @@ define_pg_enum!(BountyStatus {
     UnderReview = 4,
     Completed = 5,
     Cancelled = 6,
+    RequestRevision = 7,
+});
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
+pub enum BountyReviewType {
+    Approve,
+    RequestRevision,
+    Reject,
+}
+
+define_pg_enum!(BountyReviewType {
+    Approve = 0,
+    RequestRevision = 1,
+    Reject = 2,
 });
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
