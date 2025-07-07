@@ -5,7 +5,8 @@ use types::{
     dto::{BountyCreateRequest, SubmitBidRequest},
     error::{ApiError, DbError, UserError},
     models::{
-        BidInfo, Bounty, BountyCommentInfo, BountyDifficulty, BountyInfo, BountyStatus, User,
+        BidInfo, Bounty, BountyCommentInfo, BountyDifficulty, BountyInfo, BountyReviewType,
+        BountyStatus, User,
     },
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -230,126 +231,6 @@ impl BountyService {
         Ok(bid.to_info(user.to_info(), milestones))
     }
 
-    //     pub async fn decide_editor(
-    //         &self,
-    //         id: &str,
-    //         editor_id: Uuid,
-    //         status: FeedbackStatus,
-    //         feedback: Option<String>,
-    //     ) -> Result<bool, ApiError> {
-    //         let id = uuid_from_str(id)?;
-    //         if !self
-    //             .bounty_repo
-    //             .update_bounty_editor(id, editor_id, &status, feedback)
-    //             .await
-    //             .unwrap_or_default()
-    //         {
-    //             return Err(DbError::Str("Update bounty editor failed".to_string()).into());
-    //         }
-    //         let status = match status {
-    //             FeedbackStatus::Accepted => BountyStatus::ApprovedEditor,
-    //             FeedbackStatus::RevisionRequired => BountyStatus::RevisionEditor,
-    //             FeedbackStatus::Rejected => BountyStatus::Rejected,
-    //             FeedbackStatus::Pending => {
-    //                 return Err(DbError::Str("Status should not be Pending".to_string()).into());
-    //             }
-    //         };
-    //         if !self
-    //             .bounty_repo
-    //             .update_bounty_status(id, &status)
-    //             .await
-    //             .unwrap_or_default()
-    //         {
-    //             return Err(DbError::Str(
-    //                 "Can't update the status of the bounty when editor decision".to_string(),
-    //             )
-    //             .into());
-    //         }
-    //         Ok(true)
-    //     }
-
-    //     pub async fn decide_admin(
-    //         &self,
-    //         id: &str,
-    //         status: FeedbackStatus,
-    //         feedback: Option<String>,
-    //         to_dao: bool,
-    //     ) -> Result<bool, ApiError> {
-    //         let id = uuid_from_str(id)?;
-    //         let (status, dao_at, started_at) = match status {
-    //             FeedbackStatus::Accepted if to_dao => (BountyStatus::DaoVoting, Some(Utc::now()), None),
-    //             FeedbackStatus::Accepted => (BountyStatus::Funding, None, Some(Utc::now())),
-    //             FeedbackStatus::RevisionRequired => (BountyStatus::RevisionAdmin, None, None),
-    //             FeedbackStatus::Rejected => (BountyStatus::Rejected, None, None),
-    //             FeedbackStatus::Pending => {
-    //                 return Err(DbError::Str("Status should not be Pending".to_string()).into());
-    //             }
-    //         };
-    //         if let Ok(bounty) = self
-    //             .bounty_repo
-    //             .decide_admin(id, &status, feedback, dao_at, started_at)
-    //             .await
-    //         {
-    //             if bounty.status == BountyStatus::DaoVoting.to_i16() {
-    //                 if !self
-    //                     .bounty_repo
-    //                     .create_dao(&bounty)
-    //                     .await
-    //                     .unwrap_or_default()
-    //                 {
-    //                     return Err(DbError::Str("Create dao failed".to_string()).into());
-    //                 }
-    //             } else if bounty.status == BountyStatus::Funding.to_i16() {
-    //                 let milestones = self.bounty_repo.get_milestones(bounty.id).await;
-    //                 if !milestones.is_empty() {
-    //                     if !self
-    //                         .bounty_repo
-    //                         .update_milestone_status(milestones[0].id, 1i16)
-    //                         .await
-    //                         .unwrap_or_default()
-    //                     {
-    //                         return Err(DbError::Str(
-    //                             "Update milestone.0 status to 'In Progress' failed".to_string(),
-    //                         )
-    //                         .into());
-    //                     }
-    //                 }
-    //             }
-    //         } else {
-    //             return Err(DbError::Str("Admin decision failed".to_string()).into());
-    //         }
-    //         Ok(true)
-    //     }
-
-    //     pub async fn update_milestone(
-    //         &self,
-    //         id: &str,
-    //         payload: UpdateMilestoneRequest,
-    //     ) -> Result<bool, ApiError> {
-    //         let proof_status = if payload.is_draft { 0 } else { 1 };
-    //         if !self
-    //             .bounty_repo
-    //             .update_milestone(
-    //                 uuid_from_str(id)?,
-    //                 payload.description,
-    //                 payload.deliverables,
-    //                 payload.challenges,
-    //                 payload.next_steps,
-    //                 payload.file_urls.unwrap_or_default(),
-    //                 proof_status,
-    //             )
-    //             .await
-    //             .unwrap_or_default()
-    //         {
-    //             return Err(DbError::Str("Update milestone failed".to_string()).into());
-    //         }
-    //         Ok(true)
-    //     }
-
-    //     pub async fn get_milestones(&self, id: &str) -> Result<Vec<Milestone>, ApiError> {
-    //         Ok(self.bounty_repo.get_milestones(uuid_from_str(id)?).await)
-    //     }
-
     pub async fn get_bounty_comments(
         &self,
         id: &str,
@@ -388,62 +269,36 @@ impl BountyService {
         Ok(res)
     }
 
-    //     pub async fn get_daos(
-    //         &self,
-    //         title: Option<String>,
-    //         status: Option<i16>,
-    //         user_id: Option<Uuid>,
-    //         is_mine: Option<bool>,
-    //         offset: Option<i32>,
-    //         limit: Option<i32>,
-    //     ) -> Result<Vec<Dao>, ApiError> {
-    //         let daos = self
-    //             .bounty_repo
-    //             .get_daos(title, status, user_id, is_mine, offset, limit)
-    //             .await
-    //             .map_err(|_| DbError::Str("Get daos failed".to_string()))?;
-    //         Ok(daos)
-    //     }
-
-    //     pub async fn get_dao_by_id(&self, id: &str) -> Result<Dao, ApiError> {
-    //         let dao = self
-    //             .bounty_repo
-    //             .get_dao_by_id(uuid_from_str(id)?)
-    //             .await
-    //             .map_err(|_| DbError::Str("Get dao by id failed".to_string()))?;
-    //         Ok(dao)
-    //     }
-
-    //     pub async fn get_my_dao_vote(
-    //         &self,
-    //         id: &str,
-    //         user_id: Uuid,
-    //     ) -> Result<Option<DaoVote>, ApiError> {
-    //         let dao_vote = self
-    //             .bounty_repo
-    //             .get_my_dao_vote(uuid_from_str(id)?, user_id)
-    //             .await;
-    //         Ok(dao_vote)
-    //     }
-
-    //     pub async fn submit_dao_vote(
-    //         &self,
-    //         id: &str,
-    //         user_id: Uuid,
-    //         status: i16,
-    //         comment: Option<String>,
-    //     ) -> Result<bool, ApiError> {
-    //         if status != 1 && status != 2 {
-    //             return Err(DbError::Str("Status invalid".to_string()))?;
-    //         }
-    //         if !self
-    //             .bounty_repo
-    //             .submit_dao_vote(uuid_from_str(id)?, user_id, status, comment)
-    //             .await
-    //             .unwrap_or_default()
-    //         {
-    //             return Err(DbError::Str("Submit vote failed".to_string()).into());
-    //         }
-    //         Ok(true)
-    //     }
+    pub async fn review_bounty(
+        &self,
+        id: &str,
+        status: BountyReviewType,
+        admin_notes: Option<String>,
+    ) -> Result<bool, ApiError> {
+        let (status, approved_at, rejected_at) = match status {
+            BountyReviewType::Approve => (BountyStatus::Open, Some(Utc::now()), None),
+            BountyReviewType::RequestRevision => (BountyStatus::RequestRevision, None, None),
+            BountyReviewType::Reject => (BountyStatus::Rejected, None, Some(Utc::now())),
+        };
+        let bounty = self
+            .bounty_repo
+            .get_bounty_by_id(uuid_from_str(id)?)
+            .await
+            .ok_or(DbError::Str("Bounty not found".to_string()))?;
+        if bounty.status != BountyStatus::PendingApproval {
+            return Err(DbError::Str(
+                "The status of this bounty is not PendingApproval".to_string(),
+            )
+            .into());
+        }
+        if !self
+            .bounty_repo
+            .review_bounty(bounty.id, status, admin_notes, approved_at, rejected_at)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Review bounty failed".to_string()).into());
+        }
+        Ok(true)
+    }
 }

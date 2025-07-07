@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::models::{BountyDifficulty, BountyStatus};
+use crate::models::{BountyDifficulty, BountyReviewType, BountyStatus};
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -70,14 +70,6 @@ pub struct BidMilestoneRequest {
     pub timeline: String,
 }
 
-// #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
-// #[serde(rename_all = "camelCase")]
-// pub struct MakeDecisionRequest {
-//     pub status: i16,
-//     pub to_dao: Option<bool>,
-//     pub feedback: Option<String>,
-// }
-
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBountyCommentsOption {
@@ -89,4 +81,11 @@ pub struct GetBountyCommentsOption {
 #[serde(rename_all = "camelCase")]
 pub struct SubmitBountyCommentRequest {
     pub comment: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ReviewBountyRequest {
+    pub status: BountyReviewType,
+    pub admin_notes: Option<String>,
 }
