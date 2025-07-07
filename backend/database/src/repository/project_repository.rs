@@ -605,6 +605,7 @@ impl ProjectRepository {
         milestone: &Milestone,
         project_id: Uuid,
         project_nerd_id: &str,
+        proposal_id: i64,
         project_title: &str,
         user_id: Uuid,
         cover_photo: Option<String>,
@@ -613,16 +614,18 @@ impl ProjectRepository {
         started_at: NaiveDate,
         ended_at: NaiveDate,
     ) -> Result<Prediction, SqlxError> {
-        let prediction = sqlx::query_as::<_, Prediction>("INSERT INTO prediction (nerd_id, contract_id, status, milestone_id, title, description, funding_amount, project_id, project_nerd_id, project_title, user_id, cover_photo, category, tags, started_at, ended_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)")
+        let prediction = sqlx::query_as::<_, Prediction>("INSERT INTO prediction (nerd_id, contract_id, status, milestone_id, number, title, description, funding_amount, project_id, project_nerd_id, proposal_id, project_title, user_id, cover_photo, category, tags, started_at, ended_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)")
             .bind(nerd_id)
             .bind(contract_id)
             .bind(PredictionStatus::Active)
             .bind(milestone.id)
+            .bind(milestone.number)
             .bind(&milestone.title)
             .bind(&milestone.description)
             .bind(milestone.funding_amount)
             .bind(project_id)
             .bind(project_nerd_id)
+            .bind(proposal_id)
             .bind(project_title)
             .bind(user_id)
             .bind(cover_photo)

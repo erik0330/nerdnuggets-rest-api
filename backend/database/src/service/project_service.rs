@@ -362,6 +362,7 @@ impl ProjectService {
                             &milestone,
                             project.id,
                             &project.nerd_id,
+                            project.proposal_id,
                             &project.title.clone().unwrap_or_default(),
                             project.user_id,
                             project.cover_photo.clone(),
