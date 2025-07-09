@@ -36,6 +36,7 @@ impl User {
             institution: self.institution.clone().unwrap_or_default(),
             interests: self.interests.clone(),
             avatar_url: self.avatar_url.clone(),
+            wallet_address: self.wallet_address.clone(),
         }
     }
 }
@@ -51,4 +52,5 @@ pub struct UserInfo {
     pub institution: String,
     pub interests: Vec<String>,
     pub avatar_url: Option<String>,
+    pub wallet_address: Option<String>,
 }
