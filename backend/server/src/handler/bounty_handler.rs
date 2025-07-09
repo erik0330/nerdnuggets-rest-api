@@ -3,7 +3,7 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
 use types::dto::{
-    BountyCreateRequest, GetBountyCommentsOption, GetBountysOption, ReviewBountyRequest,
+    BountyCreateRequest, GetBountysOption, OffsetAndLimitOption, ReviewBountyRequest,
     SubmitBidRequest, SubmitBountyCommentRequest,
 };
 use types::error::{ApiError, DbError, ValidatedRequest};
@@ -60,6 +60,19 @@ pub async fn get_bounties(
     Ok(Json(res))
 }
 
+pub async fn get_bids(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    Query(opts): Query<OffsetAndLimitOption>,
+) -> Result<Json<Vec<BidInfo>>, ApiError> {
+    let bids = state
+        .service
+        .bounty
+        .get_bids(&id, opts.offset, opts.limit)
+        .await?;
+    Ok(Json(bids))
+}
+
 pub async fn submit_bid(
     Extension(user): Extension<User>,
     Path(id): Path<String>,
@@ -72,7 +85,7 @@ pub async fn submit_bid(
 
 pub async fn get_bounty_comments(
     Path(id): Path<String>,
-    Query(opts): Query<GetBountyCommentsOption>,
+    Query(opts): Query<OffsetAndLimitOption>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<BountyCommentInfo>>, ApiError> {
     Ok(Json(
