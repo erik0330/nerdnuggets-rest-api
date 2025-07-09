@@ -37,6 +37,17 @@ pub struct BountyMilestoneRequest {
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct BountyUpdateRequest {
+    pub title: String,
+    pub description: String,
+    pub reward_amount: i32,
+    pub reward_currency: String,
+    pub difficulty: BountyDifficulty,
+    pub deadline: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GetBountysOption {
     pub title: Option<String>,
     pub status: Option<BountyStatus>,

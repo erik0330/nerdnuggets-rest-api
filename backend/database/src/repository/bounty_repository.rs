@@ -92,6 +92,29 @@ impl BountyRepository {
         Ok(bounty)
     }
 
+    pub async fn update_bounty(
+        &self,
+        id: Uuid,
+        title: String,
+        description: String,
+        reward_amount: i32,
+        reward_currency: String,
+        difficulty: BountyDifficulty,
+        deadline: NaiveDate
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bounty SET title = $1, description = $2, reward_amount = $3, reward_currency = $4, difficulty = $5, deadline = $6 WHERE id = $7")
+            .bind(title)
+            .bind(description)
+            .bind(reward_amount)
+            .bind(reward_currency)
+            .bind(difficulty)
+            .bind(deadline)
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
     pub async fn delete_bounty(
         &self,
         id: Uuid,
