@@ -15,6 +15,8 @@ pub fn routes() -> Router<AppState> {
         .route("/bounty", post(create_bounty))
         .route("/bounty/:id", delete(delete_bounty))
         .route("/bounty/:id/bid", post(submit_bid))
+        // .route("/bounty/:id/bid", get(get_bids))
+        // .route("/bid/:id/win", put(select_bid_winner))
         .route("/bounty/:id/comment", get(get_bounty_comments))
         .route("/bounty/:id/comment", post(submit_bounty_comment))
         .route("/bounty/:id/review", post(review_bounty))
