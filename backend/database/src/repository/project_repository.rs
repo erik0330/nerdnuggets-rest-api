@@ -81,6 +81,14 @@ impl ProjectRepository {
         Ok(project)
     }
 
+    pub async fn delete_project(&self, id: Uuid) -> Result<bool, SqlxError> {
+        let row = sqlx::query("DELETE FROM project WHERE id = $1")
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
     pub async fn update_project_step_1(
         &self,
         id: Uuid,

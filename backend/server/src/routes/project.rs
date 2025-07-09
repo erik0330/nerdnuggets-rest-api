@@ -1,14 +1,14 @@
 use crate::{
     handler::project_handler::{
-        assign_editor, create_project, get_dao_by_id, get_milestones, get_my_dao_vote,
-        get_project_by_id, get_project_comments, make_decision, submit_dao_vote, submit_project,
-        submit_project_comment, update_milestone, update_project_step_1, update_project_step_2,
-        update_project_step_3,
+        assign_editor, create_project, delete_project, get_dao_by_id, get_milestones,
+        get_my_dao_vote, get_project_by_id, get_project_comments, make_decision, submit_dao_vote,
+        submit_project, submit_project_comment, update_milestone, update_project_step_1,
+        update_project_step_2, update_project_step_3,
     },
     state::AppState,
 };
 use axum::{
-    routing::{get, patch, post},
+    routing::{delete, get, patch, post},
     Router,
 };
 
@@ -16,6 +16,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/project/:id", get(get_project_by_id))
         .route("/project", post(create_project))
+        .route("/project/:id", delete(delete_project))
         .route("/project/:id/1", patch(update_project_step_1))
         .route("/project/:id/2", patch(update_project_step_2))
         .route("/project/:id/3", patch(update_project_step_3))
