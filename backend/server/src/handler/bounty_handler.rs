@@ -3,8 +3,8 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
 use types::dto::{
-    BountyCreateRequest, GetBountysOption, OffsetAndLimitOption, ReviewBountyRequest,
-    SubmitBidRequest, SubmitBountyCommentRequest,
+    BountyCreateRequest, BountyUpdateRequest, GetBountysOption, OffsetAndLimitOption,
+    ReviewBountyRequest, SubmitBidRequest, SubmitBountyCommentRequest,
 };
 use types::error::{ApiError, DbError, ValidatedRequest};
 use types::models::{BidInfo, BountyCommentInfo, BountyInfo, User};
@@ -25,6 +25,19 @@ pub async fn create_bounty(
 ) -> Result<Json<BountyInfo>, ApiError> {
     let bounty = state.service.bounty.create_bounty(user.id, payload).await?;
     Ok(Json(bounty))
+}
+
+pub async fn update_bounty(
+    Extension(role): Extension<String>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<BountyUpdateRequest>,
+) -> Result<Json<bool>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(DbError::Str("You are not an admin.".to_string()).into());
+    }
+    let res = state.service.bounty.update_bounty(&id, payload).await?;
+    Ok(Json(res))
 }
 
 pub async fn delete_bounty(

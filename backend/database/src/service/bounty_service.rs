@@ -2,7 +2,7 @@ use crate::{pool::DatabasePool, BountyRepository, UserRepository, UtilRepository
 use chrono::{Datelike, NaiveDate, Utc};
 use std::sync::Arc;
 use types::{
-    dto::{BountyCreateRequest, SubmitBidRequest},
+    dto::{BountyCreateRequest, BountyUpdateRequest, SubmitBidRequest},
     error::{ApiError, DbError, UserError},
     models::{
         BidInfo, Bounty, BountyCommentInfo, BountyDifficulty, BountyInfo, BountyReviewType,
@@ -118,6 +118,40 @@ impl BountyService {
             }
         }
         self.bounty_to_info(&bounty).await
+    }
+
+    pub async fn update_bounty(
+        &self,
+        id: &str,
+        payload: BountyUpdateRequest,
+    ) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        let _ = self
+            .bounty_repo
+            .get_bounty_by_id(id)
+            .await
+            .ok_or(DbError::Str("Bounty not found".to_string()))?;
+
+        // TODO: check the status of the bounty
+        let deadline = NaiveDate::parse_from_str(&payload.deadline, "%m/%d/%Y")
+            .map_err(|err| DbError::Str(err.to_string()))?;
+        if !self
+            .bounty_repo
+            .update_bounty(
+                id,
+                payload.title,
+                payload.description,
+                payload.reward_amount,
+                payload.reward_currency,
+                payload.difficulty,
+                deadline,
+            )
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Update bounty failed".to_string()).into());
+        }
+        Ok(true)
     }
 
     pub async fn delete_bounty(&self, id: &str, user_id: Uuid) -> Result<bool, ApiError> {
