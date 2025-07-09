@@ -78,6 +78,24 @@ impl ProjectService {
         self.project_to_info(&project).await
     }
 
+    pub async fn delete_project(&self, id: &str, user_id: Uuid) -> Result<bool, ApiError> {
+        let id = uuid_from_str(id)?;
+        let project = self
+            .project_repo
+            .get_project_by_id(id)
+            .await
+            .ok_or(DbError::Str("Project not found".to_string()))?;
+        if project.user_id != user_id {
+            return Err(DbError::Str("No permission".to_string()).into());
+        }
+        let res = self
+            .project_repo
+            .delete_project(id)
+            .await
+            .map_err(|_| DbError::Str("Delete project failed".to_string()))?;
+        Ok(res)
+    }
+
     pub async fn update_project_step_1(
         &self,
         id: &str,

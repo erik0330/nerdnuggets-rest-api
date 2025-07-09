@@ -29,6 +29,15 @@ pub async fn create_project(
     Ok(Json(project))
 }
 
+pub async fn delete_project(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    let res = state.service.project.delete_project(&id, user.id).await?;
+    Ok(Json(res))
+}
+
 pub async fn update_project_step_1(
     Path(id): Path<String>,
     State(state): State<AppState>,
