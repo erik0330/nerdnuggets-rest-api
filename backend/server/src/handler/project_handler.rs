@@ -9,7 +9,7 @@ use types::dto::{
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
-    Dao, DaoVote, Milestone, ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo, User,
+    DaoInfo, DaoVote, Milestone, ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo, User,
 };
 use types::{FeedbackStatus, UserRoleType};
 
@@ -221,7 +221,7 @@ pub async fn get_daos(
     Extension(user): Extension<Option<User>>,
     Query(opts): Query<GetDaosOption>,
     State(state): State<AppState>,
-) -> Result<Json<Vec<Dao>>, ApiError> {
+) -> Result<Json<Vec<DaoInfo>>, ApiError> {
     Ok(Json(
         state
             .service
@@ -241,7 +241,7 @@ pub async fn get_daos(
 pub async fn get_dao_by_id(
     Path(id): Path<String>,
     State(state): State<AppState>,
-) -> Result<Json<Dao>, ApiError> {
+) -> Result<Json<DaoInfo>, ApiError> {
     Ok(Json(state.service.project.get_dao_by_id(&id).await?))
 }
 

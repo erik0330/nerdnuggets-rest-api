@@ -8,7 +8,7 @@ use types::{
     },
     error::{ApiError, DbError, UserError},
     models::{
-        Dao, DaoVote, Milestone, Project, ProjectCommentInfo, ProjectIds, ProjectInfo,
+        DaoInfo, DaoVote, Milestone, Project, ProjectCommentInfo, ProjectIds, ProjectInfo,
         ProjectItemInfo,
     },
     FeedbackStatus, ProjectStatus, UserRoleType,
@@ -478,22 +478,42 @@ impl ProjectService {
         is_mine: Option<bool>,
         offset: Option<i32>,
         limit: Option<i32>,
-    ) -> Result<Vec<Dao>, ApiError> {
+    ) -> Result<Vec<DaoInfo>, ApiError> {
         let daos = self
             .project_repo
             .get_daos(title, status, user_id, is_mine, offset, limit)
             .await
             .map_err(|_| DbError::Str("Get daos failed".to_string()))?;
-        Ok(daos)
+        let mut dao_infos = Vec::new();
+        for dao in daos {
+            if let Some(user) = self.user_repo.get_user_by_id(dao.user_id).await {
+                let my_vote = self
+                    .project_repo
+                    .get_my_dao_vote(dao.id, user.id)
+                    .await
+                    .map(|v| v.my_vote());
+                dao_infos.push(dao.to_info(user.to_info(), my_vote));
+            }
+        }
+        Ok(dao_infos)
     }
 
-    pub async fn get_dao_by_id(&self, id: &str) -> Result<Dao, ApiError> {
+    pub async fn get_dao_by_id(&self, id: &str) -> Result<DaoInfo, ApiError> {
         let dao = self
             .project_repo
             .get_dao_by_id(uuid_from_str(id)?)
             .await
             .map_err(|_| DbError::Str("Get dao by id failed".to_string()))?;
-        Ok(dao)
+        if let Some(user) = self.user_repo.get_user_by_id(dao.user_id).await {
+            let my_vote = self
+                .project_repo
+                .get_my_dao_vote(dao.id, user.id)
+                .await
+                .map(|v| v.my_vote());
+            Ok(dao.to_info(user.to_info(), my_vote))
+        } else {
+            Err(ApiError::UserError(UserError::UserNotFound))
+        }
     }
 
     pub async fn get_my_dao_vote(
