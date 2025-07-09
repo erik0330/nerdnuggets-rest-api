@@ -216,6 +216,21 @@ impl BountyRepository {
         Ok(bounties)
     }
 
+    pub async fn get_bids(
+        &self,
+        id: Uuid,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<Bid>, SqlxError> {
+        let bids = sqlx::query_as::<_, Bid>("SELECT * FROM bid WHERE bounty_id = $1 LIMIT $2 OFFSET $3")
+            .bind(id)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(self.db_conn.get_pool())
+            .await?;
+        Ok(bids)
+    }
+
     pub async fn create_bid(
         &self,
         bounty_id: Uuid,
@@ -246,6 +261,17 @@ impl BountyRepository {
             .fetch_one(self.db_conn.get_pool())
             .await?;
         Ok(bid)
+    }
+
+    pub async fn get_bid_milestones(
+        &self,
+        bid_id: Uuid
+    ) -> Result<Vec<BidMilestone>, SqlxError> {
+        let milestones = sqlx::query_as::<_, BidMilestone>("SELECT * FROM bid_milestone WHERE bid_id = $1 ORDER BY number")
+            .bind(bid_id)
+            .fetch_all(self.db_conn.get_pool())
+            .await?;
+        Ok(milestones)
     }
 
     pub async fn create_bid_milestone(

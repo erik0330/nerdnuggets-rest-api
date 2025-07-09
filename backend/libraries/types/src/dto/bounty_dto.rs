@@ -72,7 +72,7 @@ pub struct BidMilestoneRequest {
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct GetBountyCommentsOption {
+pub struct OffsetAndLimitOption {
     pub offset: Option<i32>,
     pub limit: Option<i32>,
 }
