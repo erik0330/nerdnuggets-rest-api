@@ -269,8 +269,11 @@ impl ProjectRepository {
                     filters.push(format!("p.status = ${index}"));
                     index += 1;
                 } else {
-                    filters.push(format!("p.status = {}", ProjectStatus::Funding.to_i16()));
-                    filters.push(format!("p.status = {}", ProjectStatus::Completed.to_i16()));
+                    filters.push(format!(
+                        "(p.status = {} OR p.status = {})",
+                        ProjectStatus::Funding.to_i16(),
+                        ProjectStatus::Completed.to_i16()
+                    ));
                 }
             } else {
                 match role.clone() {
