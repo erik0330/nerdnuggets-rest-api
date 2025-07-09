@@ -46,54 +46,6 @@ pub struct Project {
     pub started_at: Option<DateTime<Utc>>,
 }
 
-impl Project {
-    pub fn to_info(
-        &self,
-        user: UserInfo,
-        category: Vec<Category>,
-        team_members: Vec<TeamMember>,
-        milestones: Vec<Milestone>,
-    ) -> ProjectInfo {
-        ProjectInfo {
-            id: self.id,
-            nerd_id: self.nerd_id.clone(),
-            user,
-            title: self.title.clone(),
-            description: self.description.clone(),
-            manuscript: self.manuscript.clone(),
-            upload_files: self.upload_files.clone(),
-            cover_photo: self.cover_photo.clone(),
-            youtube_link: self.youtube_link.clone(),
-            category,
-            status: self.status,
-            funding_goal: self.funding_goal,
-            duration: self.duration,
-            details: self.details.clone(),
-            personnel_cost: self.personnel_cost,
-            equipment_cost: self.equipment_cost,
-            materials_cost: self.materials_cost,
-            overhead_cost: self.overhead_cost,
-            other_cost: self.other_cost,
-            tags: self.tags.clone(),
-            team_members,
-            milestones,
-            ai_analysis: self.ai_analysis.clone(),
-            ai_status: self.ai_status,
-            ai_objectives: self.ai_objectives,
-            ai_methodology: self.ai_methodology,
-            ai_budget: self.ai_budget,
-            ai_expertise: self.ai_expertise,
-            ai_innovation: self.ai_innovation,
-            funding_amount: self.funding_amount,
-            count_contributors: self.count_contributors,
-            created_at: self.created_at,
-            updated_at: self.updated_at,
-            dao_at: self.dao_at,
-            started_at: self.started_at,
-        }
-    }
-}
-
 #[derive(Clone, Deserialize, Serialize, Default, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectInfo {
@@ -336,4 +288,52 @@ pub struct ProjectCommentInfo {
     pub user: UserInfo,
     pub comment: String,
     pub updated_at: DateTime<Utc>,
+}
+
+impl Project {
+    pub fn to_info(
+        &self,
+        user: UserInfo,
+        category: Vec<Category>,
+        team_members: Vec<TeamMember>,
+        milestones: Vec<Milestone>,
+    ) -> ProjectInfo {
+        ProjectInfo {
+            id: self.id,
+            nerd_id: self.nerd_id.clone(),
+            user,
+            title: self.title.clone(),
+            description: self.description.clone(),
+            manuscript: self.manuscript.clone(),
+            upload_files: self.upload_files.clone(),
+            cover_photo: self.cover_photo.clone(),
+            youtube_link: self.youtube_link.clone(),
+            category,
+            status: self.status,
+            funding_goal: self.funding_goal,
+            duration: self.duration,
+            details: self.details.clone(),
+            personnel_cost: self.personnel_cost,
+            equipment_cost: self.equipment_cost,
+            materials_cost: self.materials_cost,
+            overhead_cost: self.overhead_cost,
+            other_cost: self.other_cost,
+            tags: self.tags.clone(),
+            team_members,
+            milestones,
+            ai_analysis: self.ai_analysis.clone(),
+            ai_status: self.ai_status,
+            ai_objectives: self.ai_objectives,
+            ai_methodology: self.ai_methodology,
+            ai_budget: self.ai_budget,
+            ai_expertise: self.ai_expertise,
+            ai_innovation: self.ai_innovation,
+            funding_amount: self.funding_amount,
+            count_contributors: self.count_contributors,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            dao_at: self.dao_at,
+            started_at: self.started_at,
+        }
+    }
 }
