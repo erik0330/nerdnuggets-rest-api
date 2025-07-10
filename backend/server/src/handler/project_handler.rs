@@ -164,6 +164,7 @@ pub async fn make_decision(
                     FeedbackStatus::from(payload.status),
                     payload.feedback,
                     payload.to_dao.unwrap_or_default(),
+                    &state.evm,
                 )
                 .await?,
         ));

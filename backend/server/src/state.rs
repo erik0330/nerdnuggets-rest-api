@@ -1,5 +1,6 @@
 use chrono::{Duration, Utc};
 use database::{AppService, DatabasePool};
+use evm::EVMClient;
 use std::{collections::HashMap, sync::Arc};
 use twitter_v2::{authorization::Oauth2Client, oauth2::PkceCodeVerifier};
 use types::NerdNuggetsOAuth2AppName;
@@ -88,6 +89,7 @@ impl OAuth2Ctx {
 #[derive(Clone)]
 pub struct AppState {
     pub env: Env,
+    pub evm: EVMClient,
     pub service: AppService,
     pub s3_client: aws_sdk_s3::Client,
     pub _ses_client: aws_sdk_sesv2::Client,
@@ -100,9 +102,16 @@ impl AppState {
         s3_client: aws_sdk_s3::Client,
         ses_client: aws_sdk_sesv2::Client,
     ) -> Self {
+        let evm = EVMClient::init(
+            &env.dao_contract_address,
+            &env.wallet_private_key,
+            &env.rpc_url,
+            env.chain_id,
+        );
         Self {
             service: AppService::init(db, &env),
             env,
+            evm,
             s3_client,
             _ses_client: ses_client,
         }

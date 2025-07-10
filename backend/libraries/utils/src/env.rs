@@ -20,6 +20,10 @@ pub struct Env {
     pub production: bool,
     pub ai_backend_url: String,
     pub google_map_api_key: String,
+    pub dao_contract_address: String,
+    pub rpc_url: String,
+    pub chain_id: u64,
+    pub wallet_private_key: String,
 }
 
 impl Env {
@@ -74,6 +78,16 @@ impl Env {
         let google_map_api_key =
             std::env::var("GOOGLE_MAP_API_KEY").expect("GOOGLE_MAP_API_KEY must be set");
 
+        let dao_contract_address =
+            std::env::var("DAO_CONTRACT_ADDRESS").expect("DAO_CONTRACT_ADDRESS must be set");
+        let rpc_url = std::env::var("RPC_URL").expect("RPC_URL must be set");
+        let chain_id = std::env::var("CHAIN_ID")
+            .ok()
+            .and_then(|p| p.parse().ok())
+            .unwrap_or(1);
+        let wallet_private_key =
+            std::env::var("WALLET_PRIVATE_KEY").expect("WALLET_PRIVATE_KEY must be set");
+
         Self {
             port,
             jwt_secret,
@@ -91,6 +105,10 @@ impl Env {
             production,
             ai_backend_url,
             google_map_api_key,
+            dao_contract_address,
+            rpc_url,
+            chain_id,
+            wallet_private_key,
         }
     }
 

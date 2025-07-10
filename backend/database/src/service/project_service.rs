@@ -1,5 +1,6 @@
 use crate::{pool::DatabasePool, ProjectRepository, UserRepository, UtilRepository};
 use chrono::{Datelike, Duration, Utc};
+use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
@@ -318,6 +319,7 @@ impl ProjectService {
         status: FeedbackStatus,
         feedback: Option<String>,
         to_dao: bool,
+        evm: &EVMClient,
     ) -> Result<bool, ApiError> {
         let id = uuid_from_str(id)?;
         let (status, dao_at, started_at) = match status {
@@ -337,6 +339,29 @@ impl ProjectService {
             .await
         {
             if project.status == ProjectStatus::DaoVoting.to_i16() {
+                let researcher = self
+                    .user_repo
+                    .get_user_by_id(project.user_id)
+                    .await
+                    .ok_or(DbError::Str("Researcher not found".to_string()))?;
+                let wallet = researcher.wallet_address.ok_or(DbError::Str(
+                    "Can't find the wallet address of the researcher".to_string(),
+                ))?;
+                let milestones = self.project_repo.get_milestones(project.id).await;
+                let milestone_data = milestones
+                    .iter()
+                    .map(|m| (m.days_after_start as u64, m.funding_amount as u64))
+                    .collect();
+                let transaction_id = evm
+                    .create_project(
+                        project.proposal_id as u64,
+                        &wallet,
+                        milestone_data,
+                        String::new(),
+                    )
+                    .await
+                    .map_err(|_| DbError::Str("Create Project Contract failed".to_string()))?;
+                println!("create project transaction id: {}", transaction_id);
                 if !self
                     .project_repo
                     .create_dao(&project)

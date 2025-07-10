@@ -2,10 +2,11 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
-    ChangeRoleRequest, GetEditorsOption, LoginAndRegisterResponse, UserOnboardingRequest,
+    ChangeRoleRequest, GetEditorsOption, LoginAndRegisterResponse, OffsetAndLimitOption,
+    UserOnboardingRequest,
 };
 use types::error::UserError;
-use types::models::{User, UserInfo};
+use types::models::{ActivityHistory, User, UserInfo};
 use types::{
     dto::UserReadDto,
     error::{ApiError, ValidatedRequest},
@@ -54,6 +55,19 @@ pub async fn change_role(
         user: UserReadDto::from(user.to_owned()),
         token: state.service.token.generate_token(user, payload.role)?,
     }));
+}
+
+pub async fn get_my_activities(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+    Query(opts): Query<OffsetAndLimitOption>,
+) -> Result<Json<Vec<ActivityHistory>>, ApiError> {
+    let res = state
+        .service
+        .user
+        .get_activities(Some(user.id), opts.offset, opts.limit)
+        .await?;
+    Ok(Json(res))
 }
 
 // pub async fn check_username(
