@@ -54,3 +54,15 @@ pub struct UserInfo {
     pub avatar_url: Option<String>,
     pub wallet_address: Option<String>,
 }
+
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivityHistory {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub activity_type: String,
+    pub description: String,
+    pub details: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
