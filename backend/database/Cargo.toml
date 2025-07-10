@@ -10,6 +10,7 @@ async-stripe.workspace = true
 aws-sdk-sesv2.workspace = true
 bcrypt.workspace = true
 chrono.workspace = true
+evm.path = "../libraries/evm"
 jsonwebtoken.workspace = true
 reqwest.workspace = true
 serde.workspace = true

@@ -205,7 +205,7 @@ pub struct UserOnboardingRequest {
     pub bio: String,
     pub roles: Vec<String>,
     pub interests: Vec<String>,
-    pub wallet_address: String,
+    pub wallet_address: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]

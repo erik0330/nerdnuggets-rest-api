@@ -201,7 +201,7 @@ impl UserRepository {
         bio: &str,
         roles: Vec<String>,
         interests: Vec<String>,
-        wallet_address: &str,
+        wallet_address: Option<String>,
     ) -> Result<User, SqlxError> {
         let user = sqlx::query_as::<_, User>("UPDATE users SET name = $1, institution = $2, bio = $3, roles = $4, interests = $5, wallet_address = $6, updated_at = $7 WHERE id = $8 RETURNING *")
             .bind(name)

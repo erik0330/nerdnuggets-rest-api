@@ -77,7 +77,7 @@ impl UserService {
                 &payload.bio,
                 payload.roles,
                 payload.interests,
-                &payload.wallet_address,
+                payload.wallet_address,
             )
             .await
             .map_err(|_| DbError::Str("Update user onboarding failed".to_string()).into())

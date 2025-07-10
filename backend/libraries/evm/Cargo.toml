@@ -1,0 +1,9 @@
+[package]
+name = "evm"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+ethers.workspace = true
+serde.workspace = true
