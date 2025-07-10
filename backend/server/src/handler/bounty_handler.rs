@@ -23,7 +23,23 @@ pub async fn create_bounty(
     State(state): State<AppState>,
     ValidatedRequest(payload): ValidatedRequest<BountyCreateRequest>,
 ) -> Result<Json<BountyInfo>, ApiError> {
-    let bounty = state.service.bounty.create_bounty(user.id, payload).await?;
+    let bounty = state
+        .service
+        .bounty
+        .create_bounty(user.id, payload.clone())
+        .await?;
+    // let tags = vec![
+    //     ("Content-Type".to_string(), "application/json".to_string()),
+    //     ("App-Name".to_string(), "NerdNuggets".to_string()),
+    //     ("Type".to_string(), "Bounty".to_string()),
+    // ];
+    // if let Ok(link) =
+    //     upload_metadata_to_arweave(&tags, &serde_json::to_string(&payload).unwrap()).await
+    // {
+    //     println!("link: {}", link);
+    // } else {
+    //     println!("link error");
+    // }
     Ok(Json(bounty))
 }
 
