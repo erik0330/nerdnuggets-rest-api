@@ -3,8 +3,9 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
 use types::dto::{
-    BountyCreateRequest, BountyUpdateRequest, GetBountysOption, OffsetAndLimitOption,
-    ReviewBountyRequest, SubmitBidRequest, SubmitBountyCommentRequest,
+    BountyCreateRequest, BountyUpdateRequest, GetBountysOption, GetMarketStatsResponse,
+    GetMyBountyStatsResponse, OffsetAndLimitOption, ReviewBountyRequest, SubmitBidRequest,
+    SubmitBountyCommentRequest,
 };
 use types::error::{ApiError, DbError, ValidatedRequest};
 use types::models::{BidInfo, BountyCommentInfo, BountyInfo, User};
@@ -156,4 +157,28 @@ pub async fn review_bounty(
         .review_bounty(&id, payload.status, payload.admin_notes)
         .await?;
     Ok(Json(res))
+}
+
+pub async fn get_my_bounty_stats(
+    Extension(_user): Extension<User>,
+    State(_state): State<AppState>,
+) -> Result<Json<GetMyBountyStatsResponse>, ApiError> {
+    Ok(Json(GetMyBountyStatsResponse {
+        total_earned: 0,
+        completed: 0,
+        in_progress: 0,
+        success_rate: 0,
+    }))
+}
+
+pub async fn get_market_stats(
+    Extension(_user): Extension<User>,
+    State(_state): State<AppState>,
+) -> Result<Json<GetMarketStatsResponse>, ApiError> {
+    Ok(Json(GetMarketStatsResponse {
+        total_bounties: 0,
+        active_this_week: 0,
+        total_rewards: 0,
+        avg_completion: 0,
+    }))
 }

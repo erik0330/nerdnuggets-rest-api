@@ -1,7 +1,7 @@
 use crate::{
     handler::bounty_handler::{
-        create_bounty, delete_bounty, get_bids, get_bounty_comments, review_bounty, submit_bid,
-        submit_bounty_comment, update_bounty,
+        create_bounty, delete_bounty, get_bids, get_bounty_comments, get_market_stats,
+        get_my_bounty_stats, review_bounty, submit_bid, submit_bounty_comment, update_bounty,
     },
     state::AppState,
 };
@@ -21,4 +21,6 @@ pub fn routes() -> Router<AppState> {
         .route("/bounty/:id/comment", get(get_bounty_comments))
         .route("/bounty/:id/comment", post(submit_bounty_comment))
         .route("/bounty/:id/review", post(review_bounty))
+        .route("/bounty/stats", get(get_my_bounty_stats))
+        .route("/bounty/market-stats", get(get_market_stats))
 }

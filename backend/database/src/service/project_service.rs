@@ -352,7 +352,7 @@ impl ProjectService {
                     .iter()
                     .map(|m| (m.days_after_start as u64, m.funding_amount as u64))
                     .collect();
-                let transaction_id = evm
+                let _transaction_id = evm
                     .create_project(
                         project.proposal_id as u64,
                         &wallet,
@@ -361,7 +361,6 @@ impl ProjectService {
                     )
                     .await
                     .map_err(|_| DbError::Str("Create Project Contract failed".to_string()))?;
-                println!("create project transaction id: {}", transaction_id);
                 if !self
                     .project_repo
                     .create_dao(&project)
