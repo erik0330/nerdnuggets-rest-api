@@ -100,3 +100,21 @@ pub struct ReviewBountyRequest {
     pub status: BountyReviewType,
     pub admin_notes: Option<String>,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetMyBountyStatsResponse {
+    pub total_earned: i32,
+    pub completed: i32,
+    pub in_progress: i32,
+    pub success_rate: i32,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetMarketStatsResponse {
+    pub total_bounties: i32,
+    pub active_this_week: i32,
+    pub total_rewards: i32,
+    pub avg_completion: i32,
+}
