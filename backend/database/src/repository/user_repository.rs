@@ -36,6 +36,14 @@ impl UserRepository {
             .unwrap_or(None)
     }
 
+    pub async fn get_user_by_wallet(&self, wallet: &str) -> Option<User> {
+        sqlx::query_as::<_, User>("SELECT * FROM users WHERE wallet_address = $1")
+            .bind(wallet)
+            .fetch_optional(self.db_conn.get_pool())
+            .await
+            .unwrap_or(None)
+    }
+
     pub async fn find_by_website(&self, web_site: &str) -> Option<User> {
         sqlx::query_as::<_, User>("SELECT * FROM users WHERE web_site = $1")
             .bind(web_site)

@@ -511,18 +511,21 @@ impl ProjectService {
         let mut dao_infos = Vec::new();
         for dao in daos {
             if let Some(user) = self.user_repo.get_user_by_id(dao.user_id).await {
-                let my_vote = self
-                    .project_repo
-                    .get_my_dao_vote(dao.id, user.id)
-                    .await
-                    .map(|v| v.my_vote());
+                let my_vote = if let Some(user_id) = user_id {
+                    self.project_repo
+                        .get_my_dao_vote(dao.id, user_id)
+                        .await
+                        .map(|v| v.my_vote())
+                } else {
+                    None
+                };
                 dao_infos.push(dao.to_info(user.to_info(), my_vote));
             }
         }
         Ok(dao_infos)
     }
 
-    pub async fn get_dao_by_id(&self, id: &str) -> Result<DaoInfo, ApiError> {
+    pub async fn get_dao_by_id(&self, id: &str, user_id: Uuid) -> Result<DaoInfo, ApiError> {
         let dao = self
             .project_repo
             .get_dao_by_id(uuid_from_str(id)?)
@@ -531,7 +534,7 @@ impl ProjectService {
         if let Some(user) = self.user_repo.get_user_by_id(dao.user_id).await {
             let my_vote = self
                 .project_repo
-                .get_my_dao_vote(dao.id, user.id)
+                .get_my_dao_vote(dao.id, user_id)
                 .await
                 .map(|v| v.my_vote());
             Ok(dao.to_info(user.to_info(), my_vote))
@@ -552,20 +555,43 @@ impl ProjectService {
         Ok(dao_vote)
     }
 
-    pub async fn submit_dao_vote(
+    pub async fn submitted_dao_vote(
         &self,
-        id: &str,
-        user_id: Uuid,
-        status: i16,
-        _weight: i64,
-        comment: Option<String>,
+        proposal_id: i64,
+        wallet: &str,
+        support: bool,
+        weight: u128,
     ) -> Result<bool, ApiError> {
-        if status != 1 && status != 2 {
-            return Err(DbError::Str("Status invalid".to_string()))?;
-        }
+        let weight = (weight as f64) / 10f64.powi(18);
+        let status = if support { 1i16 } else { 2i16 };
+
+        let project = self
+            .project_repo
+            .get_project_by_proposal_id(proposal_id)
+            .await
+            .ok_or(DbError::Str("Project not found".to_string()))?;
+        let dao = self
+            .project_repo
+            .get_dao_by_project_id(project.id)
+            .await
+            .map_err(|_| DbError::Str("Dao not found".to_string()))?;
+        let user = self
+            .user_repo
+            .get_user_by_wallet(wallet)
+            .await
+            .ok_or(DbError::Str("User not found".to_string()))?;
+
         if !self
             .project_repo
-            .submit_dao_vote(uuid_from_str(id)?, user_id, status, comment)
+            .submit_dao_vote(
+                dao.id,
+                project.id,
+                &project.nerd_id,
+                proposal_id,
+                user.id,
+                status,
+                weight as f32,
+            )
             .await
             .unwrap_or_default()
         {

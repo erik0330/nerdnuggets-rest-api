@@ -9,7 +9,7 @@ abigen!(DAO_CONTRACT, "./abis/dao_contract_abi.json");
 #[derive(Clone)]
 pub struct EVMClient {
     dao_contract: DAO_CONTRACT<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
-    _provider: Provider<Http>,
+    provider: Provider<Http>,
 }
 
 impl EVMClient {
@@ -34,7 +34,7 @@ impl EVMClient {
 
         EVMClient {
             dao_contract,
-            _provider: provider,
+            provider,
         }
     }
 
@@ -68,5 +68,30 @@ impl EVMClient {
         } else {
             return Err(anyhow!("Unexpected error"));
         }
+    }
+
+    pub async fn get_dao_contract_events(
+        &self,
+        from_block_number: Option<u64>,
+        to_block_number: Option<u64>,
+    ) -> Result<(Vec<DAO_CONTRACTEvents>, Option<u64>), anyhow::Error> {
+        let events = self.dao_contract.events();
+        let to_block_number = to_block_number.unwrap_or(
+            self.provider
+                .get_block(BlockNumber::Latest)
+                .await?
+                .unwrap()
+                .number
+                .unwrap()
+                .as_u64(),
+        );
+        let from_block_number = from_block_number.unwrap_or(to_block_number - 10_000);
+        let filtered_events = events
+            .from_block(from_block_number)
+            .to_block(to_block_number)
+            .query()
+            .await?;
+
+        Ok((filtered_events, Some(to_block_number)))
     }
 }
