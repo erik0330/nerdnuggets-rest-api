@@ -555,7 +555,7 @@ impl ProjectService {
         Ok(dao_vote)
     }
 
-    pub async fn submitted_dao_vote(
+    pub async fn submit_dao_vote(
         &self,
         proposal_id: i64,
         wallet: &str,
@@ -580,6 +580,14 @@ impl ProjectService {
             .get_user_by_wallet(wallet)
             .await
             .ok_or(DbError::Str("User not found".to_string()))?;
+        if self
+            .project_repo
+            .get_my_dao_vote(dao.id, user.id)
+            .await
+            .is_some()
+        {
+            return Err(DbError::Str("You have already voted for this dao".to_string()).into());
+        }
 
         if !self
             .project_repo

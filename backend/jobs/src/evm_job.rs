@@ -26,7 +26,7 @@ pub async fn run(
             DAO_CONTRACTEvents::VotedFilter(ev) => {
                 service
                     .project
-                    .submitted_dao_vote(
+                    .submit_dao_vote(
                         ev.project_id.as_u64() as i64,
                         &format!("{:?}", ev.voter),
                         ev.support,
