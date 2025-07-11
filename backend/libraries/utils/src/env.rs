@@ -20,6 +20,7 @@ pub struct Env {
     pub production: bool,
     pub ai_backend_url: String,
     pub google_map_api_key: String,
+    pub evm_job_schedule: String,
     pub dao_contract_address: String,
     pub rpc_url: String,
     pub chain_id: u64,
@@ -78,6 +79,8 @@ impl Env {
         let google_map_api_key =
             std::env::var("GOOGLE_MAP_API_KEY").expect("GOOGLE_MAP_API_KEY must be set");
 
+        let evm_job_schedule =
+            std::env::var("EVM_JOB_SCHEDULE").expect("EVM_JOB_SCHEDULE must be set");
         let dao_contract_address =
             std::env::var("DAO_CONTRACT_ADDRESS").expect("DAO_CONTRACT_ADDRESS must be set");
         let rpc_url = std::env::var("RPC_URL").expect("RPC_URL must be set");
@@ -105,6 +108,7 @@ impl Env {
             production,
             ai_backend_url,
             google_map_api_key,
+            evm_job_schedule,
             dao_contract_address,
             rpc_url,
             chain_id,

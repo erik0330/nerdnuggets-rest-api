@@ -1,7 +1,7 @@
 use crate::pool::DatabasePool;
 use sqlx::{self};
 use std::sync::Arc;
-use types::models::{Category, City, Country};
+use types::models::{Category, City, Country, Value};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -214,16 +214,33 @@ impl UtilRepository {
             == 1
     }
 
-    // pub async fn get_hashtag_by_str(
-    //     &self,
-    //     hashtag_name: &str,
-    // ) -> Result<Option<HashTagsInfo>, SqlxError> {
-    //     let hashtag_info = sqlx::query_as::<_, HashTagsInfo>(
-    //         "SELECT id, hashtag_name FROM hashtags WHERE LOWER(hashtag_name) = LOWER($1)",
-    //     )
-    //     .bind(hashtag_name)
-    //     .fetch_optional(self.db_conn.get_pool())
-    //     .await?;
-    //     Ok(hashtag_info)
-    // }
+    pub async fn get_last_block_number(&self) -> Result<Option<String>, sqlx::Error> {
+        let value = sqlx::query_as!(
+            Value,
+            "SELECT * from values WHERE key = 'last_block_number'",
+        )
+        .fetch_optional(self.db_conn.get_pool())
+        .await?;
+        Ok(value.map(|v| v.value))
+    }
+
+    pub async fn upsert_last_block_number(
+        &self,
+        last_block_number: &str,
+    ) -> Result<String, sqlx::Error> {
+        let value = sqlx::query_as!(
+            Value,
+            r#"
+                INSERT INTO values (key, value)
+                VALUES ('last_block_number', $1)
+                ON CONFLICT (key)
+                DO UPDATE SET value = EXCLUDED.value
+                RETURNING *
+            "#,
+            last_block_number,
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(value.value)
+    }
 }

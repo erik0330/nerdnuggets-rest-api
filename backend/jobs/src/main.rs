@@ -1,5 +1,4 @@
-// #[tokio::main]
-// async fn main() -> Result<(), anyhow::Error> {
-//     jobs::run().await
-// }
-fn main() {}
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    jobs::run().await
+}

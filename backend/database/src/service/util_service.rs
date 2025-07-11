@@ -206,17 +206,20 @@ impl UtilService {
         Ok(self.util_repo.delete_category(id).await)
     }
 
-    // pub async fn get_hashtag_by_str(
-    //     &self,
-    //     hashtag_name: &str,
-    // ) -> Result<Option<HashTagsInfo>, ApiError> {
-    //     self.util_repo
-    //         .get_hashtag_by_str(hashtag_name.trim())
-    //         .await
-    //         .map_err(|_| {
-    //             ApiError::DbError(DbError::SomethingWentWrong(
-    //                 "Get hashtag failed".to_string(),
-    //             ))
-    //         })
-    // }
+    pub async fn get_last_block_number(&self) -> Result<Option<String>, ApiError> {
+        self.util_repo
+            .get_last_block_number()
+            .await
+            .map_err(|err| DbError::Str(err.to_string()).into())
+    }
+
+    pub async fn upsert_last_block_number(
+        &self,
+        last_block_number: &str,
+    ) -> Result<String, ApiError> {
+        self.util_repo
+            .upsert_last_block_number(last_block_number)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()).into())
+    }
 }

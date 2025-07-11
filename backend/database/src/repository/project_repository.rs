@@ -39,6 +39,14 @@ impl ProjectRepository {
             .unwrap_or(None)
     }
 
+    pub async fn get_project_by_proposal_id(&self, proposal_id: i64) -> Option<Project> {
+        sqlx::query_as::<_, Project>("SELECT * FROM project WHERE proposal_id = $1")
+            .bind(proposal_id)
+            .fetch_optional(self.db_conn.get_pool())
+            .await
+            .unwrap_or(None)
+    }
+
     pub async fn check_project_nerd_id(&self, nerd_id: &str) -> bool {
         let count = sqlx::query!(
             "SELECT COUNT(*) as count FROM project WHERE nerd_id = $1",
@@ -578,6 +586,14 @@ impl ProjectRepository {
         Ok(dao)
     }
 
+    pub async fn get_dao_by_project_id(&self, project_id: Uuid) -> Result<Dao, SqlxError> {
+        let dao = sqlx::query_as::<_, Dao>("SELECT * FROM dao WHERE project_id = $1")
+            .bind(project_id)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(dao)
+    }
+
     pub async fn get_my_dao_vote(&self, dao_id: Uuid, user_id: Uuid) -> Option<DaoVote> {
         let dao_vote = sqlx::query_as::<_, DaoVote>(
             "SELECT * FROM dao_vote WHERE dao_id = $1 AND user_id = $2",
@@ -592,21 +608,41 @@ impl ProjectRepository {
 
     pub async fn submit_dao_vote(
         &self,
-        id: Uuid,
+        dao_id: Uuid,
+        project_id: Uuid,
+        nerd_id: &str,
+        proposal_id: i64,
         user_id: Uuid,
         status: i16,
-        comment: Option<String>,
+        weight: f32,
     ) -> Result<bool, SqlxError> {
-        let row = sqlx::query(
-            "UPDATE dao_vote SET status = $1, comment = $2 WHERE dao_id = $3 AND user_id = $4",
-        )
-        .bind(status)
-        .bind(comment)
-        .bind(id)
-        .bind(user_id)
-        .execute(self.db_conn.get_pool())
-        .await?;
-        Ok(row.rows_affected() == 1)
+        let row = sqlx::query("INSERT INTO dao_vote (dao_id, project_id, nerd_id, proposal_id, user_id, status, weight) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+            .bind(dao_id)
+            .bind(project_id)
+            .bind(nerd_id)
+            .bind(proposal_id)
+            .bind(user_id)
+            .bind(status)
+            .bind(weight)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        let res = row.rows_affected() == 1;
+        if res {
+            let (count_for, count_against, amount_for, amount_against) = if status == 1i16 {
+                (1i32, 0i32, weight, 0f32)
+            } else {
+                (0i32, 1i32, 0f32, weight)
+            };
+            let _ = sqlx::query("UPDATE dao SET count_for = count_for + $1, count_against = count_against + $2, amount_for = amount_for +3, amount_against = amount_against + $4 WHERE id = $5")
+                .bind(count_for)
+                .bind(count_against)
+                .bind(amount_for)
+                .bind(amount_against)
+                .bind(dao_id)
+                .execute(self.db_conn.get_pool())
+                .await?;
+        }
+        Ok(res)
     }
 
     pub async fn create_predictions(

@@ -15,11 +15,8 @@ use url::Url;
 use uuid::Uuid;
 
 pub fn uuid_from_str(id: &str) -> Result<Uuid, ApiError> {
-    let id = Uuid::from_str(id).map_err(|_| {
-        ApiError::DbError(DbError::Str(
-            "Invalid UUID format".to_string(),
-        ))
-    })?;
+    let id = Uuid::from_str(id)
+        .map_err(|_| ApiError::DbError(DbError::Str("Invalid UUID format".to_string())))?;
     Ok(id)
 }
 
@@ -215,17 +212,6 @@ pub fn is_valid_email(email: &str) -> bool {
         return false;
     }
     EmailAddress::is_valid(email)
-}
-
-pub fn get_proposal_id_from_article_id(article_id: &str) -> Option<u64> {
-    // Ensure the string is long enough to slice safely
-    if article_id.len() < 3 {
-        return None;
-    }
-    // Use checked slicing with get to avoid panics
-    let slice = article_id.get(2..article_id.len() - 1)?;
-    // Parse the slice to u64
-    slice.parse::<u64>().ok()
 }
 
 pub fn get_article_id_from_proposal_id(proposal_id: &str) -> String {
