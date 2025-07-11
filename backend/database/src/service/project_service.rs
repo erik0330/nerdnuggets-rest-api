@@ -511,11 +511,14 @@ impl ProjectService {
         let mut dao_infos = Vec::new();
         for dao in daos {
             if let Some(user) = self.user_repo.get_user_by_id(dao.user_id).await {
-                let my_vote = self
-                    .project_repo
-                    .get_my_dao_vote(dao.id, user.id)
-                    .await
-                    .map(|v| v.my_vote());
+                let my_vote = if let Some(user_id) = user_id {
+                    self.project_repo
+                        .get_my_dao_vote(dao.id, user_id)
+                        .await
+                        .map(|v| v.my_vote())
+                } else {
+                    None
+                };
                 dao_infos.push(dao.to_info(user.to_info(), my_vote));
             }
         }
