@@ -64,7 +64,7 @@ impl EVMClient {
             .await?
             .await?
         {
-            return Ok(tx.transaction_hash.to_string());
+            return Ok(format!("{:?}", tx.transaction_hash));
         } else {
             return Err(anyhow!("Unexpected error"));
         }
