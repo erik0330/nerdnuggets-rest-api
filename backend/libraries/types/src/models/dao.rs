@@ -58,6 +58,7 @@ pub struct DaoVote {
     pub proposal_id: i64,
     pub user_id: Uuid,
     pub status: i16, // 0: empty, 1: for, 2: against
+    pub weight: i64,
     pub comment: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -67,6 +68,7 @@ pub struct DaoVote {
 #[serde(rename_all = "camelCase")]
 pub struct MyDaoVote {
     pub status: i16,
+    pub weight: i64,
     pub comment: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -101,6 +103,7 @@ impl DaoVote {
     pub fn my_vote(&self) -> MyDaoVote {
         MyDaoVote {
             status: self.status,
+            weight: self.weight,
             comment: self.comment.clone(),
             created_at: self.created_at,
             updated_at: self.updated_at,

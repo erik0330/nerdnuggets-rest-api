@@ -116,10 +116,3 @@ pub struct GetDaosOption {
     pub offset: Option<i32>,
     pub limit: Option<i32>,
 }
-
-#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct SubmitVoteRequest {
-    pub status: i16, // 1:For, 2:Against
-    pub comment: Option<String>,
-}

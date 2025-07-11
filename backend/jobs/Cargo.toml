@@ -1,0 +1,16 @@
+[package]
+name = "jobs"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "NerdNuggetsJobs"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+database.path = "../database"
+evm.path = "../libraries/evm"
+utils.path = "../libraries/utils"
+tokio.workspace = true
+tokio-cron-scheduler.workspace = true
