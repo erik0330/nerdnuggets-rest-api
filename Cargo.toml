@@ -8,7 +8,7 @@ members = [
     "backend/server",
     "backend/notification_websockets",
     "backend/libraries/postgres_macro",
-    "backend/libraries/evm",
+    "backend/libraries/evm", "backend/jobs",
 ]
 resolver = "2"
 

@@ -557,6 +557,7 @@ impl ProjectService {
         id: &str,
         user_id: Uuid,
         status: i16,
+        _weight: i64,
         comment: Option<String>,
     ) -> Result<bool, ApiError> {
         if status != 1 && status != 2 {
