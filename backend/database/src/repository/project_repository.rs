@@ -633,7 +633,7 @@ impl ProjectRepository {
             } else {
                 (0i32, 1i32, 0f32, weight)
             };
-            let _ = sqlx::query("UPDATE dao SET count_for = count_for + $1, count_against = count_against + $2, amount_for = amount_for +3, amount_against = amount_against + $4 WHERE id = $5")
+            let _ = sqlx::query("UPDATE dao SET count_for = count_for + $1, count_against = count_against + $2, amount_for = amount_for + $3, amount_against = amount_against + $4 WHERE id = $5")
                 .bind(count_for)
                 .bind(count_against)
                 .bind(amount_for)

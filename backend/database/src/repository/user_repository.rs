@@ -37,7 +37,7 @@ impl UserRepository {
     }
 
     pub async fn get_user_by_wallet(&self, wallet: &str) -> Option<User> {
-        sqlx::query_as::<_, User>("SELECT * FROM users WHERE wallet_address = $1")
+        sqlx::query_as::<_, User>("SELECT * FROM users WHERE wallet_address ILIKE $1")
             .bind(wallet)
             .fetch_optional(self.db_conn.get_pool())
             .await
