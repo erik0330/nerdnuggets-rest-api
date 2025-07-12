@@ -1,11 +1,11 @@
 use crate::pool::DatabasePool;
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Duration, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
     models::{
-        Dao, DaoVote, Milestone, Prediction, PredictionStatus, Project, ProjectComment, ProjectIds,
-        ProjectItem, TeamMember,
+        CompletedDao, Dao, DaoVote, Milestone, Prediction, PredictionStatus, Project,
+        ProjectComment, ProjectIds, ProjectItem, TeamMember,
     },
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
@@ -643,6 +643,36 @@ impl ProjectRepository {
                 .await?;
         }
         Ok(res)
+    }
+
+    pub async fn get_completed_daos(
+        &self,
+        dao_duration: Duration,
+    ) -> Result<Vec<CompletedDao>, SqlxError> {
+        let dao_duration = dao_duration
+            .checked_add(&Duration::minutes(1))
+            .unwrap_or_default();
+        let daos = sqlx::query_as::<_, CompletedDao>(
+            "SELECT id, proposal_id, created_at FROM dao WHERE status = 0 AND created_at <= $1 ORDER BY created_at LIMIT 3",
+        )
+        .bind(
+            Utc::now()
+                .checked_sub_signed(dao_duration)
+                .unwrap_or_default(),
+        )
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(daos)
+    }
+
+    pub async fn finish_dao(&self, dao_id: Uuid, status: i16) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE dao SET status = $1, updated_at = $2 WHERE id = $3")
+            .bind(status)
+            .bind(Utc::now())
+            .bind(dao_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
     }
 
     pub async fn create_predictions(

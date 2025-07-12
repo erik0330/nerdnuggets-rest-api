@@ -9,8 +9,8 @@ use types::{
     },
     error::{ApiError, DbError, UserError},
     models::{
-        DaoInfo, DaoVote, Milestone, Project, ProjectCommentInfo, ProjectIds, ProjectInfo,
-        ProjectItemInfo,
+        CompletedDao, DaoInfo, DaoVote, Milestone, Project, ProjectCommentInfo, ProjectIds,
+        ProjectInfo, ProjectItemInfo,
     },
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
@@ -604,6 +604,96 @@ impl ProjectService {
             .unwrap_or_default()
         {
             return Err(DbError::Str("Submit vote failed".to_string()).into());
+        }
+        Ok(true)
+    }
+
+    pub async fn get_completed_daos(
+        &self,
+        dao_duration: Duration,
+    ) -> Result<Vec<CompletedDao>, ApiError> {
+        self.project_repo
+            .get_completed_daos(dao_duration)
+            .await
+            .map_err(|_| DbError::Str("Failed to fetch completed daos".to_string()).into())
+    }
+
+    pub async fn finished_dao(&self, proposal_id: i64, status: bool) -> Result<bool, ApiError> {
+        if let Some(project) = self
+            .project_repo
+            .get_project_by_proposal_id(proposal_id)
+            .await
+        {
+            if project.status == ProjectStatus::DaoVoting.to_i16() {
+                if status {
+                    if self
+                        .project_repo
+                        .update_project_status(project.id, &ProjectStatus::Funding)
+                        .await
+                        .is_ok()
+                    {
+                        let milestones = self.project_repo.get_milestones(project.id).await;
+                        if !milestones.is_empty() {
+                            if !self
+                                .project_repo
+                                .update_milestone_status(milestones[0].id, 1i16)
+                                .await
+                                .unwrap_or_default()
+                            {
+                                return Err(DbError::Str(
+                                    "Update milestone.0 status to 'In Progress' failed".to_string(),
+                                )
+                                .into());
+                            }
+                        }
+                        let mut started_at = Utc::now().date_naive();
+                        for milestone in milestones {
+                            let (nerd_id, contract_id) = loop {
+                                let year = Utc::now().year();
+                                let rand = generate_random_number(1000, 9999);
+                                let nerd_id = format!("PN-{}-{}", year, rand);
+                                if self.project_repo.check_prediction_nerd_id(&nerd_id).await {
+                                    break (nerd_id, year * 10000 + rand as i32);
+                                }
+                            };
+                            let ended_at = Utc::now().date_naive()
+                                + Duration::days(milestone.days_after_start as i64);
+                            let _ = self
+                                .project_repo
+                                .create_predictions(
+                                    &nerd_id,
+                                    contract_id as i64,
+                                    &milestone,
+                                    project.id,
+                                    &project.nerd_id,
+                                    project.proposal_id,
+                                    &project.title.clone().unwrap_or_default(),
+                                    project.user_id,
+                                    project.cover_photo.clone(),
+                                    project.category.clone(),
+                                    project.tags.clone(),
+                                    started_at,
+                                    ended_at,
+                                )
+                                .await
+                                .map_err(|e| DbError::Str(e.to_string()));
+                            started_at = ended_at + Duration::days(1);
+                        }
+                    }
+                } else {
+                    self.project_repo
+                        .update_project_status(project.id, &ProjectStatus::Rejected)
+                        .await
+                        .ok();
+                }
+            }
+            if let Ok(dao) = self.project_repo.get_dao_by_project_id(project.id).await {
+                if dao.status == 0 {
+                    // active
+                    let status = if status { 1i16 } else { 2i16 };
+                    self.project_repo.finish_dao(dao.id, status).await.ok();
+                }
+            }
         }
         Ok(true)
     }

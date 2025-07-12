@@ -74,6 +74,13 @@ pub struct MyDaoVote {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+pub struct CompletedDao {
+    pub id: Uuid,
+    pub proposal_id: i64,
+    pub created_at: DateTime<Utc>,
+}
+
 impl Dao {
     pub fn to_info(&self, user: UserInfo, my_vote: Option<MyDaoVote>) -> DaoInfo {
         DaoInfo {
