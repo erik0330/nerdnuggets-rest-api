@@ -104,6 +104,7 @@ impl AppState {
     ) -> Self {
         let evm = EVMClient::init(
             &env.dao_contract_address,
+            &env.funding_contract_address,
             &env.wallet_private_key,
             &env.rpc_url,
             env.chain_id,

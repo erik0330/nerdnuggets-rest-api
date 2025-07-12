@@ -697,4 +697,47 @@ impl ProjectService {
         }
         Ok(true)
     }
+
+    pub async fn donate_milestone(
+        &self,
+        proposal_id: i64,
+        number: i16,
+        wallet: &str,
+        amount: u128,
+    ) -> Result<bool, ApiError> {
+        let amount = (amount as f64) / 10f64.powi(18);
+        let number = number + 1;
+        let user = self
+            .user_repo
+            .get_user_by_wallet(wallet)
+            .await
+            .ok_or(DbError::Str("User not found".to_string()))?;
+        let project = self
+            .project_repo
+            .get_project_by_proposal_id(proposal_id)
+            .await
+            .ok_or(DbError::Str("Project not found".to_string()))?;
+        let milestones = self.project_repo.get_milestones(project.id).await;
+        if milestones.len() < number as usize {
+            return Err(DbError::Str("Milestone not found".to_string()).into());
+        }
+        if self
+            .project_repo
+            .donate_milestone(
+                user.id,
+                project.id,
+                project.proposal_id,
+                number,
+                amount as i32,
+            )
+            .await
+            .unwrap_or_default()
+        {
+            self.project_repo
+                .donate_project(project.id, amount as i32)
+                .await
+                .ok();
+        }
+        Ok(true)
+    }
 }

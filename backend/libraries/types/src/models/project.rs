@@ -121,6 +121,8 @@ pub struct Milestone {
     pub file_urls: Vec<String>,
     pub proof_status: i16, // 0:empty, 1:submitted, 2:approved, 3:rejected
     pub funding_amount: i32,
+    pub amount: i32,
+    pub count_contributors: i32,
     pub days_after_start: i32,
     pub days_of_prediction: i32,
     pub created_at: DateTime<Utc>,
@@ -131,6 +133,7 @@ pub struct Milestone {
 pub struct Funding {
     pub id: Uuid,
     pub project_id: Uuid,
+    pub proposal_id: i64,
     pub number: i16,
     pub user_id: Uuid,
     pub amount: i32,

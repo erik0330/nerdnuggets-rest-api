@@ -675,6 +675,45 @@ impl ProjectRepository {
         Ok(row.rows_affected() == 1)
     }
 
+    pub async fn donate_milestone(
+        &self,
+        user_id: Uuid,
+        project_id: Uuid,
+        proposal_id: i64,
+        number: i16,
+        amount: i32,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE milestone SET amount = amount + $1, count_contributors = count_contributors + 1, updated_at = $2 WHERE (status = 0 OR status = 1) AND number = $3 AND project_id = $4")
+            .bind(amount)
+            .bind(Utc::now())
+            .bind(number)
+            .bind(project_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        if row.rows_affected() > 0 {
+            return Ok(false);
+        }
+        let row = sqlx::query("INSERT INTO funding (project_id, proposal_id, number, user_id, amount) VALUES ($1, $2, $3, $4, $5)")
+            .bind(project_id)
+            .bind(proposal_id)
+            .bind(number)
+            .bind(user_id)
+            .bind(amount)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn donate_project(&self, project_id: Uuid, amount: i32) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE project SET funding_amount = funding_amount + $1, count_contributors = count_contributors + 1, updated_at = $2 WHERE id = $3")
+            .bind(amount)
+            .bind(Utc::now())
+            .bind(project_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
     pub async fn create_predictions(
         &self,
         nerd_id: &str,

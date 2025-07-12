@@ -1,5 +1,5 @@
 use database::AppService;
-use evm::{DAO_CONTRACTEvents, EVMClient};
+use evm::{DAO_CONTRACTEvents, EVMClient, FUNDING_CONTRACTEvents};
 use std::sync::Arc;
 use utils::env::Env;
 
@@ -59,7 +59,31 @@ pub async fn run(
         }
     }
 
-    if let Some(last_block_number) = to_block_number {
+    // Funding events
+    let (events, last_block_number) = evm_client
+        .get_funding_contract_events(from_block_number, to_block_number)
+        .await?;
+
+    println!("Funding contract events: {:?}", events);
+    for event in &events {
+        match event {
+            FUNDING_CONTRACTEvents::DonatedFilter(ev) => {
+                service
+                    .project
+                    .donate_milestone(
+                        ev.project_id.as_u64() as i64,
+                        ev.milestone_index.as_u32() as i16,
+                        &format!("{:?}", ev.donor),
+                        ev.amount.as_u128(),
+                    )
+                    .await
+                    .ok();
+            }
+            _ => {}
+        }
+    }
+
+    if let Some(last_block_number) = last_block_number {
         service
             .util
             .upsert_last_block_number(&last_block_number.to_string())
