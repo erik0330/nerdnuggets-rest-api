@@ -263,7 +263,7 @@ impl ProjectRepository {
     ) -> Result<Vec<ProjectItem>, SqlxError> {
         let mut filters = Vec::new();
         let mut index = 3;
-        let mut query = format!("SELECT p.id, p.nerd_id, p.user_id, p.title, p.description, p.cover_photo, p.category, p.status, p.funding_goal, p.duration, p.tags, p.funding_amount, p.count_contributors, p.created_at, p.updated_at, p.dao_at, p.started_at FROM project p");
+        let mut query = format!("SELECT p.id, p.nerd_id, p.proposal_id, p.user_id, p.title, p.description, p.cover_photo, p.category, p.status, p.funding_goal, p.duration, p.tags, p.funding_amount, p.count_contributors, p.created_at, p.updated_at, p.dao_at, p.started_at FROM project p");
         if title.as_ref().map_or(false, |s| !s.is_empty()) {
             filters.push(format!("p.title ILIKE ${index}"));
             index += 1;
