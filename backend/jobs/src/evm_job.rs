@@ -6,8 +6,21 @@ use utils::env::Env;
 pub async fn run(
     service: Arc<AppService>,
     evm_client: Arc<EVMClient>,
-    _env: Env,
+    env: Env,
 ) -> Result<(), anyhow::Error> {
+    // check if there is completed dao
+    if let Ok(completed_daos) = service
+        .project
+        .get_completed_daos(env.dao_duration.clone())
+        .await
+    {
+        for dao in completed_daos {
+            if let Ok(_) = evm_client.approve_project(dao.proposal_id as u64).await {
+                println!("approve dao: {}", dao.proposal_id);
+            }
+        }
+    }
+
     let from_block_number = service
         .util
         .get_last_block_number()
@@ -32,6 +45,13 @@ pub async fn run(
                         ev.support,
                         ev.weight.as_u128(),
                     )
+                    .await
+                    .ok();
+            }
+            DAO_CONTRACTEvents::ProjectApprovedFilter(ev) => {
+                service
+                    .project
+                    .finished_dao(ev.project_id.as_u64() as i64, ev.proceeded_to_funding)
                     .await
                     .ok();
             }

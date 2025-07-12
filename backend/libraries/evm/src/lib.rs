@@ -70,6 +70,21 @@ impl EVMClient {
         }
     }
 
+    pub async fn approve_project(&self, proposal_id: u64) -> Result<String, anyhow::Error> {
+        let proposal_id = U256::from(proposal_id);
+        if let Some(tx) = self
+            .dao_contract
+            .approve_project(proposal_id)
+            .send()
+            .await?
+            .await?
+        {
+            return Ok(tx.transaction_hash.to_string());
+        } else {
+            return Err(anyhow!("Unexpected error"));
+        }
+    }
+
     pub async fn get_dao_contract_events(
         &self,
         from_block_number: Option<u64>,

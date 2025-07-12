@@ -1,11 +1,11 @@
 use crate::pool::DatabasePool;
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Duration, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
     models::{
-        Dao, DaoVote, Milestone, Prediction, PredictionStatus, Project, ProjectComment, ProjectIds,
-        ProjectItem, TeamMember,
+        CompletedDao, Dao, DaoVote, Milestone, Prediction, PredictionStatus, Project,
+        ProjectComment, ProjectIds, ProjectItem, TeamMember,
     },
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
@@ -263,7 +263,7 @@ impl ProjectRepository {
     ) -> Result<Vec<ProjectItem>, SqlxError> {
         let mut filters = Vec::new();
         let mut index = 3;
-        let mut query = format!("SELECT p.id, p.nerd_id, p.user_id, p.title, p.description, p.cover_photo, p.category, p.status, p.funding_goal, p.duration, p.tags, p.funding_amount, p.count_contributors, p.created_at, p.updated_at, p.dao_at, p.started_at FROM project p");
+        let mut query = format!("SELECT p.id, p.nerd_id, p.proposal_id, p.user_id, p.title, p.description, p.cover_photo, p.category, p.status, p.funding_goal, p.duration, p.tags, p.funding_amount, p.count_contributors, p.created_at, p.updated_at, p.dao_at, p.started_at FROM project p");
         if title.as_ref().map_or(false, |s| !s.is_empty()) {
             filters.push(format!("p.title ILIKE ${index}"));
             index += 1;
@@ -643,6 +643,36 @@ impl ProjectRepository {
                 .await?;
         }
         Ok(res)
+    }
+
+    pub async fn get_completed_daos(
+        &self,
+        dao_duration: Duration,
+    ) -> Result<Vec<CompletedDao>, SqlxError> {
+        let dao_duration = dao_duration
+            .checked_add(&Duration::minutes(1))
+            .unwrap_or_default();
+        let daos = sqlx::query_as::<_, CompletedDao>(
+            "SELECT id, proposal_id, created_at FROM dao WHERE status = 0 AND created_at <= $1 ORDER BY created_at LIMIT 3",
+        )
+        .bind(
+            Utc::now()
+                .checked_sub_signed(dao_duration)
+                .unwrap_or_default(),
+        )
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(daos)
+    }
+
+    pub async fn finish_dao(&self, dao_id: Uuid, status: i16) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE dao SET status = $1, updated_at = $2 WHERE id = $3")
+            .bind(status)
+            .bind(Utc::now())
+            .bind(dao_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
     }
 
     pub async fn create_predictions(

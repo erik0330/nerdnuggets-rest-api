@@ -128,6 +128,17 @@ pub struct Milestone {
 }
 
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+pub struct Funding {
+    pub id: Uuid,
+    pub project_id: Uuid,
+    pub number: i16,
+    pub user_id: Uuid,
+    pub amount: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Category {
     pub id: Uuid,
@@ -138,10 +149,10 @@ pub struct Category {
 }
 
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct ProjectItem {
     pub id: Uuid,
     pub nerd_id: String,
+    pub proposal_id: i64,
     pub user_id: Uuid,
     pub title: Option<String>,
     pub description: Option<String>,
@@ -161,41 +172,12 @@ pub struct ProjectItem {
     pub started_at: Option<DateTime<Utc>>,
 }
 
-impl ProjectItem {
-    pub fn to_info(
-        &self,
-        user: UserInfo,
-        editor: Option<ProjectEditorInfo>,
-        category: Vec<Category>,
-    ) -> ProjectItemInfo {
-        ProjectItemInfo {
-            id: self.id,
-            nerd_id: self.nerd_id.clone(),
-            user,
-            editor,
-            title: self.title.clone().unwrap_or_default(),
-            description: self.description.clone().unwrap_or_default(),
-            cover_photo: self.cover_photo.clone(),
-            category,
-            status: self.status,
-            funding_goal: self.funding_goal,
-            duration: self.duration,
-            tags: self.tags.clone(),
-            funding_amount: self.funding_amount,
-            count_contributors: self.count_contributors,
-            created_at: self.created_at,
-            updated_at: self.updated_at,
-            dao_at: self.dao_at,
-            started_at: self.started_at,
-        }
-    }
-}
-
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectItemInfo {
     pub id: Uuid,
     pub nerd_id: String,
+    pub proposal_id: i64,
     pub user: UserInfo,
     pub editor: Option<ProjectEditorInfo>,
     pub title: String,
@@ -228,19 +210,6 @@ pub struct ProjectEditor {
     pub updated_at: DateTime<Utc>,
 }
 
-impl ProjectEditor {
-    pub fn to_info(&self, is_full: bool, user: UserInfo) -> ProjectEditorInfo {
-        ProjectEditorInfo {
-            id: self.id,
-            user,
-            status: self.status,
-            feedback: self.feedback.clone().filter(|_| is_full),
-            created_at: self.created_at,
-            updated_at: self.updated_at,
-        }
-    }
-}
-
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectEditorInfo {
@@ -268,17 +237,6 @@ pub struct ProjectComment {
     pub comment: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-}
-
-impl ProjectComment {
-    pub fn to_info(&self, user: UserInfo) -> ProjectCommentInfo {
-        ProjectCommentInfo {
-            id: self.id,
-            user,
-            comment: self.comment.clone(),
-            updated_at: self.updated_at,
-        }
-    }
 }
 
 #[derive(Clone, Deserialize, Serialize, Default, Debug)]
@@ -334,6 +292,61 @@ impl Project {
             updated_at: self.updated_at,
             dao_at: self.dao_at,
             started_at: self.started_at,
+        }
+    }
+}
+
+impl ProjectItem {
+    pub fn to_info(
+        &self,
+        user: UserInfo,
+        editor: Option<ProjectEditorInfo>,
+        category: Vec<Category>,
+    ) -> ProjectItemInfo {
+        ProjectItemInfo {
+            id: self.id,
+            nerd_id: self.nerd_id.clone(),
+            proposal_id: self.proposal_id,
+            user,
+            editor,
+            title: self.title.clone().unwrap_or_default(),
+            description: self.description.clone().unwrap_or_default(),
+            cover_photo: self.cover_photo.clone(),
+            category,
+            status: self.status,
+            funding_goal: self.funding_goal,
+            duration: self.duration,
+            tags: self.tags.clone(),
+            funding_amount: self.funding_amount,
+            count_contributors: self.count_contributors,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            dao_at: self.dao_at,
+            started_at: self.started_at,
+        }
+    }
+}
+
+impl ProjectEditor {
+    pub fn to_info(&self, is_full: bool, user: UserInfo) -> ProjectEditorInfo {
+        ProjectEditorInfo {
+            id: self.id,
+            user,
+            status: self.status,
+            feedback: self.feedback.clone().filter(|_| is_full),
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        }
+    }
+}
+
+impl ProjectComment {
+    pub fn to_info(&self, user: UserInfo) -> ProjectCommentInfo {
+        ProjectCommentInfo {
+            id: self.id,
+            user,
+            comment: self.comment.clone(),
+            updated_at: self.updated_at,
         }
     }
 }

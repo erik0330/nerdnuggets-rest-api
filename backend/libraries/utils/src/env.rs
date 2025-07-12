@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use dotenv;
 use rand::Rng;
 
@@ -25,6 +25,7 @@ pub struct Env {
     pub rpc_url: String,
     pub chain_id: u64,
     pub wallet_private_key: String,
+    pub dao_duration: Duration,
 }
 
 impl Env {
@@ -90,6 +91,11 @@ impl Env {
             .unwrap_or(1);
         let wallet_private_key =
             std::env::var("WALLET_PRIVATE_KEY").expect("WALLET_PRIVATE_KEY must be set");
+        let dao_duration = if production {
+            Duration::days(7)
+        } else {
+            Duration::hours(2)
+        };
 
         Self {
             port,
@@ -113,6 +119,7 @@ impl Env {
             rpc_url,
             chain_id,
             wallet_private_key,
+            dao_duration,
         }
     }
 
