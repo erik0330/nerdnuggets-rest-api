@@ -60,6 +60,14 @@ pub struct GetBountysOption {
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct GetBidsOption {
+    pub status: Option<BidStatus>,
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GetMyBidsOption {
     pub status: Option<BidStatus>,
     pub offset: Option<i32>,

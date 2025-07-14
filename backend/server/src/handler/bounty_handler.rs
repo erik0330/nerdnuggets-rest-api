@@ -3,7 +3,7 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
 use types::dto::{
-    BountyCreateRequest, BountyUpdateRequest, GetBountysOption, GetMyBidsOption,
+    BountyCreateRequest, BountyUpdateRequest, GetBidsOption, GetBountysOption, GetMyBidsOption,
     GetMyBountyStatsResponse, OffsetAndLimitOption, ReviewBountyRequest, SendBountyChatRequest,
     SubmitBidRequest, SubmitBountyCommentRequest,
 };
@@ -93,12 +93,12 @@ pub async fn get_bounties(
 pub async fn get_bids(
     Path(id): Path<String>,
     State(state): State<AppState>,
-    Query(opts): Query<OffsetAndLimitOption>,
+    Query(opts): Query<GetBidsOption>,
 ) -> Result<Json<Vec<BidInfo>>, ApiError> {
     let bids = state
         .service
         .bounty
-        .get_bids(&id, opts.offset, opts.limit)
+        .get_bids(&id, opts.status, opts.offset, opts.limit)
         .await?;
     Ok(Json(bids))
 }
@@ -124,6 +124,14 @@ pub async fn submit_bid(
 ) -> Result<Json<BidInfo>, ApiError> {
     let bid = state.service.bounty.submit_bid(&id, user, payload).await?;
     Ok(Json(bid))
+}
+
+pub async fn select_as_winner(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    let res = state.service.bounty.select_as_winner(&id).await?;
+    Ok(Json(res))
 }
 
 pub async fn reject_bid(

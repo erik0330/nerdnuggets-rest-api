@@ -239,18 +239,40 @@ impl BountyRepository {
         Ok(bounties)
     }
 
+    pub async fn get_bid_by_id(
+        &self,
+        bid_id: Uuid
+    ) -> Result<Bid, SqlxError> {
+        let bid = sqlx::query_as::<_, Bid>("SELECT * FROM bid WHERE id = $1")
+            .bind(bid_id)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(bid)
+    }
+
     pub async fn get_bids(
         &self,
         id: Uuid,
+        status: Option<BidStatus>,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<Bid>, SqlxError> {
-        let bids = sqlx::query_as::<_, Bid>("SELECT * FROM bid WHERE bounty_id = $1 LIMIT $2 OFFSET $3")
-            .bind(id)
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(self.db_conn.get_pool())
-            .await?;
+        let bids = if let Some(status) = status {
+            sqlx::query_as::<_, Bid>("SELECT * FROM bid WHERE bounty_id = $1 AND status = $2 LIMIT $3 OFFSET $4")
+                .bind(id)
+                .bind(status)
+                .bind(limit.unwrap_or(5))
+                .bind(offset.unwrap_or(0))
+                .fetch_all(self.db_conn.get_pool())
+                .await?
+        } else {
+            sqlx::query_as::<_, Bid>("SELECT * FROM bid WHERE bounty_id = $1 LIMIT $2 OFFSET $3")
+                .bind(id)
+                .bind(limit.unwrap_or(5))
+                .bind(offset.unwrap_or(0))
+                .fetch_all(self.db_conn.get_pool())
+                .await?
+        };
         Ok(bids)
     }
     
@@ -312,12 +334,39 @@ impl BountyRepository {
         Ok(bid)
     }
 
+    pub async fn select_as_winner(
+        &self,
+        bounty_id: Uuid,
+        bid_id: Uuid,    
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bid SET status = $1, updated_at = $2, accepted_at = $2 WHERE id = $3")
+            .bind(BidStatus::Accepted)
+            .bind(Utc::now())
+            .bind(bid_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        let res = row.rows_affected() == 1;
+        if res {
+            let _ = sqlx::query("UPDATE bid SET status = $1, updated_at = $2, rejected_at = $2 WHERE bounty_id = $3 AND id != $4 AND (status = $5 OR status = $6)")
+                .bind(BidStatus::Rejected)
+                .bind(Utc::now())
+                .bind(bounty_id)
+                .bind(bid_id)
+                .bind(BidStatus::Submitted)
+                .bind(BidStatus::UnderReview)
+                .execute(self.db_conn.get_pool())
+                .await?;
+        }
+        Ok(res)
+    }
+
     pub async fn reject_bid(
         &self,
         bid_id: Uuid
     ) -> Result<bool, SqlxError> {
-        let row = sqlx::query("UPDATE bid SET status = $1 WHERE id = $2")
+        let row = sqlx::query("UPDATE bid SET status = $1, updated_at = $2, rejected_at = $2 WHERE id = $3")
             .bind(BidStatus::Rejected)
+            .bind(Utc::now())
             .bind(bid_id)
             .execute(self.db_conn.get_pool())
             .await?;

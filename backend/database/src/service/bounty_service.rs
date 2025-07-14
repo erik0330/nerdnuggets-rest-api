@@ -209,12 +209,13 @@ impl BountyService {
     pub async fn get_bids(
         &self,
         id: &str,
+        status: Option<BidStatus>,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<BidInfo>, ApiError> {
         let bids = self
             .bounty_repo
-            .get_bids(uuid_from_str(id)?, offset, limit)
+            .get_bids(uuid_from_str(id)?, status, offset, limit)
             .await
             .map_err(|_| DbError::Str("Get bids failed".to_string()))?;
         let mut bid_infos = Vec::new();
@@ -312,6 +313,24 @@ impl BountyService {
             }
         }
         Ok(bid.to_info(user.to_info(), milestones))
+    }
+
+    pub async fn select_as_winner(&self, id: &str) -> Result<bool, ApiError> {
+        let bid_id = uuid_from_str(id)?;
+        let bid = self
+            .bounty_repo
+            .get_bid_by_id(bid_id)
+            .await
+            .map_err(|_| DbError::Str("Bid not found".to_string()))?;
+        if !self
+            .bounty_repo
+            .select_as_winner(bid.bounty_id, bid_id)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Select the bid as winner failed".to_string()).into());
+        }
+        Ok(true)
     }
 
     pub async fn reject_bid(&self, id: &str) -> Result<bool, ApiError> {
