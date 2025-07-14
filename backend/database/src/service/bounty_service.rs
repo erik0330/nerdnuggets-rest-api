@@ -206,6 +206,55 @@ impl BountyService {
         Ok(bounty_infos)
     }
 
+    pub async fn get_bids(
+        &self,
+        id: &str,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BidInfo>, ApiError> {
+        let bids = self
+            .bounty_repo
+            .get_bids(uuid_from_str(id)?, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Get bids failed".to_string()))?;
+        let mut bid_infos = Vec::new();
+        for bid in bids {
+            if let Some(user) = self.user_repo.get_user_by_id(bid.user_id).await {
+                let milestones = self
+                    .bounty_repo
+                    .get_bid_milestones(bid.id)
+                    .await
+                    .unwrap_or_default();
+                bid_infos.push(bid.to_info(user.to_info(), milestones));
+            }
+        }
+        Ok(bid_infos)
+    }
+
+    pub async fn get_my_bids(
+        &self,
+        user: User,
+        status: Option<BidStatus>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BidInfo>, ApiError> {
+        let bids = self
+            .bounty_repo
+            .get_my_bids(user.id, status, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Get my bids failed".to_string()))?;
+        let mut bid_infos = Vec::new();
+        for bid in bids {
+            let milestones = self
+                .bounty_repo
+                .get_bid_milestones(bid.id)
+                .await
+                .unwrap_or_default();
+            bid_infos.push(bid.to_info(user.to_info(), milestones));
+        }
+        Ok(bid_infos)
+    }
+
     pub async fn submit_bid(
         &self,
         id: &str,
@@ -265,53 +314,16 @@ impl BountyService {
         Ok(bid.to_info(user.to_info(), milestones))
     }
 
-    pub async fn get_bids(
-        &self,
-        id: &str,
-        offset: Option<i32>,
-        limit: Option<i32>,
-    ) -> Result<Vec<BidInfo>, ApiError> {
-        let bids = self
+    pub async fn reject_bid(&self, id: &str) -> Result<bool, ApiError> {
+        if !self
             .bounty_repo
-            .get_bids(uuid_from_str(id)?, offset, limit)
+            .reject_bid(uuid_from_str(id)?)
             .await
-            .map_err(|_| DbError::Str("Get bids failed".to_string()))?;
-        let mut bid_infos = Vec::new();
-        for bid in bids {
-            if let Some(user) = self.user_repo.get_user_by_id(bid.user_id).await {
-                let milestones = self
-                    .bounty_repo
-                    .get_bid_milestones(bid.id)
-                    .await
-                    .unwrap_or_default();
-                bid_infos.push(bid.to_info(user.to_info(), milestones));
-            }
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Reject the bid failed".to_string()).into());
         }
-        Ok(bid_infos)
-    }
-
-    pub async fn get_my_bids(
-        &self,
-        user: User,
-        status: Option<BidStatus>,
-        offset: Option<i32>,
-        limit: Option<i32>,
-    ) -> Result<Vec<BidInfo>, ApiError> {
-        let bids = self
-            .bounty_repo
-            .get_my_bids(user.id, status, offset, limit)
-            .await
-            .map_err(|_| DbError::Str("Get my bids failed".to_string()))?;
-        let mut bid_infos = Vec::new();
-        for bid in bids {
-            let milestones = self
-                .bounty_repo
-                .get_bid_milestones(bid.id)
-                .await
-                .unwrap_or_default();
-            bid_infos.push(bid.to_info(user.to_info(), milestones));
-        }
-        Ok(bid_infos)
+        Ok(true)
     }
 
     pub async fn get_bounty_comments(
