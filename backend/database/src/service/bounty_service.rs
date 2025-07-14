@@ -5,8 +5,8 @@ use types::{
     dto::{BountyCreateRequest, BountyUpdateRequest, SubmitBidRequest},
     error::{ApiError, DbError, UserError},
     models::{
-        BidInfo, Bounty, BountyChatInfo, BountyCommentInfo, BountyDifficulty, BountyInfo,
-        BountyReviewType, BountyStatus, User,
+        BidInfo, BidStatus, Bounty, BountyChatInfo, BountyCommentInfo, BountyDifficulty,
+        BountyInfo, BountyReviewType, BountyStatus, User,
     },
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -286,6 +286,30 @@ impl BountyService {
                     .unwrap_or_default();
                 bid_infos.push(bid.to_info(user.to_info(), milestones));
             }
+        }
+        Ok(bid_infos)
+    }
+
+    pub async fn get_my_bids(
+        &self,
+        user: User,
+        status: Option<BidStatus>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BidInfo>, ApiError> {
+        let bids = self
+            .bounty_repo
+            .get_my_bids(user.id, status, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Get my bids failed".to_string()))?;
+        let mut bid_infos = Vec::new();
+        for bid in bids {
+            let milestones = self
+                .bounty_repo
+                .get_bid_milestones(bid.id)
+                .await
+                .unwrap_or_default();
+            bid_infos.push(bid.to_info(user.to_info(), milestones));
         }
         Ok(bid_infos)
     }
