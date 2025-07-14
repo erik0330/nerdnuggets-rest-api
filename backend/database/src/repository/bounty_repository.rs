@@ -242,15 +242,26 @@ impl BountyRepository {
     pub async fn get_bids(
         &self,
         id: Uuid,
+        status: Option<BidStatus>,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<Bid>, SqlxError> {
-        let bids = sqlx::query_as::<_, Bid>("SELECT * FROM bid WHERE bounty_id = $1 LIMIT $2 OFFSET $3")
-            .bind(id)
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(self.db_conn.get_pool())
-            .await?;
+        let bids = if let Some(status) = status {
+            sqlx::query_as::<_, Bid>("SELECT * FROM bid WHERE bounty_id = $1 AND status = $2 LIMIT $3 OFFSET $4")
+                .bind(id)
+                .bind(status)
+                .bind(limit.unwrap_or(5))
+                .bind(offset.unwrap_or(0))
+                .fetch_all(self.db_conn.get_pool())
+                .await?
+        } else {
+            sqlx::query_as::<_, Bid>("SELECT * FROM bid WHERE bounty_id = $1 LIMIT $2 OFFSET $3")
+                .bind(id)
+                .bind(limit.unwrap_or(5))
+                .bind(offset.unwrap_or(0))
+                .fetch_all(self.db_conn.get_pool())
+                .await?
+        };
         Ok(bids)
     }
     

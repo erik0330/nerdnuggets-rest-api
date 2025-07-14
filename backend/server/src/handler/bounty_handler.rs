@@ -3,7 +3,7 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
 use types::dto::{
-    BountyCreateRequest, BountyUpdateRequest, GetBountysOption, GetMyBidsOption,
+    BountyCreateRequest, BountyUpdateRequest, GetBidsOption, GetBountysOption, GetMyBidsOption,
     GetMyBountyStatsResponse, OffsetAndLimitOption, ReviewBountyRequest, SendBountyChatRequest,
     SubmitBidRequest, SubmitBountyCommentRequest,
 };
@@ -93,12 +93,12 @@ pub async fn get_bounties(
 pub async fn get_bids(
     Path(id): Path<String>,
     State(state): State<AppState>,
-    Query(opts): Query<OffsetAndLimitOption>,
+    Query(opts): Query<GetBidsOption>,
 ) -> Result<Json<Vec<BidInfo>>, ApiError> {
     let bids = state
         .service
         .bounty
-        .get_bids(&id, opts.offset, opts.limit)
+        .get_bids(&id, opts.status, opts.offset, opts.limit)
         .await?;
     Ok(Json(bids))
 }

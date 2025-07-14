@@ -209,12 +209,13 @@ impl BountyService {
     pub async fn get_bids(
         &self,
         id: &str,
+        status: Option<BidStatus>,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<BidInfo>, ApiError> {
         let bids = self
             .bounty_repo
-            .get_bids(uuid_from_str(id)?, offset, limit)
+            .get_bids(uuid_from_str(id)?, status, offset, limit)
             .await
             .map_err(|_| DbError::Str("Get bids failed".to_string()))?;
         let mut bid_infos = Vec::new();
