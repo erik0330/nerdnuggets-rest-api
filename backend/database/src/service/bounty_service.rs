@@ -315,6 +315,24 @@ impl BountyService {
         Ok(bid.to_info(user.to_info(), milestones))
     }
 
+    pub async fn select_as_winner(&self, id: &str) -> Result<bool, ApiError> {
+        let bid_id = uuid_from_str(id)?;
+        let bid = self
+            .bounty_repo
+            .get_bid_by_id(bid_id)
+            .await
+            .map_err(|_| DbError::Str("Bid not found".to_string()))?;
+        if !self
+            .bounty_repo
+            .select_as_winner(bid.bounty_id, bid_id)
+            .await
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Select the bid as winner failed".to_string()).into());
+        }
+        Ok(true)
+    }
+
     pub async fn reject_bid(&self, id: &str) -> Result<bool, ApiError> {
         if !self
             .bounty_repo

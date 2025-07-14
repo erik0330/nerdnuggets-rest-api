@@ -126,6 +126,14 @@ pub async fn submit_bid(
     Ok(Json(bid))
 }
 
+pub async fn select_as_winner(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    let res = state.service.bounty.select_as_winner(&id).await?;
+    Ok(Json(res))
+}
+
 pub async fn reject_bid(
     Path(id): Path<String>,
     State(state): State<AppState>,
