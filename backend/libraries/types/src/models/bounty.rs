@@ -176,6 +176,30 @@ pub struct BountyCommentInfo {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+pub struct BountyChat {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub bounty_id: Uuid,
+    pub nerd_id: String,
+    pub message: String,
+    pub file_urls: Vec<String>,
+    pub is_read: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyChatInfo {
+    pub id: Uuid,
+    pub user: UserInfo,
+    pub message: String,
+    pub file_urls: Vec<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
 pub enum BountyStatus {
     PendingApproval,
@@ -325,6 +349,19 @@ impl BountyComment {
             user,
             comment: self.comment.clone(),
             created_at: self.created_at,
+        }
+    }
+}
+
+impl BountyChat {
+    pub fn to_info(&self, user: UserInfo) -> BountyChatInfo {
+        BountyChatInfo {
+            id: self.id,
+            user,
+            message: self.message.clone(),
+            file_urls: self.file_urls.clone(),
+            created_at: self.created_at,
+            updated_at: self.updated_at,
         }
     }
 }

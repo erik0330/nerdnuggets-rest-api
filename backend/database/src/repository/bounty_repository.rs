@@ -2,7 +2,7 @@ use crate::pool::DatabasePool;
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::{models::{Bid, BidMilestone, BidStatus, Bounty, BountyComment, BountyDifficulty, BountyMilestone, BountyStatus}, UserRoleType};
+use types::{models::{Bid, BidMilestone, BidStatus, Bounty, BountyChat, BountyComment, BountyDifficulty, BountyMilestone, BountyStatus}, UserRoleType};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -371,6 +371,42 @@ impl BountyRepository {
             .bind(approved_at)
             .bind(rejected_at)
             .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+    
+    pub async fn get_bounty_chats(
+        &self,
+        id: Uuid,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyChat>, SqlxError> {
+        let bounty_chats = sqlx::query_as::<_, BountyChat>(
+            "SELECT * FROM bounty_chat WHERE bounty_id = $1 ORDER BY created_at LIMIT $2 OFFSET $3",
+        )
+        .bind(id)
+        .bind(limit.unwrap_or(10))
+        .bind(offset.unwrap_or(0))
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(bounty_chats)
+    }
+
+    pub async fn send_bounty_chat(
+        &self,
+        user_id: Uuid,
+        bounty_id: Uuid,
+        nerd_id: &str,
+        message: &str,
+        file_urls: Vec<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("INSERT INTO bounty_chat (user_id, bounty_id, nerd_id, message, file_urls) VALUES ($1, $2, $3, $4, $5)")
+            .bind(user_id)
+            .bind(bounty_id)
+            .bind(nerd_id)
+            .bind(message)
+            .bind(file_urls)
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)

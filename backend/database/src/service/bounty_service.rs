@@ -5,8 +5,8 @@ use types::{
     dto::{BountyCreateRequest, BountyUpdateRequest, SubmitBidRequest},
     error::{ApiError, DbError, UserError},
     models::{
-        BidInfo, Bounty, BountyCommentInfo, BountyDifficulty, BountyInfo, BountyReviewType,
-        BountyStatus, User,
+        BidInfo, Bounty, BountyChatInfo, BountyCommentInfo, BountyDifficulty, BountyInfo,
+        BountyReviewType, BountyStatus, User,
     },
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -289,6 +289,7 @@ impl BountyService {
         }
         Ok(bid_infos)
     }
+
     pub async fn get_bounty_comments(
         &self,
         id: &str,
@@ -358,5 +359,44 @@ impl BountyService {
             return Err(DbError::Str("Review bounty failed".to_string()).into());
         }
         Ok(true)
+    }
+
+    pub async fn get_bounty_chats(
+        &self,
+        id: &str,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyChatInfo>, ApiError> {
+        let bounty_chats = self
+            .bounty_repo
+            .get_bounty_chats(uuid_from_str(id)?, offset, limit)
+            .await
+            .unwrap_or_default();
+        let mut pc_infos = Vec::new();
+        for pc in bounty_chats {
+            if let Some(user) = self.user_repo.get_user_by_id(pc.user_id).await {
+                pc_infos.push(pc.to_info(user.to_info()));
+            }
+        }
+        Ok(pc_infos)
+    }
+
+    pub async fn send_bounty_chat(
+        &self,
+        id: &str,
+        user_id: Uuid,
+        message: &str,
+        file_urls: Vec<String>,
+    ) -> Result<bool, ApiError> {
+        let res = if let Some(bounty) = self.bounty_repo.get_bounty_by_id(uuid_from_str(id)?).await
+        {
+            self.bounty_repo
+                .send_bounty_chat(user_id, bounty.id, &bounty.nerd_id, message, file_urls)
+                .await
+                .unwrap_or_default()
+        } else {
+            false
+        };
+        Ok(res)
     }
 }

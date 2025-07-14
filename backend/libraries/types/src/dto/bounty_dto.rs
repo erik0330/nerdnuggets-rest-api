@@ -112,9 +112,7 @@ pub struct GetMyBountyStatsResponse {
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct GetMarketStatsResponse {
-    pub total_bounties: i32,
-    pub active_this_week: i32,
-    pub total_rewards: i32,
-    pub avg_completion: i32,
+pub struct SendBountyChatRequest {
+    pub message: String,
+    pub file_urls: Option<Vec<String>>,
 }
