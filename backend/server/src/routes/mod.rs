@@ -82,6 +82,9 @@ pub async fn routes(db_conn: Arc<DatabasePool>, env: Env) -> IntoMakeService<Rou
                 "https://www.nerdnuggets.org"
                     .parse::<HeaderValue>()
                     .unwrap(),
+                "https://dev.nerdnuggets.org"
+                    .parse::<HeaderValue>()
+                    .unwrap(),
                 "http://localhost:3000".parse::<HeaderValue>().unwrap(),
                 "http://localhost:3001".parse::<HeaderValue>().unwrap(),
                 "http://localhost:3002".parse::<HeaderValue>().unwrap(),

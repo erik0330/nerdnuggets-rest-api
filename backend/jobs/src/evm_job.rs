@@ -15,8 +15,9 @@ pub async fn run(
         .await
     {
         for dao in completed_daos {
-            if let Ok(_) = evm_client.approve_project(dao.proposal_id as u64).await {
-                println!("approve dao: {}", dao.proposal_id);
+            match evm_client.approve_project(dao.proposal_id as u64).await {
+                Ok(_) => println!("approve dao: {}", dao.proposal_id),
+                Err(e) => println!("approve dao error: {}", e.to_string()),
             }
         }
     }
@@ -79,6 +80,7 @@ pub async fn run(
                     .await
                     .ok();
             }
+            FUNDING_CONTRACTEvents::PredictionPlacedFilter(_ev) => {}
             _ => {}
         }
     }
