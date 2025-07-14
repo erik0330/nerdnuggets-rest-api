@@ -2,7 +2,7 @@ use crate::pool::DatabasePool;
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::{models::{Bid, BidMilestone, BidStatus, Bounty, BountyComment, BountyDifficulty, BountyMilestone, BountyStatus}, UserRoleType};
+use types::{models::{Bid, BidMilestone, BidStatus, Bounty, BountyChat, BountyComment, BountyDifficulty, BountyMilestone, BountyStatus}, UserRoleType};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -253,6 +253,32 @@ impl BountyRepository {
             .await?;
         Ok(bids)
     }
+    
+    pub async fn get_my_bids(
+        &self,
+        user_id: Uuid,
+        status: Option<BidStatus>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<Bid>, SqlxError> {
+        let bids = if let Some(status) = status {
+            sqlx::query_as::<_, Bid>("SELECT * FROM bid WHERE user_id = $1 AND status = $2 LIMIT $3 OFFSET $4")
+                .bind(user_id)
+                .bind(status)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(self.db_conn.get_pool())
+                .await?
+        } else {
+            sqlx::query_as::<_, Bid>("SELECT * FROM bid WHERE user_id = $1 LIMIT $2 OFFSET $3")
+                .bind(user_id)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(self.db_conn.get_pool())
+                .await?
+        };
+        Ok(bids)
+    }
 
     pub async fn create_bid(
         &self,
@@ -284,6 +310,18 @@ impl BountyRepository {
             .fetch_one(self.db_conn.get_pool())
             .await?;
         Ok(bid)
+    }
+
+    pub async fn reject_bid(
+        &self,
+        bid_id: Uuid
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bid SET status = $1 WHERE id = $2")
+            .bind(BidStatus::Rejected)
+            .bind(bid_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
     }
 
     pub async fn get_bid_milestones(
@@ -371,6 +409,42 @@ impl BountyRepository {
             .bind(approved_at)
             .bind(rejected_at)
             .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+    
+    pub async fn get_bounty_chats(
+        &self,
+        id: Uuid,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyChat>, SqlxError> {
+        let bounty_chats = sqlx::query_as::<_, BountyChat>(
+            "SELECT * FROM bounty_chat WHERE bounty_id = $1 ORDER BY created_at LIMIT $2 OFFSET $3",
+        )
+        .bind(id)
+        .bind(limit.unwrap_or(10))
+        .bind(offset.unwrap_or(0))
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(bounty_chats)
+    }
+
+    pub async fn send_bounty_chat(
+        &self,
+        user_id: Uuid,
+        bounty_id: Uuid,
+        nerd_id: &str,
+        message: &str,
+        file_urls: Vec<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("INSERT INTO bounty_chat (user_id, bounty_id, nerd_id, message, file_urls) VALUES ($1, $2, $3, $4, $5)")
+            .bind(user_id)
+            .bind(bounty_id)
+            .bind(nerd_id)
+            .bind(message)
+            .bind(file_urls)
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)

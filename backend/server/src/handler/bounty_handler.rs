@@ -3,12 +3,12 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
 use types::dto::{
-    BountyCreateRequest, BountyUpdateRequest, GetBountysOption, GetMarketStatsResponse,
-    GetMyBountyStatsResponse, OffsetAndLimitOption, ReviewBountyRequest, SubmitBidRequest,
-    SubmitBountyCommentRequest,
+    BountyCreateRequest, BountyUpdateRequest, GetBountysOption, GetMyBidsOption,
+    GetMyBountyStatsResponse, OffsetAndLimitOption, ReviewBountyRequest, SendBountyChatRequest,
+    SubmitBidRequest, SubmitBountyCommentRequest,
 };
 use types::error::{ApiError, DbError, ValidatedRequest};
-use types::models::{BidInfo, BountyCommentInfo, BountyInfo, User};
+use types::models::{BidInfo, BountyChatInfo, BountyCommentInfo, BountyInfo, User};
 use types::UserRoleType;
 
 pub async fn get_bounty_by_id(
@@ -103,6 +103,19 @@ pub async fn get_bids(
     Ok(Json(bids))
 }
 
+pub async fn get_my_bids(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+    Query(opts): Query<GetMyBidsOption>,
+) -> Result<Json<Vec<BidInfo>>, ApiError> {
+    let bids = state
+        .service
+        .bounty
+        .get_my_bids(user, opts.status, opts.offset, opts.limit)
+        .await?;
+    Ok(Json(bids))
+}
+
 pub async fn submit_bid(
     Extension(user): Extension<User>,
     Path(id): Path<String>,
@@ -111,6 +124,14 @@ pub async fn submit_bid(
 ) -> Result<Json<BidInfo>, ApiError> {
     let bid = state.service.bounty.submit_bid(&id, user, payload).await?;
     Ok(Json(bid))
+}
+
+pub async fn reject_bid(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    let res = state.service.bounty.reject_bid(&id).await?;
+    Ok(Json(res))
 }
 
 pub async fn get_bounty_comments(
@@ -171,14 +192,34 @@ pub async fn get_my_bounty_stats(
     }))
 }
 
-pub async fn get_market_stats(
-    Extension(_user): Extension<User>,
-    State(_state): State<AppState>,
-) -> Result<Json<GetMarketStatsResponse>, ApiError> {
-    Ok(Json(GetMarketStatsResponse {
-        total_bounties: 0,
-        active_this_week: 0,
-        total_rewards: 0,
-        avg_completion: 0,
-    }))
+pub async fn get_bounty_chats(
+    Path(id): Path<String>,
+    Query(opts): Query<OffsetAndLimitOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<BountyChatInfo>>, ApiError> {
+    let chats = state
+        .service
+        .bounty
+        .get_bounty_chats(&id, opts.offset, opts.limit)
+        .await?;
+    Ok(Json(chats))
+}
+
+pub async fn send_bounty_chat(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SendBountyChatRequest>,
+) -> Result<Json<bool>, ApiError> {
+    let res = state
+        .service
+        .bounty
+        .send_bounty_chat(
+            &id,
+            user.id,
+            &payload.message,
+            payload.file_urls.unwrap_or_default(),
+        )
+        .await?;
+    Ok(Json(res))
 }

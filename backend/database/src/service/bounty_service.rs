@@ -5,8 +5,8 @@ use types::{
     dto::{BountyCreateRequest, BountyUpdateRequest, SubmitBidRequest},
     error::{ApiError, DbError, UserError},
     models::{
-        BidInfo, Bounty, BountyCommentInfo, BountyDifficulty, BountyInfo, BountyReviewType,
-        BountyStatus, User,
+        BidInfo, BidStatus, Bounty, BountyChatInfo, BountyCommentInfo, BountyDifficulty,
+        BountyInfo, BountyReviewType, BountyStatus, User,
     },
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -206,6 +206,55 @@ impl BountyService {
         Ok(bounty_infos)
     }
 
+    pub async fn get_bids(
+        &self,
+        id: &str,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BidInfo>, ApiError> {
+        let bids = self
+            .bounty_repo
+            .get_bids(uuid_from_str(id)?, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Get bids failed".to_string()))?;
+        let mut bid_infos = Vec::new();
+        for bid in bids {
+            if let Some(user) = self.user_repo.get_user_by_id(bid.user_id).await {
+                let milestones = self
+                    .bounty_repo
+                    .get_bid_milestones(bid.id)
+                    .await
+                    .unwrap_or_default();
+                bid_infos.push(bid.to_info(user.to_info(), milestones));
+            }
+        }
+        Ok(bid_infos)
+    }
+
+    pub async fn get_my_bids(
+        &self,
+        user: User,
+        status: Option<BidStatus>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BidInfo>, ApiError> {
+        let bids = self
+            .bounty_repo
+            .get_my_bids(user.id, status, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Get my bids failed".to_string()))?;
+        let mut bid_infos = Vec::new();
+        for bid in bids {
+            let milestones = self
+                .bounty_repo
+                .get_bid_milestones(bid.id)
+                .await
+                .unwrap_or_default();
+            bid_infos.push(bid.to_info(user.to_info(), milestones));
+        }
+        Ok(bid_infos)
+    }
+
     pub async fn submit_bid(
         &self,
         id: &str,
@@ -265,30 +314,18 @@ impl BountyService {
         Ok(bid.to_info(user.to_info(), milestones))
     }
 
-    pub async fn get_bids(
-        &self,
-        id: &str,
-        offset: Option<i32>,
-        limit: Option<i32>,
-    ) -> Result<Vec<BidInfo>, ApiError> {
-        let bids = self
+    pub async fn reject_bid(&self, id: &str) -> Result<bool, ApiError> {
+        if !self
             .bounty_repo
-            .get_bids(uuid_from_str(id)?, offset, limit)
+            .reject_bid(uuid_from_str(id)?)
             .await
-            .map_err(|_| DbError::Str("Get bids failed".to_string()))?;
-        let mut bid_infos = Vec::new();
-        for bid in bids {
-            if let Some(user) = self.user_repo.get_user_by_id(bid.user_id).await {
-                let milestones = self
-                    .bounty_repo
-                    .get_bid_milestones(bid.id)
-                    .await
-                    .unwrap_or_default();
-                bid_infos.push(bid.to_info(user.to_info(), milestones));
-            }
+            .unwrap_or_default()
+        {
+            return Err(DbError::Str("Reject the bid failed".to_string()).into());
         }
-        Ok(bid_infos)
+        Ok(true)
     }
+
     pub async fn get_bounty_comments(
         &self,
         id: &str,
@@ -358,5 +395,44 @@ impl BountyService {
             return Err(DbError::Str("Review bounty failed".to_string()).into());
         }
         Ok(true)
+    }
+
+    pub async fn get_bounty_chats(
+        &self,
+        id: &str,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyChatInfo>, ApiError> {
+        let bounty_chats = self
+            .bounty_repo
+            .get_bounty_chats(uuid_from_str(id)?, offset, limit)
+            .await
+            .unwrap_or_default();
+        let mut pc_infos = Vec::new();
+        for pc in bounty_chats {
+            if let Some(user) = self.user_repo.get_user_by_id(pc.user_id).await {
+                pc_infos.push(pc.to_info(user.to_info()));
+            }
+        }
+        Ok(pc_infos)
+    }
+
+    pub async fn send_bounty_chat(
+        &self,
+        id: &str,
+        user_id: Uuid,
+        message: &str,
+        file_urls: Vec<String>,
+    ) -> Result<bool, ApiError> {
+        let res = if let Some(bounty) = self.bounty_repo.get_bounty_by_id(uuid_from_str(id)?).await
+        {
+            self.bounty_repo
+                .send_bounty_chat(user_id, bounty.id, &bounty.nerd_id, message, file_urls)
+                .await
+                .unwrap_or_default()
+        } else {
+            false
+        };
+        Ok(res)
     }
 }

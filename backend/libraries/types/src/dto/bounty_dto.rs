@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::models::{BountyDifficulty, BountyReviewType, BountyStatus};
+use crate::models::{BidStatus, BountyDifficulty, BountyReviewType, BountyStatus};
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -54,6 +54,14 @@ pub struct GetBountysOption {
     pub category_id: Option<Uuid>,
     pub difficulty: Option<BountyDifficulty>,
     pub is_mine: Option<bool>,
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetMyBidsOption {
+    pub status: Option<BidStatus>,
     pub offset: Option<i32>,
     pub limit: Option<i32>,
 }
@@ -112,9 +120,7 @@ pub struct GetMyBountyStatsResponse {
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct GetMarketStatsResponse {
-    pub total_bounties: i32,
-    pub active_this_week: i32,
-    pub total_rewards: i32,
-    pub avg_completion: i32,
+pub struct SendBountyChatRequest {
+    pub message: String,
+    pub file_urls: Option<Vec<String>>,
 }
