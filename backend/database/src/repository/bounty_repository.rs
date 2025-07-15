@@ -466,13 +466,15 @@ impl BountyRepository {
     pub async fn get_bounty_chats(
         &self,
         id: Uuid,
+        chat_number: &str,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<BountyChat>, SqlxError> {
         let bounty_chats = sqlx::query_as::<_, BountyChat>(
-            "SELECT * FROM bounty_chat WHERE bounty_id = $1 ORDER BY created_at LIMIT $2 OFFSET $3",
+            "SELECT * FROM bounty_chat WHERE bounty_id = $1 AND chat_number = $2 ORDER BY created_at LIMIT $3 OFFSET $4",
         )
         .bind(id)
+        .bind(chat_number)
         .bind(limit.unwrap_or(10))
         .bind(offset.unwrap_or(0))
         .fetch_all(self.db_conn.get_pool())
@@ -485,17 +487,82 @@ impl BountyRepository {
         user_id: Uuid,
         bounty_id: Uuid,
         nerd_id: &str,
+        chat_number: &str,
         message: &str,
         file_urls: Vec<String>,
     ) -> Result<bool, SqlxError> {
-        let row = sqlx::query("INSERT INTO bounty_chat (user_id, bounty_id, nerd_id, message, file_urls) VALUES ($1, $2, $3, $4, $5)")
+        let row = sqlx::query("INSERT INTO bounty_chat (user_id, bounty_id, nerd_id, chat_number, message, file_urls) VALUES ($1, $2, $3, $4, $5, $6)")
             .bind(user_id)
             .bind(bounty_id)
             .bind(nerd_id)
+            .bind(chat_number)
             .bind(message)
             .bind(file_urls)
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_bounty_chat_numbers(
+        &self,
+        bounty_id: Uuid,
+    ) -> Result<Vec<String>, SqlxError> {
+        let chat_numbers = sqlx::query_scalar!(
+            "SELECT DISTINCT chat_number FROM bounty_chat WHERE bounty_id = $1 ORDER BY chat_number",
+            bounty_id
+        ).fetch_all(self.db_conn.get_pool()).await?;
+        Ok(chat_numbers)
+    }
+
+    pub async fn get_chat_number_info(
+        &self,
+        bounty_id: Uuid,
+        chat_number: &str,
+    ) -> Result<Option<(String, Uuid, String, Option<DateTime<Utc>>, i64)>, SqlxError> {
+        let result = sqlx::query!(
+            r#"
+            SELECT 
+                u.name as bidder_name,
+                u.id as bidder_id,
+                bc.message as last_message,
+                bc.created_at as last_message_time,
+                COUNT(CASE WHEN bc.is_read = false AND bc.user_id != u.id THEN 1 END) as unread_count
+            FROM bounty_chat bc
+            JOIN users u ON bc.user_id = u.id
+            WHERE bc.bounty_id = $1 AND bc.chat_number = $2
+            GROUP BY u.name, u.id, bc.message, bc.created_at
+            ORDER BY bc.created_at DESC
+            LIMIT 1
+            "#,
+            bounty_id,
+            chat_number
+        )
+        .fetch_optional(self.db_conn.get_pool())
+        .await?;
+
+        Ok(result.map(|row| (
+            row.bidder_name.unwrap_or_default(),
+            row.bidder_id,
+            row.last_message,
+            row.last_message_time,
+            row.unread_count.unwrap_or(0),
+        )))
+    }
+
+    pub async fn mark_chat_as_read(
+        &self,
+        bounty_id: Uuid,
+        chat_number: &str,
+        user_id: Uuid,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE bounty_chat SET is_read = true WHERE bounty_id = $1 AND chat_number = $2 AND user_id != $3"
+        )
+        .bind(bounty_id)
+        .bind(chat_number)
+        .bind(user_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() > 0)
     }
 }

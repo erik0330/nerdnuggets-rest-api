@@ -6,6 +6,7 @@ CREATE TABLE
         user_id UUID NOT NULL,
         bounty_id UUID NOT NULL,
         nerd_id VARCHAR(255) NOT NULL,
+        chat_number VARCHAR(255) NOT NULL,
         message TEXT NOT NULL,
         file_urls TEXT[] DEFAULT ARRAY[]::TEXT[],
         is_read BOOLEAN DEFAULT false,

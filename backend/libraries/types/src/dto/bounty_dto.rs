@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
@@ -131,4 +132,31 @@ pub struct GetMyBountyStatsResponse {
 pub struct SendBountyChatRequest {
     pub message: String,
     pub file_urls: Option<Vec<String>>,
+    pub chat_number: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetBountyChatsOption {
+    pub chat_number: String,
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetBountyChatNumbersResponse {
+    pub chat_numbers: Vec<String>,
+    pub chat_info: Vec<ChatNumberInfo>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatNumberInfo {
+    pub chat_number: String,
+    pub bidder_name: String,
+    pub bidder_id: Uuid,
+    pub last_message: String,
+    pub last_message_time: Option<DateTime<Utc>>,
+    pub unread_count: i32,
 }

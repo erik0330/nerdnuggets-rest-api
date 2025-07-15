@@ -3,13 +3,15 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
 use types::dto::{
-    BountyCreateRequest, BountyUpdateRequest, GetBidsOption, GetBountysOption, GetMyBidsOption,
-    GetMyBountyStatsResponse, OffsetAndLimitOption, ReviewBountyRequest, SendBountyChatRequest,
-    SubmitBidRequest, SubmitBountyCommentRequest,
+    BountyCreateRequest, BountyUpdateRequest, GetBidsOption, GetBountyChatNumbersResponse,
+    GetBountyChatsOption, GetBountysOption, GetMyBidsOption, GetMyBountyStatsResponse,
+    OffsetAndLimitOption, ReviewBountyRequest, SendBountyChatRequest, SubmitBidRequest,
+    SubmitBountyCommentRequest,
 };
 use types::error::{ApiError, DbError, ValidatedRequest};
 use types::models::{BidInfo, BountyChatInfo, BountyCommentInfo, BountyInfo, User};
 use types::UserRoleType;
+use utils::commons::uuid_from_str;
 
 pub async fn get_bounty_by_id(
     Path(id): Path<String>,
@@ -202,13 +204,13 @@ pub async fn get_my_bounty_stats(
 
 pub async fn get_bounty_chats(
     Path(id): Path<String>,
-    Query(opts): Query<OffsetAndLimitOption>,
+    Query(opts): Query<GetBountyChatsOption>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<BountyChatInfo>>, ApiError> {
     let chats = state
         .service
         .bounty
-        .get_bounty_chats(&id, opts.offset, opts.limit)
+        .get_bounty_chats(&id, &opts.chat_number, opts.offset, opts.limit)
         .await?;
     Ok(Json(chats))
 }
@@ -227,7 +229,69 @@ pub async fn send_bounty_chat(
             user.id,
             &payload.message,
             payload.file_urls.unwrap_or_default(),
+            &payload.chat_number,
         )
         .await?;
     Ok(Json(res))
+}
+
+pub async fn get_bounty_chat_numbers(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<GetBountyChatNumbersResponse>, ApiError> {
+    let chat_numbers = state.service.bounty.get_bounty_chat_numbers(&id).await?;
+    let mut chat_info = Vec::new();
+
+    for chat_number in &chat_numbers {
+        if let Ok(info) = state
+            .service
+            .bounty
+            .get_chat_number_info(&id, chat_number)
+            .await
+        {
+            chat_info.push(info);
+        }
+    }
+
+    Ok(Json(GetBountyChatNumbersResponse {
+        chat_numbers,
+        chat_info,
+    }))
+}
+
+pub async fn mark_chat_as_read(
+    Extension(user): Extension<User>,
+    Path((id, chat_number)): Path<(String, String)>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    let res = state
+        .service
+        .bounty
+        .mark_chat_as_read(&id, &chat_number, user.id)
+        .await?;
+    Ok(Json(res))
+}
+
+pub async fn create_bidder_chat(
+    Extension(user): Extension<User>,
+    Path((id, bidder_id)): Path<(String, String)>,
+    State(state): State<AppState>,
+) -> Result<Json<String>, ApiError> {
+    // Verify that the current user is the bounty creator (funder)
+    let bounty = state.service.bounty.get_bounty_by_id(&id).await?;
+    if bounty.user.id != user.id {
+        return Err(DbError::Str(
+            "Only the bounty creator can initiate chats with bidders".to_string(),
+        )
+        .into());
+    }
+
+    let bidder_uuid = uuid_from_str(&bidder_id)?;
+    let chat_number = state
+        .service
+        .bounty
+        .get_or_create_chat_number(user.id, &bounty.nerd_id, &id, bidder_uuid)
+        .await?;
+
+    Ok(Json(chat_number))
 }
