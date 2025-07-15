@@ -182,6 +182,7 @@ pub struct BountyChat {
     pub user_id: Uuid,
     pub bounty_id: Uuid,
     pub nerd_id: String,
+    pub chat_number: String,
     pub message: String,
     pub file_urls: Vec<String>,
     pub is_read: bool,

@@ -1,8 +1,9 @@
 use crate::{
     handler::bounty_handler::{
-        create_bounty, delete_bounty, get_bids, get_bounty_chats, get_bounty_comments, get_my_bids,
-        get_my_bounty_stats, reject_bid, review_bounty, select_as_winner, send_bounty_chat,
-        submit_bid, submit_bounty_comment, update_bounty,
+        create_bidder_chat, create_bounty, delete_bounty, get_bids, get_bounty_chat_numbers,
+        get_bounty_chats, get_bounty_comments, get_my_bids, get_my_bounty_stats, mark_chat_as_read,
+        reject_bid, review_bounty, select_as_winner, send_bounty_chat, submit_bid,
+        submit_bounty_comment, update_bounty,
     },
     state::AppState,
 };
@@ -24,6 +25,12 @@ pub fn routes() -> Router<AppState> {
         .route("/bounty/stats", get(get_my_bounty_stats))
         .route("/bounty/:id/chat", get(get_bounty_chats))
         .route("/bounty/:id/chat", post(send_bounty_chat))
+        .route("/bounty/:id/chat/numbers", get(get_bounty_chat_numbers))
+        .route("/bounty/:id/chat/:chat_number/read", put(mark_chat_as_read))
+        .route(
+            "/bounty/:id/chat/bidder/:bidder_id",
+            post(create_bidder_chat),
+        )
         .route("/bid/:id/reject", put(reject_bid))
         .route("/bid/:id/win", put(select_as_winner))
         .route("/bid/me", get(get_my_bids))

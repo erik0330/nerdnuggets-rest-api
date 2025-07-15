@@ -2,7 +2,7 @@ use crate::{pool::DatabasePool, BountyRepository, UserRepository, UtilRepository
 use chrono::{Datelike, NaiveDate, Utc};
 use std::sync::Arc;
 use types::{
-    dto::{BountyCreateRequest, BountyUpdateRequest, SubmitBidRequest},
+    dto::{BountyCreateRequest, BountyUpdateRequest, ChatNumberInfo, SubmitBidRequest},
     error::{ApiError, DbError, UserError},
     models::{
         BidInfo, BidStatus, Bounty, BountyChatInfo, BountyCommentInfo, BountyDifficulty,
@@ -419,12 +419,13 @@ impl BountyService {
     pub async fn get_bounty_chats(
         &self,
         id: &str,
+        chat_number: &str,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<BountyChatInfo>, ApiError> {
         let bounty_chats = self
             .bounty_repo
-            .get_bounty_chats(uuid_from_str(id)?, offset, limit)
+            .get_bounty_chats(uuid_from_str(id)?, chat_number, offset, limit)
             .await
             .unwrap_or_default();
         let mut pc_infos = Vec::new();
@@ -442,16 +443,109 @@ impl BountyService {
         user_id: Uuid,
         message: &str,
         file_urls: Vec<String>,
+        chat_number: &str,
     ) -> Result<bool, ApiError> {
         let res = if let Some(bounty) = self.bounty_repo.get_bounty_by_id(uuid_from_str(id)?).await
         {
             self.bounty_repo
-                .send_bounty_chat(user_id, bounty.id, &bounty.nerd_id, message, file_urls)
+                .send_bounty_chat(
+                    user_id,
+                    bounty.id,
+                    &bounty.nerd_id,
+                    chat_number,
+                    message,
+                    file_urls,
+                )
                 .await
                 .unwrap_or_default()
         } else {
             false
         };
         Ok(res)
+    }
+
+    pub async fn get_bounty_chat_numbers(&self, id: &str) -> Result<Vec<String>, ApiError> {
+        let chat_numbers = self
+            .bounty_repo
+            .get_bounty_chat_numbers(uuid_from_str(id)?)
+            .await
+            .map_err(|_| DbError::Str("Failed to get chat numbers".to_string()))?;
+        Ok(chat_numbers)
+    }
+
+    pub async fn get_chat_number_info(
+        &self,
+        id: &str,
+        chat_number: &str,
+    ) -> Result<ChatNumberInfo, ApiError> {
+        if let Some((bidder_name, bidder_id, last_message, last_message_time, unread_count)) = self
+            .bounty_repo
+            .get_chat_number_info(uuid_from_str(id)?, chat_number)
+            .await
+            .map_err(|_| DbError::Str("Failed to get chat info".to_string()))?
+        {
+            Ok(ChatNumberInfo {
+                chat_number: chat_number.to_string(),
+                bidder_name,
+                bidder_id,
+                last_message,
+                last_message_time,
+                unread_count: unread_count as i32,
+            })
+        } else {
+            Err(DbError::Str("Chat not found".to_string()).into())
+        }
+    }
+
+    pub async fn mark_chat_as_read(
+        &self,
+        id: &str,
+        chat_number: &str,
+        user_id: Uuid,
+    ) -> Result<bool, ApiError> {
+        let res = self
+            .bounty_repo
+            .mark_chat_as_read(uuid_from_str(id)?, chat_number, user_id)
+            .await
+            .unwrap_or_default();
+        Ok(res)
+    }
+
+    pub fn generate_chat_number(&self, nerd_id: &str, bidder_id: Uuid) -> String {
+        format!("{}-{}", nerd_id, bidder_id)
+    }
+
+    pub async fn get_or_create_chat_number(
+        &self,
+        user_id: Uuid,
+        nerd_id: &str,
+        bounty_id: &str,
+        bidder_id: Uuid,
+    ) -> Result<String, ApiError> {
+        let chat_number = self.generate_chat_number(nerd_id, bidder_id);
+
+        // Check if this chat number already exists
+        let existing_chats = self
+            .bounty_repo
+            .get_bounty_chats(uuid_from_str(bounty_id)?, &chat_number, None, Some(1))
+            .await
+            .unwrap_or_default();
+
+        if existing_chats.is_empty() {
+            // Create an initial message to establish the chat
+            let _ = self
+                .bounty_repo
+                .send_bounty_chat(
+                    user_id, // funder's user_id
+                    uuid_from_str(bounty_id)?,
+                    nerd_id,
+                    &chat_number,
+                    "Chat started",
+                    Vec::new(),
+                )
+                .await;
+        }
+
+        Ok(chat_number)
     }
 }
