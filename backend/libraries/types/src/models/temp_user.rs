@@ -6,6 +6,7 @@ use uuid::Uuid;
 pub struct TempUser {
     pub id: Uuid,
     pub email: Option<String>,
+    pub name: Option<String>,
     pub password: Option<String>,
     pub verify_type: Option<String>,
     pub passkey: Option<String>,

@@ -1,9 +1,9 @@
 use crate::pool::DatabasePool;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
-    models::{ActivityHistory, User},
+    models::{ActivityHistory, TempUser, User},
     UserRoleType, UserTierType,
 };
 use uuid::Uuid;
@@ -79,20 +79,18 @@ impl UserRepository {
     pub async fn create_user_with_email(
         &self,
         name: &str,
-        institution: &str,
         email: &str,
         password: &str,
     ) -> Result<User, SqlxError> {
         let user = sqlx::query_as::<_, User>(
-            "INSERT INTO users (name, email, password, institution, tier, verified_email)
-            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+            "INSERT INTO users (name, email, password, tier, verified_email)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *",
         )
         .bind(name)
         .bind(email)
         .bind(password)
-        .bind(institution)
         .bind(UserTierType::Bronze.to_string())
-        .bind(true)
+        .bind(false)
         .fetch_one(self.db_conn.get_pool())
         .await?;
         return Ok(user);
@@ -212,5 +210,90 @@ impl UserRepository {
             .await?
         };
         Ok(histories)
+    }
+
+    // Temp user methods for email verification
+    pub async fn tempuser_by_email(&self, email: &str) -> Result<TempUser, SqlxError> {
+        let temp_user = sqlx::query_as::<_, TempUser>("SELECT * FROM temp_users WHERE email = $1")
+            .bind(email)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(temp_user)
+    }
+
+    pub async fn create_tempuser_with_email(
+        &self,
+        email: &str,
+        name: &str,
+        password: &str,
+        verify_type: &str,
+        passkey: &str,
+        try_limit: i16,
+        iat: i64,
+        exp: i64,
+        now: DateTime<Utc>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "INSERT INTO temp_users (email, name, password, verify_type, passkey, try_limit, iat, exp, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        )
+        .bind(email)
+        .bind(name)
+        .bind(password)
+        .bind(verify_type)
+        .bind(passkey)
+        .bind(try_limit)
+        .bind(iat)
+        .bind(exp)
+        .bind(now)
+        .bind(now)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn update_tempuser_with_email(
+        &self,
+        email: &str,
+        name: &str,
+        password: &str,
+        verify_type: &str,
+        passkey: &str,
+        try_limit: i16,
+        iat: i64,
+        exp: i64,
+        now: chrono::DateTime<Utc>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE temp_users SET name = $1, password = $2, verify_type = $3, passkey = $4, try_limit = $5, iat = $6, exp = $7, updated_at = $8 WHERE email = $9",
+        )
+        .bind(name)
+        .bind(password)
+        .bind(verify_type)
+        .bind(passkey)
+        .bind(try_limit)
+        .bind(iat)
+        .bind(exp)
+        .bind(now)
+        .bind(email)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn delete_tempuser_by_email(&self, email: &str) -> Result<bool, SqlxError> {
+        let row = sqlx::query("DELETE FROM temp_users WHERE email = $1")
+            .bind(email)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn verify_user_email(&self, email: &str) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE users SET verified_email = true WHERE email = $1")
+            .bind(email)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
     }
 }

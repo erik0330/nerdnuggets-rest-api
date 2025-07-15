@@ -177,6 +177,7 @@ pub struct UserCheckUsernameOption {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserCheckResponse {
     pub is_available: bool,
 }
@@ -185,7 +186,6 @@ pub struct UserCheckResponse {
 #[serde(rename_all = "camelCase")]
 pub struct UserRegisterWithEmailRequest {
     pub name: String,
-    pub institution: String,
     pub email: String,
     pub password: String,
 }
@@ -209,21 +209,24 @@ pub struct UserOnboardingRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
-pub struct UserSendPasskeyAgainRequest {
+#[serde(rename_all = "camelCase")]
+pub struct ResendVerificationEmailRequest {
     pub email: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct UserSendPasskeyResponse {
-    pub is_sent_passkey: bool,
+#[serde(rename_all = "camelCase")]
+pub struct EmailVerificationResponse {
+    pub is_sent: bool,
     pub iat: i64,
     pub exp: i64,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
-pub struct UserVerifyPasskeyRequest {
+#[serde(rename_all = "camelCase")]
+pub struct VerifyEmailRequest {
     pub email: String,
-    pub passkey: Option<String>,
+    pub verification_code: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
@@ -249,6 +252,7 @@ pub struct ChangeRoleRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateUsernameRequest {
     #[validate(length(
         min = 5,
@@ -259,21 +263,25 @@ pub struct UserUpdateUsernameRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserSendVerifyCodeResetPwdRequest {
     pub email: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserResendVerifyCodeResetPwdRequest {
     pub email: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserVerifyPasskeyResetPwdRequest {
     pub passkey: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdatePasswordRequest {
     pub passkey: String,
     #[validate(length(
@@ -291,11 +299,13 @@ pub struct UserUpdatePasswordRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateIsActiveRequest {
     pub is_active: bool,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateRolesRequest {
     pub role_editor: Option<bool>,
     pub role_reviewer: Option<bool>,
@@ -304,16 +314,19 @@ pub struct UserUpdateRolesRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdatePublishingRequest {
     pub allowed_comments: bool,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateNotificationRequest {
     pub on_notification: bool,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateEmailRequest {
     pub email: String,
     pub password: Option<String>,
@@ -321,6 +334,7 @@ pub struct UserUpdateEmailRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateProfileRequest {
     pub first_name: Option<String>,
     pub middle_name: Option<String>,
@@ -331,6 +345,7 @@ pub struct UserUpdateProfileRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateSettingProfileRequest {
     pub first_name: Option<String>,
     pub middle_name: Option<String>,
@@ -346,6 +361,7 @@ pub struct UserUpdateSettingProfileRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserAddAffiliationRequest {
     #[validate(length(min = 1, message = "Title is required"))]
     pub title: Option<String>,
@@ -363,12 +379,14 @@ pub struct UserAddAffiliationRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserAddAffiliationResponse {
     pub state: bool,
     pub id: Uuid,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserEditAffiliationRequest {
     pub id: Uuid,
     #[validate(length(min = 1, message = "Title is required"))]
@@ -387,23 +405,27 @@ pub struct UserEditAffiliationRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserDeleteRequest {
     pub id: Uuid,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserAddDomainExpertiseRequest {
     pub expertise_domain: String,
     pub years: i16,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserAddDomainExpertiseResponse {
     pub state: bool,
     pub id: Uuid,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateDomainExpertiseRequest {
     pub expertise_domains: Option<Vec<String>>,
     pub years_of_experience: Option<i16>,
@@ -411,6 +433,7 @@ pub struct UserUpdateDomainExpertiseRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateNobleblocksRoleRequest {
     // reviewer role
     pub r_is_like: bool,
@@ -438,28 +461,33 @@ pub struct UserUpdateNobleblocksRoleRequest {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateResponse {
     pub state: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUploadAvatarResponse {
     pub state: bool,
     pub avatar_url: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUpdateWallPaperRequest {
     pub wallpaper_url: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserUploadWallPaperResponse {
     pub state: bool,
     pub wallpaper_url: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserGetProfileResponse {
     pub id: Uuid,
     pub noble_id: Option<String>,
@@ -494,6 +522,7 @@ pub struct UserGetProfileResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserGetSettingsResponse {
     pub id: Uuid,
     pub noble_id: Option<String>,
@@ -515,6 +544,7 @@ pub struct UserGetSettingsResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserGetRolesResponse {
     pub role_editor: bool,
     pub role_reviewer: bool,
@@ -523,16 +553,19 @@ pub struct UserGetRolesResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserGetPublishingResponse {
     pub allowed_comments: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserGetNotificationResponse {
     pub on_notification: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserGetSocialResponse {
     pub noble_id: Option<String>,
     pub principal: Option<String>,
@@ -546,6 +579,7 @@ pub struct UserGetSocialResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserGetPrivacyResponse {
     pub email: String,
     pub user_name: String,
@@ -555,6 +589,7 @@ pub struct UserGetPrivacyResponse {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetMembersOption {
     pub name: Option<String>,
     pub user_type: Option<u16>, // 0: All, 1: Follower, 2: Following, 3: Blocklist
@@ -564,17 +599,20 @@ pub struct GetMembersOption {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetProfileOption {
     pub user_id: Option<String>,
     pub session: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserFollowRequest {
     pub followed_id: Uuid,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserReportRequest {
     pub reported_id: Uuid,
     pub description: Option<String>,
@@ -582,6 +620,7 @@ pub struct UserReportRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserBlockRequest {
     pub blocked_id: Uuid,
     pub reason: Option<String>,
@@ -589,27 +628,32 @@ pub struct UserBlockRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct MarkNotificationAsReadRequest {
     pub from_id: Option<i64>,
     pub to_id: Option<i64>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadNotificationRequest {
     pub notification_id: i64,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetSuggestedUserOption {
     pub count: Option<i32>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetUsersByIdsOption {
     pub user_ids: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetNotificationsOption {
     pub from_id: Option<i64>,
     pub limit: Option<i32>,
@@ -617,6 +661,7 @@ pub struct GetNotificationsOption {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct AddUsersRequest {
     pub api_key: Option<String>,
     pub noble_id: Option<String>,
@@ -636,11 +681,13 @@ pub struct AddUsersRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct AddUsersResponse {
     pub id: Uuid,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct AddUserFollowerRequest {
     pub api_key: Option<String>,
     pub follower: Uuid,
@@ -648,6 +695,7 @@ pub struct AddUserFollowerRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdatePaperTableRequest {
     pub api_key: Option<String>,
     pub post_id: Option<Uuid>,
@@ -655,6 +703,7 @@ pub struct UpdatePaperTableRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct AddNotification {
     pub api_key: Option<String>,
     pub user_id: Uuid,
@@ -665,12 +714,14 @@ pub struct AddNotification {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserLoginWithNobleblocksParams {
     pub app_name: NerdNuggetsOAuth2AppName,
     pub redirect_url: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct NobleblocksOAuth2Params {
     pub app_name: NerdNuggetsOAuth2AppName,
     pub state: Uuid,
@@ -678,17 +729,20 @@ pub struct NobleblocksOAuth2Params {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct NobleblocksOAuth2RedirectParams {
     pub state: Uuid,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GetSpeechesParams {
     pub start: Option<i64>,
     pub limit: Option<i32>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GetSpeechesResponse {
     pub data: Vec<SpeechInfo>,
     pub total_count: i64,
@@ -697,16 +751,19 @@ pub struct GetSpeechesResponse {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GetSpeechParams {
     pub speech_id: Uuid,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserConnectStripePaymentRequest {
     pub payment_method_id: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserPayByStripe {
     pub payment_method_id: String,
     pub pay_type: i16, // StripePayType: 0: ArticleAIErrorCheck, 1: ArticleSubmit
@@ -714,6 +771,7 @@ pub struct UserPayByStripe {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GetCardInfo {
     pub payment_method_id: String,
     pub brand: String,

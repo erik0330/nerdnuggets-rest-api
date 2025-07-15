@@ -3,7 +3,7 @@ use std::{str::FromStr, sync::Arc};
 use types::{
     dto::{UserCheckResponse, UserOnboardingRequest},
     error::{ApiError, DbError, UserError},
-    models::{ActivityHistory, User, UserInfo},
+    models::{ActivityHistory, TempUser, User, UserInfo},
 };
 use uuid::Uuid;
 
@@ -103,7 +103,6 @@ impl UserService {
     pub async fn create_user_with_email(
         &self,
         name: &str,
-        institution: &str,
         email: &str,
         password: &str,
     ) -> Result<User, ApiError> {
@@ -112,7 +111,7 @@ impl UserService {
         }
         match self
             .user_repo
-            .create_user_with_email(name, institution, email, password)
+            .create_user_with_email(name, email, password)
             .await
         {
             Ok(user) => Ok(user),
@@ -132,5 +131,83 @@ impl UserService {
             .await
             .unwrap_or_default();
         Ok(histories)
+    }
+
+    // Temp user methods for email verification
+    pub async fn tempuser_by_email(&self, email: &str) -> Result<TempUser, ApiError> {
+        self.user_repo
+            .tempuser_by_email(email)
+            .await
+            .map_err(|_| UserError::TempUserNotFound.into())
+    }
+
+    pub async fn create_tempuser_with_email(
+        &self,
+        email: &str,
+        name: &str,
+        password: &str,
+        verify_type: &str,
+        passkey: &str,
+        try_limit: i16,
+        iat: i64,
+        exp: i64,
+        now: chrono::DateTime<chrono::Utc>,
+    ) -> Result<bool, ApiError> {
+        self.user_repo
+            .create_tempuser_with_email(
+                email,
+                name,
+                password,
+                verify_type,
+                passkey,
+                try_limit,
+                iat,
+                exp,
+                now,
+            )
+            .await
+            .map_err(|_| DbError::Str("Failed to create temp user".to_string()).into())
+    }
+
+    pub async fn update_tempuser_with_email(
+        &self,
+        email: &str,
+        name: &str,
+        password: &str,
+        verify_type: &str,
+        passkey: &str,
+        try_limit: i16,
+        iat: i64,
+        exp: i64,
+        now: chrono::DateTime<chrono::Utc>,
+    ) -> Result<bool, ApiError> {
+        self.user_repo
+            .update_tempuser_with_email(
+                email,
+                name,
+                password,
+                verify_type,
+                passkey,
+                try_limit,
+                iat,
+                exp,
+                now,
+            )
+            .await
+            .map_err(|_| DbError::Str("Failed to update temp user".to_string()).into())
+    }
+
+    pub async fn delete_tempuser_by_email(&self, email: &str) -> Result<bool, ApiError> {
+        self.user_repo
+            .delete_tempuser_by_email(email)
+            .await
+            .map_err(|_| DbError::Str("Failed to delete temp user".to_string()).into())
+    }
+
+    pub async fn verify_user_email(&self, email: &str) -> Result<bool, ApiError> {
+        self.user_repo
+            .verify_user_email(email)
+            .await
+            .map_err(|_| DbError::Str("Failed to verify user email".to_string()).into())
     }
 }

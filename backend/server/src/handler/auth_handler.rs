@@ -3,24 +3,28 @@ use axum::{
     extract::{Query, State},
     Json,
 };
+use chrono::Duration;
 use third_party_api::google_oauth::get_google_user;
 use types::{
     dto::{
-        LoginAndRegisterResponse, UserCheckEmailOption, UserCheckResponse,
-        UserLoginWithEmailRequest, UserLoginWithGoogleRequest, UserReadDto,
-        UserRegisterWithEmailRequest,
+        EmailVerificationResponse, LoginAndRegisterResponse, ResendVerificationEmailRequest,
+        UserCheckEmailOption, UserCheckResponse, UserLoginWithEmailRequest,
+        UserLoginWithGoogleRequest, UserReadDto, UserRegisterWithEmailRequest, VerifyEmailRequest,
     },
     error::{ApiError, DbError, UserError, ValidatedRequest},
-    UserRoleType,
+    EmailVerifyType, UserRoleType,
 };
-use utils::commons::is_valid_email;
+use utils::{
+    commons::{is_valid_email, send_auth_email},
+    constants::EMAIL_SEND_AGAIN_IN_SECONDS,
+};
 
 pub async fn login_with_email(
     State(state): State<AppState>,
     ValidatedRequest(payload): ValidatedRequest<UserLoginWithEmailRequest>,
 ) -> Result<Json<LoginAndRegisterResponse>, ApiError> {
     if !is_valid_email(&payload.email) {
-        return Err(ApiError::UserError(UserError::SomethingWentWrong(
+        return Err(ApiError::UserError(UserError::Str(
             "The email is invalid".to_string(),
         )));
     }
@@ -258,9 +262,9 @@ pub async fn check_email(
 pub async fn register_with_email(
     State(state): State<AppState>,
     ValidatedRequest(payload): ValidatedRequest<UserRegisterWithEmailRequest>,
-) -> Result<Json<LoginAndRegisterResponse>, ApiError> {
+) -> Result<Json<EmailVerificationResponse>, ApiError> {
     if !is_valid_email(&payload.email) {
-        return Err(ApiError::UserError(UserError::SomethingWentWrong(
+        return Err(ApiError::UserError(UserError::Str(
             "The email is invalid".to_string(),
         )));
     }
@@ -282,215 +286,209 @@ pub async fn register_with_email(
     {
         return Err(UserError::TryOtherMethod)?;
     }
-    // let now = state.env.now();
-    // let iat = now.timestamp();
-    // let exp = now
-    //     .checked_add_signed(Duration::seconds(state.env.email_verify_exp_second))
-    //     .unwrap()
-    //     .timestamp();
-    // let passkey = state.env.generate_passkey().to_string();
-    // let verify_type = EmailVerifyType::VerifyEmail.to_string();
-    // let try_limit = state.env.email_verify_limit;
-    // let is_sent_passkey =
-    //     if let Ok(temp_user) = state.service.user.tempuser_by_email(&payload.email).await {
-    //         if iat < temp_user.iat.unwrap_or_default() + EMAIL_SEND_AGAIN_IN_SECONDS {
-    //             return Err(UserError::CantSendEmail)?;
-    //         }
-    //         state
-    //             .service
-    //             .user
-    //             .update_tempuser_with_email(
-    //                 &payload.email,
-    //                 &payload.password,
-    //                 &verify_type,
-    //                 &passkey,
-    //                 try_limit,
-    //                 iat,
-    //                 exp,
-    //                 now,
-    //             )
-    //             .await
-    //             .map_err(|_| {
-    //                 ApiError::DbError(DbError::SomethingWentWrong(
-    //                     "TempUser can't be updated".to_string(),
-    //                 ))
-    //             })?
-    //     } else {
-    //         state
-    //             .service
-    //             .user
-    //             .create_tempuser_with_email(
-    //                 &payload.email,
-    //                 &payload.password,
-    //                 &verify_type,
-    //                 &passkey,
-    //                 try_limit,
-    //                 iat,
-    //                 exp,
-    //                 now,
-    //             )
-    //             .await
-    //             .map_err(|_| {
-    //                 ApiError::DbError(DbError::SomethingWentWrong(
-    //                     "TempUser can't be created".to_string(),
-    //                 ))
-    //             })?
-    //     };
+    let now = state.env.now();
+    let iat = now.timestamp();
+    let exp = now
+        .checked_add_signed(Duration::seconds(state.env.email_verify_exp_second))
+        .unwrap()
+        .timestamp();
+    let passkey = state.env.generate_passkey().to_string();
+    let verify_type = EmailVerifyType::VerifyEmail.to_string();
+    let try_limit = state.env.email_verify_limit;
 
-    // if !send_auth_email(
-    //     payload.email,
-    //     passkey,
-    //     EmailVerifyType::VerifyEmail,
-    //     &state.ses_client,
-    // )
-    // .await
-    // {
-    //     return Err(UserError::CantSendEmail)?;
-    // }
-    let user = state
-        .service
-        .user
-        .create_user_with_email(
-            &payload.name,
-            &payload.institution,
-            &payload.email,
-            &bcrypt::hash(payload.password, 12).unwrap(),
-        )
-        .await?;
-    Ok(Json(LoginAndRegisterResponse {
-        user: UserReadDto::from(user.to_owned()),
-        token: state
+    let is_sent_passkey = if let Ok(temp_user) =
+        state.service.user.tempuser_by_email(&payload.email).await
+    {
+        if iat < temp_user.iat.unwrap_or_default() + EMAIL_SEND_AGAIN_IN_SECONDS {
+            return Err(UserError::CantSendEmail)?;
+        }
+        state
             .service
-            .token
-            .generate_token(user, UserRoleType::Member.to_string())?,
+            .user
+            .update_tempuser_with_email(
+                &payload.email,
+                &payload.name,
+                &payload.password,
+                &verify_type,
+                &passkey,
+                try_limit,
+                iat,
+                exp,
+                now,
+            )
+            .await
+            .map_err(|_| ApiError::DbError(DbError::Str("TempUser can't be updated".to_string())))?
+    } else {
+        state
+            .service
+            .user
+            .create_tempuser_with_email(
+                &payload.email,
+                &payload.name,
+                &payload.password,
+                &verify_type,
+                &passkey,
+                try_limit,
+                iat,
+                exp,
+                now,
+            )
+            .await
+            .map_err(|_| ApiError::DbError(DbError::Str("TempUser can't be created".to_string())))?
+    };
+
+    if !send_auth_email(
+        payload.email,
+        passkey,
+        EmailVerifyType::VerifyEmail,
+        &state.ses_client,
+    )
+    .await
+    {
+        return Err(UserError::CantSendEmail)?;
+    }
+    Ok(Json(EmailVerificationResponse {
+        is_sent: is_sent_passkey,
+        iat,
+        exp,
     }))
 }
 
-// pub async fn resend_email_verify_code(
-//     State(state): State<AppState>,
-//     ValidatedRequest(payload): ValidatedRequest<UserSendPasskeyAgainRequest>,
-// ) -> Result<Json<UserSendPasskeyResponse>, ApiError> {
-//     if !is_valid_email(&payload.email) {
-//         return Err(ApiError::UserError(UserError::SomethingWentWrong(
-//             "The email is invalid".to_string(),
-//         )));
-//     }
-//     if let Ok(temp_user) = state.service.user.tempuser_by_email(&payload.email).await {
-//         let now = state.env.now();
-//         let iat = now.timestamp();
-//         let exp = now
-//             .checked_add_signed(Duration::seconds(state.env.email_verify_exp_second))
-//             .unwrap()
-//             .timestamp();
-//         let passkey = state.env.generate_passkey().to_string();
-//         let verify_type = temp_user.verify_type.unwrap_or_default();
-//         let try_limit = temp_user.try_limit.unwrap_or_default();
-//         if iat < temp_user.iat.unwrap_or_default() + EMAIL_SEND_AGAIN_IN_SECONDS {
-//             return Err(UserError::CantSendEmail)?;
-//         }
-//         if !send_auth_email(
-//             payload.email.to_owned(),
-//             passkey.to_owned(),
-//             EmailVerifyType::VerifyEmail,
-//             &state.ses_client,
-//         )
-//         .await
-//         {
-//             return Err(UserError::CantSendEmail)?;
-//         }
-//         let is_sent_passkey = state
-//             .service
-//             .user
-//             .update_tempuser_with_email(
-//                 &temp_user.email.unwrap_or_default(),
-//                 &temp_user.password.unwrap_or_default(),
-//                 &verify_type,
-//                 &passkey,
-//                 try_limit,
-//                 iat,
-//                 exp,
-//                 now,
-//             )
-//             .await
-//             .map_err(|_| {
-//                 ApiError::DbError(DbError::SomethingWentWrong(
-//                     "TempUser can't be updated".to_string(),
-//                 ))
-//             })?;
-//         return Ok(Json(UserSendPasskeyResponse {
-//             is_sent_passkey,
-//             iat,
-//             exp,
-//         }));
-//     }
-//     Err(UserError::TempUserNotFound)?
-// }
+pub async fn resend_verification_email(
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<ResendVerificationEmailRequest>,
+) -> Result<Json<EmailVerificationResponse>, ApiError> {
+    if !is_valid_email(&payload.email) {
+        return Err(ApiError::UserError(UserError::Str(
+            "The email is invalid".to_string(),
+        )));
+    }
+    if let Ok(temp_user) = state.service.user.tempuser_by_email(&payload.email).await {
+        let now = state.env.now();
+        let iat = now.timestamp();
+        let exp = now
+            .checked_add_signed(Duration::seconds(state.env.email_verify_exp_second))
+            .unwrap()
+            .timestamp();
+        let passkey = state.env.generate_passkey().to_string();
+        let verify_type = temp_user.verify_type.unwrap_or_default();
+        let try_limit = temp_user.try_limit.unwrap_or_default();
+        if iat < temp_user.iat.unwrap_or_default() + EMAIL_SEND_AGAIN_IN_SECONDS {
+            return Err(UserError::CantSendEmail)?;
+        }
+        if !send_auth_email(
+            payload.email.to_owned(),
+            passkey.to_owned(),
+            EmailVerifyType::VerifyEmail,
+            &state.ses_client,
+        )
+        .await
+        {
+            return Err(UserError::CantSendEmail)?;
+        }
+        let is_sent_passkey = state
+            .service
+            .user
+            .update_tempuser_with_email(
+                &temp_user.email.unwrap_or_default(),
+                &temp_user.name.unwrap_or_default(),
+                &temp_user.password.unwrap_or_default(),
+                &verify_type,
+                &passkey,
+                try_limit,
+                iat,
+                exp,
+                now,
+            )
+            .await
+            .map_err(|_| {
+                ApiError::DbError(DbError::Str("TempUser can't be updated".to_string()))
+            })?;
+        return Ok(Json(EmailVerificationResponse {
+            is_sent: is_sent_passkey,
+            iat,
+            exp,
+        }));
+    }
+    Err(UserError::TempUserNotFound)?
+}
 
-// pub async fn verify_passkey_register(
-//     State(state): State<AppState>,
-//     ValidatedRequest(payload): ValidatedRequest<UserVerifyPasskeyRequest>,
-// ) -> Result<Json<UserLoginAndRegisterResponse>, ApiError> {
-//     if !is_valid_email(&payload.email) {
-//         return Err(ApiError::UserError(UserError::SomethingWentWrong(
-//             "The email is invalid".to_string(),
-//         )));
-//     }
-//     if let Ok(temp_user) = state.service.user.tempuser_by_email(&payload.email).await {
-//         if temp_user.exp.unwrap_or(0) < state.env.now().timestamp() {
-//             return Err(UserError::ExpiredPasskey)?;
-//         }
-//         let passkey = payload.passkey.unwrap_or_default();
-//         if passkey.is_empty() || !temp_user.passkey.unwrap_or_default().eq(&passkey) {
-//             return Err(UserError::InvalidPasskey)?;
-//         }
-//         if state
-//             .service
-//             .user
-//             .find_by_email(&payload.email)
-//             .await
-//             .is_ok()
-//         {
-//             return Err(UserError::UserAlreadyExists)?;
-//         }
-//         if state
-//             .service
-//             .user
-//             .find_by_gmail(&payload.email)
-//             .await
-//             .is_ok()
-//         {
-//             return Err(UserError::UserAlreadyExists)?;
-//         }
-//         state
-//             .service
-//             .user
-//             .create_user_with_email(
-//                 &temp_user.email.clone().unwrap_or_default(),
-//                 &bcrypt::hash(temp_user.password.unwrap_or_default(), 12).unwrap(),
-//             )
-//             .await?;
-//         let user = state
-//             .service
-//             .user
-//             .find_by_email(&temp_user.email.unwrap_or_default())
-//             .await?;
-//         return Ok(Json(UserLoginAndRegisterResponse {
-//             user: UserReadDto::from(user.to_owned()),
-//             token: state
-//                 .service
-//                 .token
-//                 .generate_token(user, UserRoleType::Guest)?,
-//         }));
-//     }
-//     Err(UserError::TempUserNotFound)?
-// }
+pub async fn verify_email(
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<VerifyEmailRequest>,
+) -> Result<Json<LoginAndRegisterResponse>, ApiError> {
+    if !is_valid_email(&payload.email) {
+        return Err(ApiError::UserError(UserError::Str(
+            "The email is invalid".to_string(),
+        )));
+    }
+    if let Ok(temp_user) = state.service.user.tempuser_by_email(&payload.email).await {
+        if temp_user.exp.unwrap_or(0) < state.env.now().timestamp() {
+            return Err(UserError::ExpiredPasskey)?;
+        }
+        let verification_code = payload.verification_code.unwrap_or_default();
+        if verification_code.is_empty()
+            || !temp_user.passkey.unwrap_or_default().eq(&verification_code)
+        {
+            return Err(UserError::InvalidPasskey)?;
+        }
+        if state
+            .service
+            .user
+            .get_user_by_email(&payload.email)
+            .await
+            .is_ok()
+        {
+            return Err(UserError::UserAlreadyExists)?;
+        }
+        if state
+            .service
+            .user
+            .get_user_by_gmail(&payload.email)
+            .await
+            .is_ok()
+        {
+            return Err(UserError::UserAlreadyExists)?;
+        }
+
+        // Create the user with the stored information from temp_user
+        let user = state
+            .service
+            .user
+            .create_user_with_email(
+                &temp_user.name.unwrap_or_default(),
+                &temp_user.email.unwrap_or_default(),
+                &bcrypt::hash(temp_user.password.unwrap_or_default(), 12).unwrap(),
+            )
+            .await?;
+
+        // Verify the user's email
+        state.service.user.verify_user_email(&payload.email).await?;
+
+        // Delete the temp user after successful verification
+        state
+            .service
+            .user
+            .delete_tempuser_by_email(&payload.email)
+            .await?;
+
+        return Ok(Json(LoginAndRegisterResponse {
+            user: UserReadDto::from(user.to_owned()),
+            token: state
+                .service
+                .token
+                .generate_token(user, UserRoleType::Member.to_string())?,
+        }));
+    }
+    Err(UserError::TempUserNotFound)?
+}
 
 // pub async fn send_email_forgot_password(
 //     State(state): State<AppState>,
 //     ValidatedRequest(payload): ValidatedRequest<UserSendEmailForgotPwdRequest>,
 // ) -> Result<Json<UserSendPasskeyResponse>, ApiError> {
 //     if !is_valid_email(&payload.email) {
-//         return Err(ApiError::UserError(UserError::SomethingWentWrong(
+//         return Err(ApiError::UserError(UserError::Str(
 //             "The email is invalid".to_string(),
 //         )));
 //     }
@@ -524,7 +522,7 @@ pub async fn register_with_email(
 //                 )
 //                 .await
 //                 .map_err(|_| {
-//                     ApiError::DbError(DbError::SomethingWentWrong(
+//                     ApiError::DbError(DbError::Str(
 //                         "TempUser can't be updated".to_string(),
 //                     ))
 //                 })?
@@ -544,7 +542,7 @@ pub async fn register_with_email(
 //                 )
 //                 .await
 //                 .map_err(|_| {
-//                     ApiError::DbError(DbError::SomethingWentWrong(
+//                     ApiError::DbError(DbError::Str(
 //                         "TempUser can't be created".to_string(),
 //                     ))
 //                 })?
@@ -573,7 +571,7 @@ pub async fn register_with_email(
 //     ValidatedRequest(payload): ValidatedRequest<UserSendPasskeyAgainRequest>,
 // ) -> Result<Json<UserSendPasskeyResponse>, ApiError> {
 //     if !is_valid_email(&payload.email) {
-//         return Err(ApiError::UserError(UserError::SomethingWentWrong(
+//         return Err(ApiError::UserError(UserError::Str(
 //             "The email is invalid".to_string(),
 //         )));
 //     }
@@ -616,7 +614,7 @@ pub async fn register_with_email(
 //             )
 //             .await
 //             .map_err(|_| {
-//                 ApiError::DbError(DbError::SomethingWentWrong(
+//                 ApiError::DbError(DbError::Str(
 //                     "TempUser can't be updated".to_string(),
 //                 ))
 //             })?;
@@ -634,7 +632,7 @@ pub async fn register_with_email(
 //     ValidatedRequest(payload): ValidatedRequest<UserVerifyPasskeyRequest>,
 // ) -> Result<Json<UserUpdateResponse>, ApiError> {
 //     if !is_valid_email(&payload.email) {
-//         return Err(ApiError::UserError(UserError::SomethingWentWrong(
+//         return Err(ApiError::UserError(UserError::Str(
 //             "The email is invalid".to_string(),
 //         )));
 //     }
@@ -666,7 +664,7 @@ pub async fn register_with_email(
 //             )
 //             .await
 //             .map_err(|_| {
-//                 ApiError::DbError(DbError::SomethingWentWrong(
+//                 ApiError::DbError(DbError::Str(
 //                     "TempUser can't be updated".to_string(),
 //                 ))
 //             })?;
@@ -680,7 +678,7 @@ pub async fn register_with_email(
 //     ValidatedRequest(payload): ValidatedRequest<UserResetPwdPwdRequest>,
 // ) -> Result<Json<UserUpdateResponse>, ApiError> {
 //     if !is_valid_email(&payload.email) {
-//         return Err(ApiError::UserError(UserError::SomethingWentWrong(
+//         return Err(ApiError::UserError(UserError::Str(
 //             "The email is invalid".to_string(),
 //         )));
 //     }
@@ -718,7 +716,7 @@ pub async fn register_with_email(
 //                 )
 //                 .await
 //                 .map_err(|_| {
-//                     ApiError::DbError(DbError::SomethingWentWrong(
+//                     ApiError::DbError(DbError::Str(
 //                         "TempUser can't be updated".to_string(),
 //                     ))
 //                 })?;
@@ -735,13 +733,13 @@ pub async fn register_with_email(
 //     ValidatedRequest(payload): ValidatedRequest<AddUsersRequest>,
 // ) -> Result<Json<AddUsersResponse>, ApiError> {
 //     if payload.api_key.unwrap_or_default() != state.env.aws_access_key_id {
-//         return Err(DbError::SomethingWentWrong(
+//         return Err(DbError::Str(
 //             "API key is incorrect".to_string(),
 //         ))?;
 //     }
 //     if let Some(gmail) = &payload.gmail {
 //         if let Ok(user) = state.service.user.find_by_gmail(&gmail).await {
-//             return Err(DbError::SomethingWentWrong(format!(
+//             return Err(DbError::Str(format!(
 //                 "Gmail is using now\nID: {}",
 //                 user.id
 //             )))?;
@@ -749,7 +747,7 @@ pub async fn register_with_email(
 //     }
 //     if let Some(principal) = &payload.principal {
 //         if let Ok(user) = state.service.user.find_by_principal(&principal).await {
-//             return Err(DbError::SomethingWentWrong(format!(
+//             return Err(DbError::Str(format!(
 //                 "Princiipal is using now\nID: {}",
 //                 user.id
 //             )))?;
