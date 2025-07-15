@@ -37,7 +37,7 @@ pub enum UserError {
     #[error("This role is not allowed")]
     RoleNotAllowed,
     #[error("{0}")]
-    SomethingWentWrong(String),
+    Str(String),
 }
 
 impl IntoResponse for UserError {
@@ -57,7 +57,7 @@ impl IntoResponse for UserError {
             UserError::EmailNotMatch => StatusCode::BAD_REQUEST,
             UserError::TryOtherMethod => StatusCode::BAD_REQUEST,
             UserError::RoleNotAllowed => StatusCode::BAD_REQUEST,
-            UserError::SomethingWentWrong(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            UserError::Str(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
         ApiErrorResponse::send(status_code.as_u16(), Some(self.to_string()))

@@ -185,7 +185,6 @@ pub struct UserCheckResponse {
 #[serde(rename_all = "camelCase")]
 pub struct UserRegisterWithEmailRequest {
     pub name: String,
-    pub institution: String,
     pub email: String,
     pub password: String,
 }
@@ -209,21 +208,21 @@ pub struct UserOnboardingRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
-pub struct UserSendPasskeyAgainRequest {
+pub struct ResendVerificationEmailRequest {
     pub email: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct UserSendPasskeyResponse {
-    pub is_sent_passkey: bool,
+pub struct EmailVerificationResponse {
+    pub is_sent: bool,
     pub iat: i64,
     pub exp: i64,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
-pub struct UserVerifyPasskeyRequest {
+pub struct VerifyEmailRequest {
     pub email: String,
-    pub passkey: Option<String>,
+    pub verification_code: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]

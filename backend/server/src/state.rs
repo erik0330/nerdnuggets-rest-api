@@ -92,7 +92,7 @@ pub struct AppState {
     pub evm: EVMClient,
     pub service: AppService,
     pub s3_client: aws_sdk_s3::Client,
-    pub _ses_client: aws_sdk_sesv2::Client,
+    pub ses_client: aws_sdk_sesv2::Client,
 }
 
 impl AppState {
@@ -114,7 +114,7 @@ impl AppState {
             env,
             evm,
             s3_client,
-            _ses_client: ses_client,
+            ses_client,
         }
     }
 }
