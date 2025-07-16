@@ -3,7 +3,10 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
     ChangeRoleRequest, GetEditorsOption, LoginAndRegisterResponse, OffsetAndLimitOption,
-    UserOnboardingRequest,
+    UserAllSettingsResponse, UserNotificationSettingsRequest, UserNotificationSettingsResponse,
+    UserOnboardingRequest, UserPreferencesSettingsRequest, UserPreferencesSettingsResponse,
+    UserPrivacySettingsRequest, UserPrivacySettingsResponse, UserProfileSettingsRequest,
+    UserProfileSettingsResponse, UserWalletSettingsRequest, UserWalletSettingsResponse,
 };
 use types::error::UserError;
 use types::models::{ActivityHistory, User, UserInfo};
@@ -1242,3 +1245,78 @@ pub async fn get_my_activities(
 //         .await?;
 //     Ok(Json(result))
 // }
+
+// ========================= USER SETTINGS HANDLERS =========================
+
+pub async fn get_user_settings(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+) -> Result<Json<UserAllSettingsResponse>, ApiError> {
+    let settings = state.service.user.get_all_user_settings(user.id).await?;
+    Ok(Json(settings))
+}
+
+pub async fn update_profile_settings(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<UserProfileSettingsRequest>,
+) -> Result<Json<UserProfileSettingsResponse>, ApiError> {
+    let result = state
+        .service
+        .user
+        .update_profile_settings(user.id, payload)
+        .await?;
+    Ok(Json(result))
+}
+
+pub async fn update_notification_settings(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<UserNotificationSettingsRequest>,
+) -> Result<Json<UserNotificationSettingsResponse>, ApiError> {
+    let result = state
+        .service
+        .user
+        .update_notification_settings(user.id, payload)
+        .await?;
+    Ok(Json(result))
+}
+
+pub async fn update_privacy_settings(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<UserPrivacySettingsRequest>,
+) -> Result<Json<UserPrivacySettingsResponse>, ApiError> {
+    let result = state
+        .service
+        .user
+        .update_privacy_settings(user.id, payload)
+        .await?;
+    Ok(Json(result))
+}
+
+pub async fn update_wallet_settings(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<UserWalletSettingsRequest>,
+) -> Result<Json<UserWalletSettingsResponse>, ApiError> {
+    let result = state
+        .service
+        .user
+        .update_wallet_settings(user.id, payload)
+        .await?;
+    Ok(Json(result))
+}
+
+pub async fn update_preferences_settings(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<UserPreferencesSettingsRequest>,
+) -> Result<Json<UserPreferencesSettingsResponse>, ApiError> {
+    let result = state
+        .service
+        .user
+        .update_preferences_settings(user.id, payload)
+        .await?;
+    Ok(Json(result))
+}

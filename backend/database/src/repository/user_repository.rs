@@ -296,4 +296,120 @@ impl UserRepository {
             .await?;
         Ok(row.rows_affected() == 1)
     }
+
+    // ========================= USER SETTINGS METHODS =========================
+
+    pub async fn update_profile_settings(
+        &self,
+        id: Uuid,
+        avatar_url: Option<String>,
+        email: String,
+        name: Option<String>,
+        institution: Option<String>,
+        bio: Option<String>,
+        website: Option<String>,
+        roles: Vec<String>,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>(
+            "UPDATE users SET avatar_url = $1, email = $2, name = $3, institution = $4, bio = $5, website = $6, roles = $7, updated_at = $8 WHERE id = $9 RETURNING *"
+        )
+        .bind(avatar_url)
+        .bind(email)
+        .bind(name)
+        .bind(institution)
+        .bind(bio)
+        .bind(website)
+        .bind(roles)
+        .bind(Utc::now())
+        .bind(id)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(user)
+    }
+
+    pub async fn update_notification_settings(
+        &self,
+        id: Uuid,
+        email_notifications: bool,
+        push_notifications: bool,
+        milestone_updates: bool,
+        funding_updates: bool,
+        dao_proposals: bool,
+        prediction_markets: bool,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>(
+            "UPDATE users SET email_notifications = $1, push_notifications = $2, milestone_updates = $3, funding_updates = $4, dao_proposals = $5, prediction_markets = $6, updated_at = $7 WHERE id = $8 RETURNING *"
+        )
+        .bind(email_notifications)
+        .bind(push_notifications)
+        .bind(milestone_updates)
+        .bind(funding_updates)
+        .bind(dao_proposals)
+        .bind(prediction_markets)
+        .bind(Utc::now())
+        .bind(id)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(user)
+    }
+
+    pub async fn update_privacy_settings(
+        &self,
+        id: Uuid,
+        profile_visibility: bool,
+        show_funding_history: bool,
+        show_prediction_history: bool,
+        two_factor_enabled: bool,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>(
+            "UPDATE users SET profile_visibility = $1, show_funding_history = $2, show_prediction_history = $3, two_factor_enabled = $4, updated_at = $5 WHERE id = $6 RETURNING *"
+        )
+        .bind(profile_visibility)
+        .bind(show_funding_history)
+        .bind(show_prediction_history)
+        .bind(two_factor_enabled)
+        .bind(Utc::now())
+        .bind(id)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(user)
+    }
+
+    pub async fn update_wallet_settings(
+        &self,
+        id: Uuid,
+        wallet_address: Option<String>,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>(
+            "UPDATE users SET wallet_address = $1, updated_at = $2 WHERE id = $3 RETURNING *",
+        )
+        .bind(wallet_address)
+        .bind(Utc::now())
+        .bind(id)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(user)
+    }
+
+    pub async fn update_preferences_settings(
+        &self,
+        id: Uuid,
+        dark_mode: bool,
+        language: String,
+        timezone: String,
+        display_currency: String,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>(
+            "UPDATE users SET dark_mode = $1, language = $2, timezone = $3, display_currency = $4, updated_at = $5 WHERE id = $6 RETURNING *"
+        )
+        .bind(dark_mode)
+        .bind(language)
+        .bind(timezone)
+        .bind(display_currency)
+        .bind(Utc::now())
+        .bind(id)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(user)
+    }
 }

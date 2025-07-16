@@ -779,3 +779,116 @@ pub struct GetCardInfo {
     pub exp_year: i64,
     pub last4: String,
 }
+
+// ========================= USER SETTINGS DTOs =========================
+
+// Profile Settings
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserProfileSettingsRequest {
+    pub avatar_url: Option<String>,
+    pub email: String,
+    pub name: Option<String>,
+    pub institution: Option<String>,
+    pub bio: Option<String>,
+    pub website: Option<String>,
+    pub roles: Vec<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserProfileSettingsResponse {
+    pub id: Uuid,
+    pub avatar_url: Option<String>,
+    pub email: String,
+    pub name: Option<String>,
+    pub institution: Option<String>,
+    pub bio: Option<String>,
+    pub website: Option<String>,
+    pub roles: Vec<String>,
+}
+
+// Notification Settings
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserNotificationSettingsRequest {
+    pub email_notifications: bool,
+    pub push_notifications: bool,
+    pub milestone_updates: bool,
+    pub funding_updates: bool,
+    pub dao_proposals: bool,
+    pub prediction_markets: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserNotificationSettingsResponse {
+    pub email_notifications: bool,
+    pub push_notifications: bool,
+    pub milestone_updates: bool,
+    pub funding_updates: bool,
+    pub dao_proposals: bool,
+    pub prediction_markets: bool,
+}
+
+// Privacy Settings
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserPrivacySettingsRequest {
+    pub profile_visibility: bool,
+    pub show_funding_history: bool,
+    pub show_prediction_history: bool,
+    pub two_factor_enabled: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserPrivacySettingsResponse {
+    pub profile_visibility: bool,
+    pub show_funding_history: bool,
+    pub show_prediction_history: bool,
+    pub two_factor_enabled: bool,
+}
+
+// Wallet Settings
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserWalletSettingsRequest {
+    pub wallet_address: Option<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserWalletSettingsResponse {
+    pub wallet_address: Option<String>,
+}
+
+// Preferences Settings
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserPreferencesSettingsRequest {
+    pub dark_mode: bool,
+    pub language: String,
+    pub timezone: String,
+    pub display_currency: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserPreferencesSettingsResponse {
+    pub dark_mode: bool,
+    pub language: String,
+    pub timezone: String,
+    pub display_currency: String,
+}
+
+// Complete Settings Response (all tabs)
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserAllSettingsResponse {
+    pub profile: UserProfileSettingsResponse,
+    pub notifications: UserNotificationSettingsResponse,
+    pub privacy: UserPrivacySettingsResponse,
+    pub wallet: UserWalletSettingsResponse,
+    pub preferences: UserPreferencesSettingsResponse,
+}

@@ -20,6 +20,25 @@ pub struct User {
     pub tier: String,
     pub nerd_balance: i64,
     pub wallet_address: Option<String>,
+    // profile settings
+    pub website: Option<String>,
+    // notification settings
+    pub email_notifications: bool,
+    pub push_notifications: bool,
+    pub milestone_updates: bool,
+    pub funding_updates: bool,
+    pub dao_proposals: bool,
+    pub prediction_markets: bool,
+    // privacy settings
+    pub profile_visibility: bool,
+    pub show_funding_history: bool,
+    pub show_prediction_history: bool,
+    pub two_factor_enabled: bool,
+    // preferences settings
+    pub dark_mode: bool,
+    pub language: String,
+    pub timezone: String,
+    pub display_currency: String,
     // date
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -37,6 +56,7 @@ impl User {
             interests: self.interests.clone(),
             avatar_url: self.avatar_url.clone(),
             wallet_address: self.wallet_address.clone(),
+            website: self.website.clone(),
         }
     }
 }
@@ -53,6 +73,7 @@ pub struct UserInfo {
     pub interests: Vec<String>,
     pub avatar_url: Option<String>,
     pub wallet_address: Option<String>,
+    pub website: Option<String>,
 }
 
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
