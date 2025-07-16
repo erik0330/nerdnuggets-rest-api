@@ -35,68 +35,19 @@ impl TryFrom<i32> for MessageType {
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
 pub enum NotificationType {
     #[default]
-    FollowUser,
-    ResearchCheckSuccess,
-    ResearchCheckFailed,
-    PostLike,
-    CommentLike,
-    PostComment,
-    CommentReply,
-    ApproveAdminRole,
-    ApproveEditorRole,
-    ApproveReviewerRole,
-    ApproveAuthorRole,
-    ApproveCopyEditorRole,
-    //article
     InviteEditor,
     CancelEditor,
     AcceptEditor,
     DeclineEditor,
-    InviteReviewer,
-    CancelReviewer,
-    AcceptReviewer,
-    DeclineReviewer,
-    NerdBunnyResearchCheckSuccess,
-    NerdBunnyResearchCheckFailed,
-    InviteCopyEditor,
-    CancelCopyEditor,
-    AcceptCopyEditor,
-    DeclineCopyEditor,
-    AIErrorCheckSuccess,
-    AIErrorCheckFailed,
 }
 
 impl From<NotificationType> for i32 {
     fn from(notification_type: NotificationType) -> i32 {
         match notification_type {
-            NotificationType::FollowUser => 0,
-            NotificationType::ResearchCheckSuccess => 1,
-            NotificationType::ResearchCheckFailed => 2,
-            NotificationType::PostLike => 3,
-            NotificationType::CommentLike => 4,
-            NotificationType::PostComment => 5,
-            NotificationType::CommentReply => 6,
-            NotificationType::ApproveAdminRole => 7,
-            NotificationType::ApproveEditorRole => 8,
-            NotificationType::ApproveReviewerRole => 9,
-            NotificationType::ApproveAuthorRole => 10,
-            NotificationType::InviteEditor => 11,
-            NotificationType::CancelEditor => 12,
-            NotificationType::AcceptEditor => 13,
-            NotificationType::DeclineEditor => 14,
-            NotificationType::InviteReviewer => 15,
-            NotificationType::CancelReviewer => 16,
-            NotificationType::AcceptReviewer => 17,
-            NotificationType::DeclineReviewer => 18,
-            NotificationType::NerdBunnyResearchCheckSuccess => 19,
-            NotificationType::NerdBunnyResearchCheckFailed => 20,
-            NotificationType::InviteCopyEditor => 21,
-            NotificationType::CancelCopyEditor => 22,
-            NotificationType::AcceptCopyEditor => 23,
-            NotificationType::DeclineCopyEditor => 24,
-            NotificationType::ApproveCopyEditorRole => 25,
-            NotificationType::AIErrorCheckSuccess => 26,
-            NotificationType::AIErrorCheckFailed => 27,
+            NotificationType::InviteEditor => 0,
+            NotificationType::CancelEditor => 1,
+            NotificationType::AcceptEditor => 2,
+            NotificationType::DeclineEditor => 3,
         }
     }
 }
@@ -106,34 +57,10 @@ impl TryFrom<i32> for NotificationType {
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(Self::FollowUser),
-            1 => Ok(Self::ResearchCheckSuccess),
-            2 => Ok(Self::ResearchCheckFailed),
-            3 => Ok(Self::PostLike),
-            4 => Ok(Self::CommentLike),
-            5 => Ok(Self::PostComment),
-            6 => Ok(Self::CommentReply),
-            7 => Ok(Self::ApproveAdminRole),
-            8 => Ok(Self::ApproveEditorRole),
-            9 => Ok(Self::ApproveReviewerRole),
-            10 => Ok(Self::ApproveAuthorRole),
-            11 => Ok(Self::InviteEditor),
-            12 => Ok(Self::CancelEditor),
-            13 => Ok(Self::AcceptEditor),
-            14 => Ok(Self::DeclineEditor),
-            15 => Ok(Self::InviteReviewer),
-            16 => Ok(Self::CancelReviewer),
-            17 => Ok(Self::AcceptReviewer),
-            18 => Ok(Self::DeclineReviewer),
-            19 => Ok(Self::NerdBunnyResearchCheckSuccess),
-            20 => Ok(Self::NerdBunnyResearchCheckFailed),
-            21 => Ok(Self::InviteCopyEditor),
-            22 => Ok(Self::CancelCopyEditor),
-            23 => Ok(Self::AcceptCopyEditor),
-            24 => Ok(Self::DeclineCopyEditor),
-            25 => Ok(Self::ApproveCopyEditorRole),
-            26 => Ok(Self::AIErrorCheckSuccess),
-            27 => Ok(Self::AIErrorCheckFailed),
+            0 => Ok(Self::InviteEditor),
+            1 => Ok(Self::CancelEditor),
+            2 => Ok(Self::AcceptEditor),
+            3 => Ok(Self::DeclineEditor),
             _ => Err(format!("Invalid value for NotificationType: {}", value)),
         }
     }
@@ -166,16 +93,6 @@ impl Notification {
             created_at: self.created_at.clone(),
         }
     }
-}
-
-#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
-pub struct Subscription {
-    pub id: Uuid,
-    pub user_id: Uuid,
-    pub endpoint: String,
-    pub p256dh: String,
-    pub auth: String,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Default, Debug)]
