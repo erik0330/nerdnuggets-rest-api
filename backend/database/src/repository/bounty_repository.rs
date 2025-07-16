@@ -443,20 +443,22 @@ impl BountyRepository {
         Ok(row.rows_affected() == 1)
     }
 
-    pub async fn review_bounty(
+    pub async fn update_bounty_status(
         &self,
         id: Uuid,
         status: BountyStatus,
         admin_notes: Option<String>,
         approved_at: Option<DateTime<Utc>>,
-        rejected_at: Option<DateTime<Utc>>
+        rejected_at: Option<DateTime<Utc>>,
+        started_at: Option<DateTime<Utc>>,
     ) -> Result<bool, SqlxError> {
-        let row = sqlx::query("UPDATE bounty SET status = $1, admin_notes = $2, updated_at = $3, approved_at = $4, rejected_at = $5 WHERE id = $6")
+        let row = sqlx::query("UPDATE bounty SET status = $1, admin_notes = $2, updated_at = $3, approved_at = $4, rejected_at = $5, started_at = $6 WHERE id = $7")
             .bind(status)
             .bind(admin_notes)
             .bind(Utc::now())
             .bind(approved_at)
             .bind(rejected_at)
+            .bind(started_at)
             .bind(id)
             .execute(self.db_conn.get_pool())
             .await?;

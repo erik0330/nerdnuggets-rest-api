@@ -322,6 +322,17 @@ impl BountyService {
             .get_bid_by_id(bid_id)
             .await
             .map_err(|_| DbError::Str("Bid not found".to_string()))?;
+        let bounty = self
+            .bounty_repo
+            .get_bounty_by_id(bid.bounty_id)
+            .await
+            .ok_or(DbError::Str("Bounty not found".to_string()))?;
+        if bounty.user_id != bid.user_id {
+            return Err(DbError::Str("You are not the owner of this bounty".to_string()).into());
+        }
+        if bounty.status != BountyStatus::Open {
+            return Err(DbError::Str("The bounty is not open".to_string()).into());
+        }
         if !self
             .bounty_repo
             .select_as_winner(bid.bounty_id, bid_id)
@@ -330,6 +341,18 @@ impl BountyService {
         {
             return Err(DbError::Str("Select the bid as winner failed".to_string()).into());
         }
+        // Update the bounty status to InProgress
+        let _ = self
+            .bounty_repo
+            .update_bounty_status(
+                bounty.id,
+                BountyStatus::InProgress,
+                bounty.admin_notes,
+                bounty.approved_at,
+                bounty.rejected_at,
+                Some(Utc::now()),
+            )
+            .await;
         Ok(true)
     }
 
@@ -407,7 +430,14 @@ impl BountyService {
         }
         if !self
             .bounty_repo
-            .review_bounty(bounty.id, status, admin_notes, approved_at, rejected_at)
+            .update_bounty_status(
+                bounty.id,
+                status,
+                admin_notes,
+                approved_at,
+                rejected_at,
+                None,
+            )
             .await
             .unwrap_or_default()
         {
