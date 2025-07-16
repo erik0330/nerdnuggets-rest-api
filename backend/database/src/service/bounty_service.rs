@@ -478,9 +478,12 @@ impl BountyService {
         id: &str,
         chat_number: &str,
     ) -> Result<ChatNumberInfo, ApiError> {
+        // Extract bidder ID from chat number (format: "{bounty_nerd_id}-{bidder_id}")
+        let bidder_id = self.extract_bidder_id_from_chat_number(chat_number)?;
+
         if let Some((bidder_name, bidder_id, last_message, last_message_time, unread_count)) = self
             .bounty_repo
-            .get_chat_number_info(uuid_from_str(id)?, chat_number)
+            .get_chat_number_info(uuid_from_str(id)?, chat_number, bidder_id)
             .await
             .map_err(|_| DbError::Str("Failed to get chat info".to_string()))?
         {
@@ -490,10 +493,26 @@ impl BountyService {
                 bidder_id,
                 last_message,
                 last_message_time,
-                unread_count: unread_count as i32,
+                unread_count,
             })
         } else {
             Err(DbError::Str("Chat not found".to_string()).into())
+        }
+    }
+
+    fn extract_bidder_id_from_chat_number(&self, chat_number: &str) -> Result<Uuid, ApiError> {
+        // Chat number format: "{bounty_nerd_id}-{bidder_id}"
+        // Example: "BT-2024-1234-550e8400-e29b-41d4-a716-446655440000"
+        let parts: Vec<&str> = chat_number.split('-').collect();
+        if parts.len() >= 5 {
+            // The UUID part starts from the 4th element (index 3)
+            let uuid_str = parts[3..].join("-");
+            uuid_from_str(&uuid_str).map_err(|_| {
+                DbError::Str("Invalid chat number format: cannot extract bidder ID".to_string())
+                    .into()
+            })
+        } else {
+            Err(DbError::Str("Invalid chat number format".to_string()).into())
         }
     }
 
@@ -540,7 +559,7 @@ impl BountyService {
                     uuid_from_str(bounty_id)?,
                     nerd_id,
                     &chat_number,
-                    "Chat started",
+                    "",
                     Vec::new(),
                 )
                 .await;
