@@ -518,7 +518,8 @@ impl BountyRepository {
         &self,
         bounty_id: Uuid,
         chat_number: &str,
-    ) -> Result<Option<(String, Uuid, String, Option<DateTime<Utc>>, i64)>, SqlxError> {
+        bidder_id: Uuid,
+    ) -> Result<Option<(String, Uuid, String, Option<DateTime<Utc>>, i32)>, SqlxError> {
         let result = sqlx::query!(
             r#"
             SELECT 
@@ -526,16 +527,24 @@ impl BountyRepository {
                 u.id as bidder_id,
                 bc.message as last_message,
                 bc.created_at as last_message_time,
-                COUNT(CASE WHEN bc.is_read = false AND bc.user_id != u.id THEN 1 END) as unread_count
-            FROM bounty_chat bc
-            JOIN users u ON bc.user_id = u.id
-            WHERE bc.bounty_id = $1 AND bc.chat_number = $2
-            GROUP BY u.name, u.id, bc.message, bc.created_at
-            ORDER BY bc.created_at DESC
-            LIMIT 1
+                (
+                    SELECT COUNT(*)::int 
+                    FROM bounty_chat 
+                    WHERE bounty_id = $1 AND chat_number = $2 AND is_read = false AND user_id = $3
+                ) as unread_count
+            FROM users u
+            LEFT JOIN LATERAL (
+                SELECT message, created_at
+                FROM bounty_chat
+                WHERE bounty_id = $1 AND chat_number = $2
+                ORDER BY created_at DESC
+                LIMIT 1
+            ) bc ON true
+            WHERE u.id = $3
             "#,
             bounty_id,
-            chat_number
+            chat_number,
+            bidder_id
         )
         .fetch_optional(self.db_conn.get_pool())
         .await?;
@@ -545,7 +554,7 @@ impl BountyRepository {
             row.bidder_id,
             row.last_message,
             row.last_message_time,
-            row.unread_count.unwrap_or(0),
+            row.unread_count.unwrap_or(0) as i32,
         )))
     }
 
