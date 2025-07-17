@@ -1,5 +1,6 @@
 mod auth;
 mod bounty;
+mod notification;
 mod project;
 mod public;
 mod user;
@@ -52,6 +53,7 @@ pub async fn routes(db_conn: Arc<DatabasePool>, env: Env) -> IntoMakeService<Rou
         let app_state = AppState::init(&db_conn, env, s3_client, ses_client);
         Router::new()
             .merge(bounty::routes())
+            .merge(notification::routes())
             .merge(project::routes())
             .merge(user::routes())
             .merge(util::routes())

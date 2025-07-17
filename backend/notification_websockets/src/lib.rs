@@ -25,9 +25,9 @@ pub fn run_notifications_pusher<I: IndexStore + 'static>(
 ) {
     info!("Notifications pusher starting");
 
-    let (sender, receiver) = async_channel::bounded::<Notification>(50_000);
+    let (sender, receiver) = async_channel::bounded::<WsNotification>(50_000);
 
-    let reader = Reader::new(service.clone(), index_store, sender);
+    let reader = Reader::new(service, index_store, sender);
     tokio::spawn(reader.run());
 
     for _ in 0..pusher_count {
@@ -39,7 +39,7 @@ pub fn run_notifications_pusher<I: IndexStore + 'static>(
 }
 
 #[derive(Debug)]
-pub struct Notification {
+pub struct WsNotification {
     recipient: Uuid,
     payload: String,
 }
