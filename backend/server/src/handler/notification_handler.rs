@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use types::{
     error::{ApiError, UserError},
-    models::{CreateNotification, NotificationResponse, NotificationType, User},
+    models::{CreateNotification, NotificationResponse, NotificationTab, NotificationType, User},
+    UserRoleType,
 };
 use uuid::Uuid;
 
@@ -14,8 +15,14 @@ use crate::state::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct NotificationQuery {
-    pub limit: Option<i64>,
-    pub offset: Option<i64>,
+    pub limit: Option<i32>,
+    pub offset: Option<i32>,
+    pub tab: Option<NotificationTab>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NotificationCountQuery {
+    pub tab: Option<NotificationTab>,
 }
 
 #[derive(Debug, Serialize)]
@@ -36,7 +43,7 @@ pub async fn get_notifications(
         state
             .service
             .notification
-            .get_user_notifications(user.id, limit, offset)
+            .get_user_notifications_by_tab(user.id, limit, offset, query.tab)
             .await?,
     ))
 }
@@ -97,15 +104,20 @@ pub async fn delete_notification(
 
 pub async fn get_notification_count(
     Extension(user): Extension<User>,
+    Query(query): Query<NotificationCountQuery>,
     State(state): State<AppState>,
 ) -> Result<Json<NotificationCountResponse>, ApiError> {
     let total = state
         .service
         .notification
-        .get_notification_count(user.id)
+        .get_notification_count_by_tab(user.id, query.tab.clone())
         .await?;
 
-    let unread = state.service.notification.get_unread_count(user.id).await?;
+    let unread = state
+        .service
+        .notification
+        .get_unread_count_by_tab(user.id, query.tab)
+        .await?;
 
     Ok(Json(NotificationCountResponse { total, unread }))
 }
@@ -127,7 +139,7 @@ pub async fn create_notification(
     State(state): State<AppState>,
     Json(request): Json<CreateNotificationRequest>,
 ) -> Result<Json<NotificationResponse>, ApiError> {
-    if role != "admin" {
+    if role != UserRoleType::Admin.to_string() {
         return Err(ApiError::UserError(UserError::Str(
             "You are not authorized to create notifications".to_string(),
         )));
