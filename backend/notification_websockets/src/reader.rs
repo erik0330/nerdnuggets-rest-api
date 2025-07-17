@@ -1,22 +1,21 @@
+use crate::WsNotification;
 use async_channel::Sender;
 use database::AppService;
 use index_store::IndexStore;
 use tokio::time;
 use tracing::{error, info};
-use types::error::Error;
-
-use crate::Notification;
+use types::{error::Error, models::NotificationResponse};
 
 pub struct Reader<I: IndexStore> {
-    _service: AppService,
+    service: AppService,
     index_store: I,
-    sender: Sender<Notification>,
+    sender: Sender<WsNotification>,
 }
 
 impl<I: IndexStore> Reader<I> {
-    pub fn new(service: AppService, index_store: I, sender: Sender<Notification>) -> Self {
+    pub fn new(service: AppService, index_store: I, sender: Sender<WsNotification>) -> Self {
         Self {
-            _service: service,
+            service,
             index_store,
             sender,
         }
@@ -42,31 +41,32 @@ impl<I: IndexStore> Reader<I> {
     }
 
     async fn read_notifications(&self) -> Result<(), Error> {
-        let _from_notification_index = self.index_processed_up_to().await? + 1;
+        let from_notification_index = self.index_processed_up_to().await? + 1;
 
-        // let notifications = self
-        //     .service
-        //     .notification
-        //     .get_notifications(from_notification_index as i64, 1_000)
-        //     .await?;
+        let notifications = self
+            .service
+            .notification
+            .get_notifications_from_index(from_notification_index as i64, 1_000)
+            .await?;
 
-        // if let Some(latest_notification_index) = notifications.last().map(|e| e.id) {
-        //     for notification in &notifications {
-        //         let payload = serde_json::to_string(&notification).unwrap();
-        //         if self
-        //             .sender
-        //             .try_send(Notification {
-        //                 recipient: notification.user_id.clone(),
-        //                 payload,
-        //             })
-        //             .is_err()
-        //         {
-        //             return Err("Notifications queue is full".into());
-        //         }
-        //     }
-        //     self.set_index_processed_up_to(latest_notification_index)
-        //         .await?;
-        // }
+        if let Some(latest_notification_index) = notifications.last().map(|e| e.id) {
+            for notification in &notifications {
+                let payload =
+                    serde_json::to_string(&NotificationResponse::from(notification.clone()))?;
+                if self
+                    .sender
+                    .try_send(WsNotification {
+                        recipient: notification.user_id,
+                        payload,
+                    })
+                    .is_err()
+                {
+                    return Err("Notifications queue is full".into());
+                }
+            }
+            self.set_index_processed_up_to(latest_notification_index)
+                .await?;
+        }
 
         Ok(())
     }
@@ -75,17 +75,16 @@ impl<I: IndexStore> Reader<I> {
         if let Some(index) = self.index_store.get().await? {
             Ok(index)
         } else {
-            // let index = self
-            //     .service
-            //     .notification
-            //     .get_latest_notification_index()
-            //     .await?;
-            // self.set_index_processed_up_to(index).await?;
-            Ok(0)
+            let index = self
+                .service
+                .notification
+                .get_latest_notification_index()
+                .await?;
+            self.set_index_processed_up_to(index).await?;
+            Ok(index)
         }
     }
 
-    #[allow(dead_code)]
     async fn set_index_processed_up_to(&self, index: i64) -> Result<(), Error> {
         self.index_store.set(index).await
     }

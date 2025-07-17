@@ -1,15 +1,15 @@
-use crate::Notification;
 use crate::UserSockets;
+use crate::WsNotification;
 use async_channel::Receiver;
 use axum::extract::ws::Message;
 
 pub struct Pusher {
-    receiver: Receiver<Notification>,
+    receiver: Receiver<WsNotification>,
     user_sockets: UserSockets,
 }
 
 impl Pusher {
-    pub fn new(receiver: Receiver<Notification>, user_sockets: UserSockets) -> Self {
+    pub fn new(receiver: Receiver<WsNotification>, user_sockets: UserSockets) -> Self {
         Self {
             receiver,
             user_sockets,
@@ -23,7 +23,7 @@ impl Pusher {
     }
 }
 
-pub fn send_notification(notification: &Notification, state: &UserSockets) {
+pub fn send_notification(notification: &WsNotification, state: &UserSockets) {
     let mut user_sockets = state.lock().unwrap();
     if let Some(sockets) = user_sockets.get_mut(&notification.recipient) {
         sockets.retain(|s| !s.is_closed());

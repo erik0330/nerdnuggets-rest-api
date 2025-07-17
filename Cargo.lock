@@ -1692,6 +1692,7 @@ checksum = "0e60eed09d8c01d3cee5b7d30acb059b76614c918fa0f992e0dd6eeb10daad6f"
 name = "database"
 version = "0.1.0"
 dependencies = [
+ "async-channel 2.3.1",
  "async-stripe",
  "aws-sdk-sesv2",
  "bcrypt",

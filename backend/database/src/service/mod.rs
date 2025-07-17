@@ -1,4 +1,5 @@
 mod bounty_service;
+mod notification_service;
 mod prediction_service;
 mod project_service;
 mod token_service;
@@ -6,6 +7,7 @@ mod user_service;
 mod util_service;
 
 pub use bounty_service::*;
+pub use notification_service::*;
 pub use prediction_service::*;
 pub use project_service::*;
 pub use token_service::*;
@@ -19,6 +21,7 @@ use utils::env::Env;
 #[derive(Clone)]
 pub struct AppService {
     pub bounty: BountyService,
+    pub notification: NotificationService,
     pub prediction: PredictionService,
     pub project: ProjectService,
     pub token: TokenService,
@@ -30,6 +33,7 @@ impl AppService {
     pub fn init(db: &Arc<DatabasePool>, env: &Env) -> Self {
         Self {
             bounty: BountyService::new(db),
+            notification: NotificationService::new(db),
             prediction: PredictionService::new(db),
             project: ProjectService::new(db),
             token: TokenService::new(env),
