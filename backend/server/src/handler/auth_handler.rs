@@ -76,6 +76,7 @@ pub async fn login_or_register_with_google(
             .user
             .update_gmail(user.id, Some(email))
             .await?;
+        let user = state.service.user.get_user_by_id(user.id).await?;
         return Ok(Json(LoginAndRegisterResponse {
             user: UserReadDto::from(user.to_owned()),
             token: state
@@ -84,7 +85,12 @@ pub async fn login_or_register_with_google(
                 .generate_token(user, UserRoleType::Member.to_string())?,
         }));
     }
-    match state.service.user.create_user_with_google(&email).await {
+    match state
+        .service
+        .user
+        .create_user_with_google(&email, &google_user.name)
+        .await
+    {
         Ok(user) => Ok(Json(LoginAndRegisterResponse {
             user: UserReadDto::from(user.to_owned()),
             token: state

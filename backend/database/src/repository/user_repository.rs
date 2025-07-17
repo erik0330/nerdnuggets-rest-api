@@ -96,14 +96,19 @@ impl UserRepository {
         return Ok(user);
     }
 
-    pub async fn create_user_with_google(&self, gmail: &str) -> Result<User, SqlxError> {
+    pub async fn create_user_with_google(
+        &self,
+        gmail: &str,
+        name: &str,
+    ) -> Result<User, SqlxError> {
         let user = sqlx::query_as::<_, User>(
-            "INSERT INTO users (email, verified_email, gmail)
-            VALUES ($1, $2, $3) RETURNING *",
+            "INSERT INTO users (email, verified_email, gmail, name)
+            VALUES ($1, $2, $3, $4) RETURNING *",
         )
         .bind(gmail)
         .bind(true)
         .bind(gmail)
+        .bind(name)
         .fetch_one(self.db_conn.get_pool())
         .await?;
         return Ok(user);

@@ -27,7 +27,7 @@ impl UserService {
         }
     }
 
-    pub async fn get_by_user_id(&self, user_id: Uuid) -> Result<User, ApiError> {
+    pub async fn get_user_by_id(&self, user_id: Uuid) -> Result<User, ApiError> {
         self.user_repo
             .get_user_by_id(user_id)
             .await
@@ -89,9 +89,9 @@ impl UserService {
             .map_err(|_| DbError::Str("Update user onboarding failed".to_string()).into())
     }
 
-    pub async fn create_user_with_google(&self, gmail: &str) -> Result<User, ApiError> {
+    pub async fn create_user_with_google(&self, gmail: &str, name: &str) -> Result<User, ApiError> {
         self.user_repo
-            .create_user_with_google(gmail)
+            .create_user_with_google(gmail, name)
             .await
             .map_err(|err| DbError::Str(err.to_string()).into())
     }
@@ -223,7 +223,7 @@ impl UserService {
         &self,
         user_id: Uuid,
     ) -> Result<UserAllSettingsResponse, ApiError> {
-        let user = self.get_by_user_id(user_id).await?;
+        let user = self.get_user_by_id(user_id).await?;
 
         Ok(UserAllSettingsResponse {
             profile: UserProfileSettingsResponse {
