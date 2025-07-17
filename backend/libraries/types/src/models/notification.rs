@@ -33,6 +33,77 @@ impl TryFrom<i32> for MessageType {
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
+pub enum NotificationTab {
+    #[default]
+    All,
+    Unread,
+    Funding,
+    DAO,
+    Projects,
+    Predictions,
+    Site,
+}
+
+impl From<NotificationTab> for &'static str {
+    fn from(tab: NotificationTab) -> &'static str {
+        match tab {
+            NotificationTab::All => "all",
+            NotificationTab::Unread => "unread",
+            NotificationTab::Funding => "funding",
+            NotificationTab::DAO => "dao",
+            NotificationTab::Projects => "projects",
+            NotificationTab::Predictions => "predictions",
+            NotificationTab::Site => "site",
+        }
+    }
+}
+
+impl TryFrom<&str> for NotificationTab {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "all" => Ok(NotificationTab::All),
+            "unread" => Ok(NotificationTab::Unread),
+            "funding" => Ok(NotificationTab::Funding),
+            "dao" => Ok(NotificationTab::DAO),
+            "projects" => Ok(NotificationTab::Projects),
+            "predictions" => Ok(NotificationTab::Predictions),
+            "site" => Ok(NotificationTab::Site),
+            _ => Err(format!("Invalid notification tab: {}", value)),
+        }
+    }
+}
+
+impl NotificationTab {
+    pub fn to_notification_types(&self) -> Vec<NotificationType> {
+        match self {
+            NotificationTab::All => vec![],
+            NotificationTab::Unread => vec![],
+            NotificationTab::Funding => vec![NotificationType::FundingUpdate],
+            NotificationTab::DAO => vec![NotificationType::NewDAO, NotificationType::DAOVote],
+            NotificationTab::Projects => vec![
+                NotificationType::InviteEditor,
+                NotificationType::CancelEditor,
+                NotificationType::AcceptEditor,
+                NotificationType::DeclineEditor,
+                NotificationType::NewProject,
+                NotificationType::ProjectMilestone,
+                NotificationType::ProjectComment,
+            ],
+            NotificationTab::Predictions => vec![
+                NotificationType::NewPrediction,
+                NotificationType::PredictionResult,
+            ],
+            NotificationTab::Site => vec![
+                NotificationType::NewMessage,
+                NotificationType::SystemMessage,
+            ],
+        }
+    }
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, Default, PartialEq)]
 pub enum NotificationType {
     #[default]
     InviteEditor,
@@ -163,4 +234,9 @@ impl From<Notification> for NotificationResponse {
             updated_at: notification.updated_at,
         }
     }
+}
+
+#[derive(sqlx::FromRow, Debug, Deserialize, Serialize)]
+pub struct NotificationCount {
+    pub count: i64,
 }

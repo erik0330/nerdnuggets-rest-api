@@ -4,7 +4,9 @@ use crate::{DatabasePool, NotificationRepository};
 use serde_json::json;
 use types::{
     error::{ApiError, DbError},
-    models::{CreateNotification, Notification, NotificationResponse, NotificationType},
+    models::{
+        CreateNotification, Notification, NotificationResponse, NotificationTab, NotificationType,
+    },
 };
 use uuid::Uuid;
 
@@ -42,6 +44,24 @@ impl NotificationService {
         let notifications = self
             .repository
             .get_user_notifications(user_id, limit, offset)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+        Ok(notifications
+            .into_iter()
+            .map(NotificationResponse::from)
+            .collect())
+    }
+
+    pub async fn get_user_notifications_by_tab(
+        &self,
+        user_id: Uuid,
+        limit: i32,
+        offset: i32,
+        tab: Option<NotificationTab>,
+    ) -> Result<Vec<NotificationResponse>, ApiError> {
+        let notifications = self
+            .repository
+            .get_user_notifications_by_tab(user_id, limit, offset, tab)
             .await
             .map_err(|e| DbError::Str(e.to_string()))?;
         Ok(notifications
@@ -105,10 +125,34 @@ impl NotificationService {
             .map_err(|e| DbError::Str(e.to_string()))?)
     }
 
+    pub async fn get_notification_count_by_tab(
+        &self,
+        user_id: Uuid,
+        tab: Option<NotificationTab>,
+    ) -> Result<i64, ApiError> {
+        Ok(self
+            .repository
+            .get_notification_count_by_tab(user_id, tab)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?)
+    }
+
     pub async fn get_unread_count(&self, user_id: Uuid) -> Result<i64, ApiError> {
         Ok(self
             .repository
             .get_unread_count(user_id)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?)
+    }
+
+    pub async fn get_unread_count_by_tab(
+        &self,
+        user_id: Uuid,
+        tab: Option<NotificationTab>,
+    ) -> Result<i64, ApiError> {
+        Ok(self
+            .repository
+            .get_unread_count_by_tab(user_id, tab)
             .await
             .map_err(|e| DbError::Str(e.to_string()))?)
     }

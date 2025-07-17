@@ -49,10 +49,8 @@ async fn main() -> Result<(), Error> {
         "/ws",
         get(move |ws, query| websocket_handler(ws, query, Arc::clone(&user_sockets))),
     );
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8001")
-        .await
-        .unwrap();
-    info!("WebSocket server running on ws://0.0.0.0:8001/ws?user_id=USER_ID");
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8001").await.unwrap();
+    info!("WebSocket server running on ws://0.0.0.0:8001/ws?userId=USER_ID");
     axum::serve(listener, app).await.unwrap();
 
     Ok(())
@@ -64,13 +62,13 @@ async fn websocket_handler(
     state: UserSockets,
 ) -> impl IntoResponse {
     if let Some(user_id) = params
-        .get("user_id")
+        .get("userId")
         .cloned()
         .and_then(|u| Uuid::from_str(&u).ok())
     {
         ws.on_upgrade(move |socket| handle_socket(socket, user_id, state))
     } else {
-        "Missing user_id query parameter".into_response()
+        "Missing userId query parameter".into_response()
     }
 }
 
