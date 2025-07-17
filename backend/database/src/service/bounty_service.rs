@@ -597,4 +597,24 @@ impl BountyService {
 
         Ok(chat_number)
     }
+
+    pub async fn get_similar_bounties(
+        &self,
+        id: &str,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyInfo>, ApiError> {
+        let similar_bounties = self
+            .bounty_repo
+            .get_similar_bounties(uuid_from_str(id)?, limit)
+            .await
+            .map_err(|_| DbError::Str("Failed to get similar bounties".to_string()))?;
+
+        let mut bounty_infos = Vec::new();
+        for bounty in similar_bounties {
+            let bounty_info = self.bounty_to_info(&bounty).await?;
+            bounty_infos.push(bounty_info);
+        }
+
+        Ok(bounty_infos)
+    }
 }

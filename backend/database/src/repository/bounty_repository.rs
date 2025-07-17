@@ -576,4 +576,61 @@ impl BountyRepository {
         .await?;
         Ok(row.rows_affected() > 0)
     }
+
+    pub async fn get_similar_bounties(
+        &self,
+        bounty_id: Uuid,
+        limit: Option<i32>,
+    ) -> Result<Vec<Bounty>, SqlxError> {
+        // First get the target bounty to extract its properties
+        let target_bounty = self.get_bounty_by_id(bounty_id).await
+            .ok_or_else(|| SqlxError::RowNotFound)?;
+
+        let statuses = vec![BountyStatus::Open as i16, BountyStatus::PendingApproval as i16];
+        // Find similar bounties based on category, difficulty, and overlapping tags
+        let similar_bounties = sqlx::query_as::<_, Bounty>(
+            "
+            SELECT b.* FROM bounty b
+            WHERE b.id != $1 
+            AND b.status = ANY($6)
+            AND (
+                b.category = $2 
+                OR b.difficulty = $3
+                OR (
+                    b.tags IS NOT NULL 
+                    AND $4 IS NOT NULL 
+                    AND EXISTS (
+                        SELECT 1 FROM unnest(b.tags) tag1
+                        WHERE EXISTS (
+                            SELECT 1 FROM unnest($4) tag2
+                            WHERE tag1 ILIKE '%' || tag2 || '%' OR tag2 ILIKE '%' || tag1 || '%'
+                        )
+                    )
+                )
+            )
+            ORDER BY 
+                CASE WHEN b.category = $2 THEN 3 ELSE 0 END +
+                CASE WHEN b.difficulty = $3 THEN 2 ELSE 0 END +
+                CASE WHEN b.tags IS NOT NULL AND $4 IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM unnest(b.tags) tag1
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest($4) tag2
+                        WHERE tag1 ILIKE '%' || tag2 || '%' OR tag2 ILIKE '%' || tag1 || '%'
+                    )
+                ) THEN 1 ELSE 0 END DESC,
+                b.created_at DESC
+            LIMIT $5
+            ",
+        )
+        .bind(bounty_id)
+        .bind(target_bounty.category)
+        .bind(target_bounty.difficulty)
+        .bind(target_bounty.tags)
+        .bind(limit.unwrap_or(5))
+        .bind(statuses)
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+
+        Ok(similar_bounties)
+    }
 }

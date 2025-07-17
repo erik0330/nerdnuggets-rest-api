@@ -5,8 +5,8 @@ use axum::{Extension, Json};
 use types::dto::{
     BountyCreateRequest, BountyUpdateRequest, GetBidsOption, GetBountyChatNumbersResponse,
     GetBountyChatsOption, GetBountysOption, GetMyBidsOption, GetMyBountyStatsResponse,
-    OffsetAndLimitOption, ReviewBountyRequest, SendBountyChatRequest, SubmitBidRequest,
-    SubmitBountyCommentRequest,
+    GetSimilarBountiesOption, OffsetAndLimitOption, ReviewBountyRequest, SendBountyChatRequest,
+    SubmitBidRequest, SubmitBountyCommentRequest,
 };
 use types::error::{ApiError, DbError, ValidatedRequest};
 use types::models::{BidInfo, BountyChatInfo, BountyCommentInfo, BountyInfo, User};
@@ -294,4 +294,17 @@ pub async fn create_bidder_chat(
         .await?;
 
     Ok(Json(chat_number))
+}
+
+pub async fn get_similar_bounties(
+    Path(id): Path<String>,
+    Query(opts): Query<GetSimilarBountiesOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<BountyInfo>>, ApiError> {
+    let similar_bounties = state
+        .service
+        .bounty
+        .get_similar_bounties(&id, opts.limit)
+        .await?;
+    Ok(Json(similar_bounties))
 }

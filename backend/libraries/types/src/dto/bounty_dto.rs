@@ -160,3 +160,9 @@ pub struct ChatNumberInfo {
     pub last_message_time: Option<DateTime<Utc>>,
     pub unread_count: i32,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSimilarBountiesOption {
+    pub limit: Option<i32>,
+}
