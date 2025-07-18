@@ -160,3 +160,38 @@ pub struct ChatNumberInfo {
     pub last_message_time: Option<DateTime<Utc>>,
     pub unread_count: i32,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSimilarBountiesOption {
+    pub limit: Option<i32>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyChatListResponse {
+    pub chat_number: String,
+    pub bounty: BountyChatBountyInfo,
+    pub funder: BountyChatUserInfo,
+    pub created_at: DateTime<Utc>,
+    pub last_message: String,
+    pub last_message_at: DateTime<Utc>,
+    pub unread_count: i32,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyChatBountyInfo {
+    pub id: Uuid,
+    pub nerd_id: String,
+    pub title: String,
+    pub status: BountyStatus,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyChatUserInfo {
+    pub id: Uuid,
+    pub name: String,
+    pub avatar: Option<String>,
+}

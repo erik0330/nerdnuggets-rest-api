@@ -2,7 +2,10 @@ use crate::{pool::DatabasePool, BountyRepository, UserRepository, UtilRepository
 use chrono::{Datelike, NaiveDate, Utc};
 use std::sync::Arc;
 use types::{
-    dto::{BountyCreateRequest, BountyUpdateRequest, ChatNumberInfo, SubmitBidRequest},
+    dto::{
+        BountyChatBountyInfo, BountyChatListResponse, BountyChatUserInfo, BountyCreateRequest,
+        BountyUpdateRequest, ChatNumberInfo, SubmitBidRequest,
+    },
     error::{ApiError, DbError, UserError},
     models::{
         BidInfo, BidStatus, Bounty, BountyChatInfo, BountyCommentInfo, BountyDifficulty,
@@ -39,7 +42,12 @@ impl BountyService {
         Ok(bounty.to_info(user.to_info(), category, milestones))
     }
 
-    pub async fn get_bounty_by_id(&self, id: &str) -> Result<BountyInfo, ApiError> {
+    pub async fn get_bounty_info_by_id(&self, id: &str) -> Result<BountyInfo, ApiError> {
+        let bounty = self.get_bounty_by_id_or_nerd_id(id).await?;
+        self.bounty_to_info(&bounty).await
+    }
+
+    pub async fn get_bounty_by_id_or_nerd_id(&self, id: &str) -> Result<Bounty, ApiError> {
         let bounty = if let Ok(id) = uuid_from_str(id) {
             self.bounty_repo
                 .get_bounty_by_id(id)
@@ -53,7 +61,7 @@ impl BountyService {
         } else {
             return Err(DbError::Str("Invalid id format".to_string()).into());
         };
-        self.bounty_to_info(&bounty).await
+        Ok(bounty)
     }
 
     pub async fn create_bounty(
@@ -523,7 +531,7 @@ impl BountyService {
                 bidder_id,
                 last_message,
                 last_message_time,
-                unread_count,
+                unread_count: unread_count as i32,
             })
         } else {
             Err(DbError::Str("Chat not found".to_string()).into())
@@ -596,5 +604,81 @@ impl BountyService {
         }
 
         Ok(chat_number)
+    }
+
+    pub async fn get_similar_bounties(
+        &self,
+        id: &str,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyInfo>, ApiError> {
+        let bounty = self.get_bounty_by_id_or_nerd_id(id).await?;
+        let similar_bounties = self
+            .bounty_repo
+            .get_similar_bounties(bounty.id, limit)
+            .await
+            .map_err(|_| DbError::Str("Failed to get similar bounties".to_string()))?;
+
+        let mut bounty_infos = Vec::new();
+        for bounty in similar_bounties {
+            let bounty_info = self.bounty_to_info(&bounty).await?;
+            bounty_infos.push(bounty_info);
+        }
+
+        Ok(bounty_infos)
+    }
+
+    pub async fn get_bounty_chat_list(
+        &self,
+        user_id: Uuid,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyChatListResponse>, ApiError> {
+        let chat_list_data = self
+            .bounty_repo
+            .get_bounty_chat_list(user_id, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Failed to get bounty chat list".to_string()))?;
+
+        let mut chat_list = Vec::new();
+        for (
+            chat_number,
+            bounty_id,
+            nerd_id,
+            bounty_title,
+            bounty_status,
+            funder_id,
+            funder_name,
+            funder_avatar,
+            created_at,
+            last_message,
+            last_message_at,
+            unread_count,
+        ) in chat_list_data
+        {
+            let funder = BountyChatUserInfo {
+                id: funder_id,
+                name: funder_name,
+                avatar: funder_avatar,
+            };
+
+            let bounty = BountyChatBountyInfo {
+                id: bounty_id,
+                nerd_id,
+                title: bounty_title,
+                status: bounty_status,
+            };
+
+            chat_list.push(BountyChatListResponse {
+                chat_number,
+                bounty,
+                funder,
+                created_at,
+                last_message,
+                last_message_at,
+                unread_count: unread_count as i32, // Convert from i64 to i32 for DTO
+            });
+        }
+
+        Ok(chat_list)
     }
 }
