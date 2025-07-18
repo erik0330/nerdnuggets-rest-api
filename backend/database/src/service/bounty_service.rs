@@ -456,14 +456,13 @@ impl BountyService {
 
     pub async fn get_bounty_chats(
         &self,
-        id: &str,
         chat_number: &str,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<BountyChatInfo>, ApiError> {
         let bounty_chats = self
             .bounty_repo
-            .get_bounty_chats(uuid_from_str(id)?, chat_number, offset, limit)
+            .get_bounty_chats(chat_number, offset, limit)
             .await
             .unwrap_or_default();
         let mut pc_infos = Vec::new();
@@ -584,7 +583,7 @@ impl BountyService {
         // Check if this chat number already exists
         let existing_chats = self
             .bounty_repo
-            .get_bounty_chats(uuid_from_str(bounty_id)?, &chat_number, None, Some(1))
+            .get_bounty_chats(&chat_number, None, Some(1))
             .await
             .unwrap_or_default();
 

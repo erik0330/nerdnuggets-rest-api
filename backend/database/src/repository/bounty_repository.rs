@@ -467,15 +467,13 @@ impl BountyRepository {
     
     pub async fn get_bounty_chats(
         &self,
-        id: Uuid,
         chat_number: &str,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<BountyChat>, SqlxError> {
         let bounty_chats = sqlx::query_as::<_, BountyChat>(
-            "SELECT * FROM bounty_chat WHERE bounty_id = $1 AND chat_number = $2 ORDER BY created_at LIMIT $3 OFFSET $4",
+            "SELECT * FROM bounty_chat WHERE chat_number = $1 ORDER BY created_at LIMIT $2 OFFSET $3",
         )
-        .bind(id)
         .bind(chat_number)
         .bind(limit.unwrap_or(10))
         .bind(offset.unwrap_or(0))
