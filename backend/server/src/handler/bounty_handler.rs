@@ -3,10 +3,10 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
 use types::dto::{
-    BountyCreateRequest, BountyUpdateRequest, GetBidsOption, GetBountyChatNumbersResponse,
-    GetBountyChatsOption, GetBountysOption, GetMyBidsOption, GetMyBountyStatsResponse,
-    GetSimilarBountiesOption, OffsetAndLimitOption, ReviewBountyRequest, SendBountyChatRequest,
-    SubmitBidRequest, SubmitBountyCommentRequest,
+    BountyChatListResponse, BountyCreateRequest, BountyUpdateRequest, GetBidsOption,
+    GetBountyChatNumbersResponse, GetBountyChatsOption, GetBountysOption, GetMyBidsOption,
+    GetMyBountyStatsResponse, GetSimilarBountiesOption, OffsetAndLimitOption, ReviewBountyRequest,
+    SendBountyChatRequest, SubmitBidRequest, SubmitBountyCommentRequest,
 };
 use types::error::{ApiError, DbError, ValidatedRequest};
 use types::models::{BidInfo, BountyChatInfo, BountyCommentInfo, BountyInfo, User};
@@ -307,4 +307,17 @@ pub async fn get_similar_bounties(
         .get_similar_bounties(&id, opts.limit)
         .await?;
     Ok(Json(similar_bounties))
+}
+
+pub async fn get_bounty_chat_list(
+    Extension(user): Extension<User>,
+    Query(opts): Query<OffsetAndLimitOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<BountyChatListResponse>>, ApiError> {
+    let chat_list = state
+        .service
+        .bounty
+        .get_bounty_chat_list(user.id, opts.offset, opts.limit)
+        .await?;
+    Ok(Json(chat_list))
 }

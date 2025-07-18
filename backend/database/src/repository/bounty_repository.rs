@@ -521,7 +521,7 @@ impl BountyRepository {
         bounty_id: Uuid,
         chat_number: &str,
         bidder_id: Uuid,
-    ) -> Result<Option<(String, Uuid, String, Option<DateTime<Utc>>, i32)>, SqlxError> {
+    ) -> Result<Option<(String, Uuid, String, Option<DateTime<Utc>>, i64)>, SqlxError> {
         let result = sqlx::query!(
             r#"
             SELECT 
@@ -556,7 +556,7 @@ impl BountyRepository {
             row.bidder_id,
             row.last_message,
             row.last_message_time,
-            row.unread_count.unwrap_or(0) as i32,
+            row.unread_count.unwrap_or(0) as i64,
         )))
     }
 
@@ -632,5 +632,102 @@ impl BountyRepository {
         .await?;
 
         Ok(similar_bounties)
+    }
+
+    pub async fn get_bounty_chat_list(
+        &self,
+        user_id: Uuid,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<(String, Uuid, String, String, BountyStatus, Uuid, String, Option<String>, DateTime<Utc>, String, DateTime<Utc>, i32)>, SqlxError> {
+        let chat_list = sqlx::query!(
+            r#"
+            WITH chat_summary AS (
+                SELECT 
+                    bc.chat_number,
+                    bc.bounty_id,
+                    b.nerd_id,
+                    b.title as bounty_title,
+                    b.status as bounty_status,
+                    b.user_id as funder_id,
+                    u.name as funder_name,
+                    u.avatar_url as funder_avatar,
+                    MIN(bc.created_at) as first_message_at,
+                    MAX(bc.created_at) as last_message_at,
+                    (
+                        SELECT message 
+                        FROM bounty_chat 
+                        WHERE bounty_id = bc.bounty_id 
+                        AND chat_number = bc.chat_number 
+                        ORDER BY created_at DESC 
+                        LIMIT 1
+                    ) as last_message,
+                    (
+                        SELECT COUNT(*)::int 
+                        FROM bounty_chat 
+                        WHERE bounty_id = bc.bounty_id 
+                        AND chat_number = bc.chat_number 
+                        AND is_read = false 
+                        AND user_id != $1
+                    ) as unread_count
+                FROM bounty_chat bc
+                JOIN bounty b ON bc.bounty_id = b.id
+                JOIN users u ON b.user_id = u.id
+                WHERE bc.user_id = $1 OR b.user_id = $1
+                GROUP BY bc.chat_number, bc.bounty_id, b.nerd_id, b.title, b.status, b.user_id, u.name, u.avatar_url
+            )
+            SELECT 
+                chat_number,
+                bounty_id,
+                nerd_id,
+                bounty_title,
+                bounty_status,
+                funder_id,
+                funder_name,
+                funder_avatar,
+                first_message_at,
+                last_message_at,
+                last_message,
+                unread_count
+            FROM chat_summary
+            ORDER BY last_message_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            user_id,
+            limit.unwrap_or(20) as i64,
+            offset.unwrap_or(0) as i64
+        )
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+
+        let result = chat_list
+            .into_iter()
+            .map(|row| (
+                row.chat_number,
+                row.bounty_id,
+                row.nerd_id,
+                row.bounty_title.unwrap_or_default(),
+                match row.bounty_status.unwrap_or(0) {
+                    0 => BountyStatus::PendingApproval,
+                    1 => BountyStatus::Open,
+                    2 => BountyStatus::Rejected,
+                    3 => BountyStatus::InProgress,
+                    4 => BountyStatus::UnderReview,
+                    5 => BountyStatus::Completed,
+                    6 => BountyStatus::Cancelled,
+                    7 => BountyStatus::RequestRevision,
+                    _ => BountyStatus::PendingApproval,
+                },
+                row.funder_id,
+                row.funder_name.unwrap_or_default(),
+                row.funder_avatar,
+                row.first_message_at.unwrap_or_default(),
+                row.last_message.unwrap_or_default(),
+                row.last_message_at.unwrap_or_default(),
+                row.unread_count.unwrap_or(0) as i32,
+            ))
+            .collect();
+
+        Ok(result)
     }
 }

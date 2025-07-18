@@ -2,7 +2,10 @@ use crate::{pool::DatabasePool, BountyRepository, UserRepository, UtilRepository
 use chrono::{Datelike, NaiveDate, Utc};
 use std::sync::Arc;
 use types::{
-    dto::{BountyCreateRequest, BountyUpdateRequest, ChatNumberInfo, SubmitBidRequest},
+    dto::{
+        BountyChatBountyInfo, BountyChatListResponse, BountyChatUserInfo, BountyCreateRequest,
+        BountyUpdateRequest, ChatNumberInfo, SubmitBidRequest,
+    },
     error::{ApiError, DbError, UserError},
     models::{
         BidInfo, BidStatus, Bounty, BountyChatInfo, BountyCommentInfo, BountyDifficulty,
@@ -528,7 +531,7 @@ impl BountyService {
                 bidder_id,
                 last_message,
                 last_message_time,
-                unread_count,
+                unread_count: unread_count as i32,
             })
         } else {
             Err(DbError::Str("Chat not found".to_string()).into())
@@ -622,5 +625,60 @@ impl BountyService {
         }
 
         Ok(bounty_infos)
+    }
+
+    pub async fn get_bounty_chat_list(
+        &self,
+        user_id: Uuid,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<BountyChatListResponse>, ApiError> {
+        let chat_list_data = self
+            .bounty_repo
+            .get_bounty_chat_list(user_id, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Failed to get bounty chat list".to_string()))?;
+
+        let mut chat_list = Vec::new();
+        for (
+            chat_number,
+            bounty_id,
+            nerd_id,
+            bounty_title,
+            bounty_status,
+            funder_id,
+            funder_name,
+            funder_avatar,
+            created_at,
+            last_message,
+            last_message_at,
+            unread_count,
+        ) in chat_list_data
+        {
+            let funder = BountyChatUserInfo {
+                id: funder_id,
+                name: funder_name,
+                avatar: funder_avatar,
+            };
+
+            let bounty = BountyChatBountyInfo {
+                id: bounty_id,
+                nerd_id,
+                title: bounty_title,
+                status: bounty_status,
+            };
+
+            chat_list.push(BountyChatListResponse {
+                chat_number,
+                bounty,
+                funder,
+                created_at,
+                last_message,
+                last_message_at,
+                unread_count: unread_count as i32, // Convert from i64 to i32 for DTO
+            });
+        }
+
+        Ok(chat_list)
     }
 }
