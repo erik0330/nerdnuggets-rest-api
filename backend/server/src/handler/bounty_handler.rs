@@ -203,14 +203,13 @@ pub async fn get_my_bounty_stats(
 }
 
 pub async fn get_bounty_chats(
-    Path(id): Path<String>,
     Query(opts): Query<GetBountyChatsOption>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<BountyChatInfo>>, ApiError> {
     let chats = state
         .service
         .bounty
-        .get_bounty_chats(&id, &opts.chat_number, opts.offset, opts.limit)
+        .get_bounty_chats(&opts.chat_number, opts.offset, opts.limit)
         .await?;
     Ok(Json(chats))
 }
