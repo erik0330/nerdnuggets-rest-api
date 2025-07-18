@@ -39,7 +39,12 @@ impl BountyService {
         Ok(bounty.to_info(user.to_info(), category, milestones))
     }
 
-    pub async fn get_bounty_by_id(&self, id: &str) -> Result<BountyInfo, ApiError> {
+    pub async fn get_bounty_info_by_id(&self, id: &str) -> Result<BountyInfo, ApiError> {
+        let bounty = self.get_bounty_by_id_or_nerd_id(id).await?;
+        self.bounty_to_info(&bounty).await
+    }
+
+    pub async fn get_bounty_by_id_or_nerd_id(&self, id: &str) -> Result<Bounty, ApiError> {
         let bounty = if let Ok(id) = uuid_from_str(id) {
             self.bounty_repo
                 .get_bounty_by_id(id)
@@ -53,7 +58,7 @@ impl BountyService {
         } else {
             return Err(DbError::Str("Invalid id format".to_string()).into());
         };
-        self.bounty_to_info(&bounty).await
+        Ok(bounty)
     }
 
     pub async fn create_bounty(
@@ -603,9 +608,10 @@ impl BountyService {
         id: &str,
         limit: Option<i32>,
     ) -> Result<Vec<BountyInfo>, ApiError> {
+        let bounty = self.get_bounty_by_id_or_nerd_id(id).await?;
         let similar_bounties = self
             .bounty_repo
-            .get_similar_bounties(uuid_from_str(id)?, limit)
+            .get_similar_bounties(bounty.id, limit)
             .await
             .map_err(|_| DbError::Str("Failed to get similar bounties".to_string()))?;
 

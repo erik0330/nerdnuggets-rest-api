@@ -17,7 +17,7 @@ pub async fn get_bounty_by_id(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<BountyInfo>, ApiError> {
-    let bounty = state.service.bounty.get_bounty_by_id(&id).await?;
+    let bounty = state.service.bounty.get_bounty_info_by_id(&id).await?;
     Ok(Json(bounty))
 }
 
@@ -278,7 +278,7 @@ pub async fn create_bidder_chat(
     State(state): State<AppState>,
 ) -> Result<Json<String>, ApiError> {
     // Verify that the current user is the bounty creator (funder)
-    let bounty = state.service.bounty.get_bounty_by_id(&id).await?;
+    let bounty = state.service.bounty.get_bounty_info_by_id(&id).await?;
     if bounty.user.id != user.id {
         return Err(DbError::Str(
             "Only the bounty creator can initiate chats with bidders".to_string(),
