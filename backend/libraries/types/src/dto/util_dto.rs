@@ -74,6 +74,7 @@ pub struct GetCategoryOption {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateDegreeOption {
     pub id: Uuid,
     pub degree_name: String,
@@ -82,11 +83,13 @@ pub struct UpdateDegreeOption {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetDegreeResponse {
     pub degree_list: Vec<Degree>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetHashTagsOption {
     #[serde(rename = "q")]
     pub hashtags: Option<String>,
@@ -95,26 +98,67 @@ pub struct GetHashTagsOption {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetHashTagsResponse {
     pub hashtags: Vec<HashTagsInfo>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct GetEmploymentsOption {
     pub employments: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetEmploymentsResponse {
     pub employments: Vec<EmploymentsInfo>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetWallPapersResponse {
     pub wallpapers: Vec<WallPapers>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct RemoveFileFromS3Request {
     pub link: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ExtractProjectInfoRequest {
+    #[validate(url)]
+    pub s3_paper: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct NerdNuggetsInfo {
+    pub title: String,
+    pub description: String,
+    pub research_objectives: Vec<String>,
+    pub methodology: String,
+    pub expected_outcomes: String,
+    pub strengths_potential_limitations: StrengthsLimitations,
+    pub commercial_applications: String,
+    pub societal_benefit: String,
+    pub risk_assessment: String,
+    pub tags: Vec<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct StrengthsLimitations {
+    pub strengths: Vec<String>,
+    pub limitations: Vec<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ExtractProjectInfoResponse {
+    pub status: String,
+    pub data: NerdNuggetsInfo,
 }

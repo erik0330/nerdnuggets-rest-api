@@ -2,7 +2,10 @@ use crate::{pool::DatabasePool, repository::UtilRepository};
 use serde_json::Value;
 use std::{str::FromStr, sync::Arc};
 use types::{
-    dto::{GetCityResponse, GetCountryResponse, GetInstitutionDetailItem, GetInstitutionsItem},
+    dto::{
+        ExtractProjectInfoRequest, ExtractProjectInfoResponse, GetCityResponse, GetCountryResponse,
+        GetInstitutionDetailItem, GetInstitutionsItem,
+    },
     error::{ApiError, DbError},
     models::Category,
 };
@@ -219,6 +222,15 @@ impl UtilService {
     ) -> Result<String, ApiError> {
         self.util_repo
             .upsert_last_block_number(last_block_number)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()).into())
+    }
+
+    pub async fn extract_project_info(
+        &self,
+        request: ExtractProjectInfoRequest,
+    ) -> Result<ExtractProjectInfoResponse, ApiError> {
+        third_party_api::nerdbunny_api::extract_project_info(request)
             .await
             .map_err(|err| DbError::Str(err.to_string()).into())
     }
