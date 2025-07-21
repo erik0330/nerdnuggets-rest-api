@@ -14,6 +14,12 @@ pub struct UserLoginWithGoogleRequest {
     pub access_token: String,
 }
 
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserLoginWithAppleRequest {
+    pub authorization_code: String,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserReadDto {

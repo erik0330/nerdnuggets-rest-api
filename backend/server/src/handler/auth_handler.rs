@@ -4,12 +4,13 @@ use axum::{
     Json,
 };
 use chrono::Duration;
-use third_party_api::google_oauth::get_google_user;
+use third_party_api::{apple_oauth::get_apple_user_with_code, google_oauth::get_google_user};
 use types::{
     dto::{
         EmailVerificationResponse, LoginAndRegisterResponse, ResendVerificationEmailRequest,
-        UserCheckEmailOption, UserCheckResponse, UserLoginWithEmailRequest,
-        UserLoginWithGoogleRequest, UserReadDto, UserRegisterWithEmailRequest, VerifyEmailRequest,
+        UserCheckEmailOption, UserCheckResponse, UserLoginWithAppleRequest,
+        UserLoginWithEmailRequest, UserLoginWithGoogleRequest, UserReadDto,
+        UserRegisterWithEmailRequest, VerifyEmailRequest,
     },
     error::{ApiError, DbError, UserError, ValidatedRequest},
     EmailVerifyType, UserRoleType,
@@ -89,6 +90,119 @@ pub async fn login_or_register_with_google(
         .service
         .user
         .create_user_with_google(&email, &google_user.name)
+        .await
+    {
+        Ok(user) => Ok(Json(LoginAndRegisterResponse {
+            user: UserReadDto::from(user.to_owned()),
+            token: state
+                .service
+                .token
+                .generate_token(user, UserRoleType::Member.to_string())?,
+        })),
+        Err(_) => Err(ApiError::UserError(UserError::CantCreateUser)),
+    }
+}
+
+pub async fn login_or_register_with_apple(
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<UserLoginWithAppleRequest>,
+) -> Result<Json<LoginAndRegisterResponse>, ApiError> {
+    let apple_user = get_apple_user_with_code(
+        &payload.authorization_code,
+        &state.env.apple_client_id,
+        &state.env.apple_team_id,
+        &state.env.apple_key_id,
+        &state.env.apple_private_key,
+    )
+    .await;
+
+    if let Err(_) = apple_user {
+        return Err(DbError::Str(
+            "An error occurred while trying to retrieve user information.".to_string(),
+        ))?;
+    }
+
+    let apple_user = apple_user.unwrap();
+    let apple_id = apple_user.sub;
+    // let email = apple_user.email.unwrap_or_default().to_lowercase();
+    // let name = if let Some(apple_name) = apple_user.name {
+    //     format!(
+    //         "{} {}",
+    //         apple_name.first_name.unwrap_or_default(),
+    //         apple_name.last_name.unwrap_or_default()
+    //     )
+    //     .trim()
+    //     .to_string()
+    // } else {
+    //     "Apple User".to_string()
+    // };
+
+    // Check if user exists by Apple ID
+    if let Ok(user) = state.service.user.get_user_by_apple_id(&apple_id).await {
+        return Ok(Json(LoginAndRegisterResponse {
+            user: UserReadDto::from(user.to_owned()),
+            token: state
+                .service
+                .token
+                .generate_token(user, UserRoleType::Member.to_string())?,
+        }));
+    }
+
+    // Check if user exists by email and update Apple ID
+    if let Some(email) = apple_user.email.as_ref() {
+        let email = email.to_lowercase();
+        if let Ok(user) = state.service.user.get_user_by_email(&email).await {
+            state
+                .service
+                .user
+                .update_apple_id(user.id, Some(apple_id.clone()))
+                .await?;
+            let user = state.service.user.get_user_by_id(user.id).await?;
+            return Ok(Json(LoginAndRegisterResponse {
+                user: UserReadDto::from(user.to_owned()),
+                token: state
+                    .service
+                    .token
+                    .generate_token(user, UserRoleType::Member.to_string())?,
+            }));
+        }
+    }
+
+    // Check if user exists by Gmail and update Apple ID
+    if let Some(email) = apple_user.email.as_ref() {
+        let email = email.to_lowercase();
+        if let Ok(user) = state.service.user.get_user_by_gmail(&email).await {
+            state
+                .service
+                .user
+                .update_apple_id(user.id, Some(apple_id.clone()))
+                .await?;
+            let user = state.service.user.get_user_by_id(user.id).await?;
+            return Ok(Json(LoginAndRegisterResponse {
+                user: UserReadDto::from(user.to_owned()),
+                token: state
+                    .service
+                    .token
+                    .generate_token(user, UserRoleType::Member.to_string())?,
+            }));
+        }
+    }
+
+    // Create new user with Apple
+    match state
+        .service
+        .user
+        .create_user_with_apple(
+            &apple_id,
+            apple_user.email,
+            apple_user.name.map(|name| {
+                format!(
+                    "{} {}",
+                    name.first_name.unwrap_or_default(),
+                    name.last_name.unwrap_or_default()
+                )
+            }),
+        )
         .await
     {
         Ok(user) => Ok(Json(LoginAndRegisterResponse {

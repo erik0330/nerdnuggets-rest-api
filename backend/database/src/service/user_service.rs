@@ -48,11 +48,36 @@ impl UserService {
             .ok_or_else(|| UserError::UserNotFound.into())
     }
 
+    pub async fn get_user_by_apple_id(&self, apple_id: &str) -> Result<User, ApiError> {
+        self.user_repo
+            .get_user_by_apple_id(apple_id)
+            .await
+            .ok_or_else(|| UserError::UserNotFound.into())
+    }
+
+    pub async fn get_user_by_wallet(&self, wallet: &str) -> Result<User, ApiError> {
+        self.user_repo
+            .get_user_by_wallet(wallet)
+            .await
+            .ok_or_else(|| UserError::UserNotFound.into())
+    }
+
     pub async fn update_gmail(&self, id: Uuid, gmail: Option<String>) -> Result<bool, ApiError> {
         self.user_repo
             .update_gmail(id, gmail)
             .await
-            .map_err(|_| DbError::Str("Update gmail failed".to_string()).into())
+            .map_err(|err| DbError::Str(err.to_string()).into())
+    }
+
+    pub async fn update_apple_id(
+        &self,
+        id: Uuid,
+        apple_id: Option<String>,
+    ) -> Result<bool, ApiError> {
+        self.user_repo
+            .update_apple_id(id, apple_id)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()).into())
     }
 
     pub async fn get_editors(
@@ -92,6 +117,18 @@ impl UserService {
     pub async fn create_user_with_google(&self, gmail: &str, name: &str) -> Result<User, ApiError> {
         self.user_repo
             .create_user_with_google(gmail, name)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()).into())
+    }
+
+    pub async fn create_user_with_apple(
+        &self,
+        apple_id: &str,
+        email: Option<String>,
+        name: Option<String>,
+    ) -> Result<User, ApiError> {
+        self.user_repo
+            .create_user_with_apple(apple_id, email, name)
             .await
             .map_err(|err| DbError::Str(err.to_string()).into())
     }

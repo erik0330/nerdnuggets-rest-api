@@ -6087,7 +6087,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arrs",
+ "base64 0.22.1",
  "chrono",
+ "jsonwebtoken 9.3.0",
  "reqwest 0.12.12",
  "rsa",
  "serde",

@@ -36,6 +36,14 @@ impl UserRepository {
             .unwrap_or(None)
     }
 
+    pub async fn get_user_by_apple_id(&self, apple_id: &str) -> Option<User> {
+        sqlx::query_as::<_, User>("SELECT * FROM users WHERE apple_id = $1")
+            .bind(apple_id)
+            .fetch_optional(self.db_conn.get_pool())
+            .await
+            .unwrap_or(None)
+    }
+
     pub async fn get_user_by_wallet(&self, wallet: &str) -> Option<User> {
         sqlx::query_as::<_, User>("SELECT * FROM users WHERE wallet_address ILIKE $1")
             .bind(wallet)
@@ -114,9 +122,41 @@ impl UserRepository {
         return Ok(user);
     }
 
+    pub async fn create_user_with_apple(
+        &self,
+        apple_id: &str,
+        email: Option<String>,
+        name: Option<String>,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>(
+            "INSERT INTO users (email, verified_email, apple_id, name)
+            VALUES ($1, $2, $3, $4) RETURNING *",
+        )
+        .bind(email.map(|e| e.to_lowercase()).unwrap_or_default())
+        .bind(false)
+        .bind(apple_id)
+        .bind(name)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        return Ok(user);
+    }
+
     pub async fn update_gmail(&self, id: Uuid, gmail: Option<String>) -> Result<bool, SqlxError> {
         let row = sqlx::query("UPDATE users SET gmail = $1 WHERE id = $2")
             .bind(gmail)
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn update_apple_id(
+        &self,
+        id: Uuid,
+        apple_id: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE users SET apple_id = $1 WHERE id = $2")
+            .bind(apple_id)
             .bind(id)
             .execute(self.db_conn.get_pool())
             .await?;

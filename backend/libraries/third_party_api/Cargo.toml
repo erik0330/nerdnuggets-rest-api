@@ -8,7 +8,9 @@ edition.workspace = true
 [dependencies]
 arrs.workspace = true
 anyhow.workspace = true
+base64.workspace = true
 chrono.workspace = true
+jsonwebtoken.workspace = true
 reqwest.workspace = true
 rsa.workspace = true
 serde.workspace = true
