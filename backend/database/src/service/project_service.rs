@@ -744,4 +744,38 @@ impl ProjectService {
         }
         Ok(true)
     }
+
+    pub async fn get_similar_projects(
+        &self,
+        id: &str,
+        limit: Option<i32>,
+    ) -> Result<Vec<ProjectInfo>, ApiError> {
+        let project = if let Ok(id) = uuid_from_str(id) {
+            self.project_repo
+                .get_project_by_id(id)
+                .await
+                .ok_or_else(|| DbError::Str("Project not found".to_string()))?
+        } else if id.starts_with("RP-") {
+            self.project_repo
+                .get_project_by_nerd_id(id)
+                .await
+                .ok_or_else(|| DbError::Str("Project not found".to_string()))?
+        } else {
+            return Err(DbError::Str("Invalid id format".to_string()).into());
+        };
+
+        let similar_projects = self
+            .project_repo
+            .get_similar_projects(&project, limit)
+            .await
+            .map_err(|_| DbError::Str("Failed to get similar projects".to_string()))?;
+
+        let mut project_infos = Vec::new();
+        for project in similar_projects {
+            let project_info = self.project_to_info(&project).await?;
+            project_infos.push(project_info);
+        }
+
+        Ok(project_infos)
+    }
 }
