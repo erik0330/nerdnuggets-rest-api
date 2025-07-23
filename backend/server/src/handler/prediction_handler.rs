@@ -2,9 +2,9 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
-use types::dto::GetPredictionsOption;
+use types::dto::{GetMyPredictionStatsResponse, GetPredictionsOption};
 use types::error::ApiError;
-use types::models::{PredictionInfo, User};
+use types::models::{PredictionInfo, TopPredictor, User};
 
 pub async fn get_prediction_by_id(
     Path(id): Path<String>,
@@ -59,4 +59,22 @@ pub async fn get_predictions(
         )
         .await?;
     Ok(Json(res))
+}
+
+pub async fn get_my_prediction_stats(
+    Extension(_user): Extension<User>,
+    State(_state): State<AppState>,
+) -> Result<Json<GetMyPredictionStatsResponse>, ApiError> {
+    Ok(Json(GetMyPredictionStatsResponse {
+        total_invested: 0,
+        potential: 0,
+        active_bets: 0,
+        accuracy_rate: 0,
+    }))
+}
+
+pub async fn get_top_predictors(
+    State(_state): State<AppState>,
+) -> Result<Json<Vec<TopPredictor>>, ApiError> {
+    Ok(Json(vec![]))
 }

@@ -87,6 +87,15 @@ define_pg_enum!(PredictionStatus {
     Cancelled = 3,
 });
 
+#[derive(Clone, Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct TopPredictor {
+    pub id: Uuid,
+    pub name: String,
+    pub count_prediction: i32,
+    pub accuracy_rate: i32,
+}
+
 impl Prediction {
     pub fn to_info(&self, user: UserInfo, category: Vec<Category>) -> PredictionInfo {
         PredictionInfo {

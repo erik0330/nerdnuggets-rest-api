@@ -1,9 +1,12 @@
 use crate::{
-    handler::project_handler::{
-        assign_editor, create_project, delete_project, get_dao_by_id, get_milestones,
-        get_my_dao_vote, get_project_by_id, get_project_comments, make_decision, submit_dao_vote,
-        submit_project, submit_project_comment, update_milestone, update_project_step_1,
-        update_project_step_2, update_project_step_3,
+    handler::{
+        prediction_handler::get_my_prediction_stats,
+        project_handler::{
+            assign_editor, create_project, delete_project, get_dao_by_id, get_milestones,
+            get_my_dao_vote, get_project_by_id, get_project_comments, make_decision,
+            submit_dao_vote, submit_project, submit_project_comment, update_milestone,
+            update_project_step_1, update_project_step_2, update_project_step_3,
+        },
     },
     state::AppState,
 };
@@ -30,4 +33,5 @@ pub fn routes() -> Router<AppState> {
         .route("/dao/:id", get(get_dao_by_id))
         .route("/dao/:id/vote", post(submit_dao_vote))
         .route("/dao/:id/vote", get(get_my_dao_vote))
+        .route("/prediction/stats", get(get_my_prediction_stats))
 }
