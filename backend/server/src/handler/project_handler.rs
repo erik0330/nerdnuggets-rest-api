@@ -78,9 +78,14 @@ pub async fn update_project_step_3(
 }
 
 pub async fn submit_project(
+    Extension(user): Extension<User>,
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<bool>, ApiError> {
+    let user = state.service.user.get_user_by_id(user.id).await?;
+    if user.wallet_address.filter(|w| !w.is_empty()).is_none() {
+        return Err(UserError::Str("Wallet address is not set".to_string()).into());
+    }
     let res = state.service.project.submit_project(&id).await?;
     Ok(Json(res))
 }

@@ -344,9 +344,13 @@ impl ProjectService {
                     .get_user_by_id(project.user_id)
                     .await
                     .ok_or(DbError::Str("Researcher not found".to_string()))?;
-                let wallet = researcher.wallet_address.ok_or(DbError::Str(
-                    "Can't find the wallet address of the researcher".to_string(),
-                ))?;
+                let wallet =
+                    researcher
+                        .wallet_address
+                        .filter(|w| !w.is_empty())
+                        .ok_or(DbError::Str(
+                            "Can't find the wallet address of the researcher".to_string(),
+                        ))?;
                 let milestones = self.project_repo.get_milestones(project.id).await;
                 let milestone_data = milestones
                     .iter()
@@ -360,7 +364,7 @@ impl ProjectService {
                         String::new(),
                     )
                     .await
-                    .map_err(|_| DbError::Str("Create Project Contract failed".to_string()))?;
+                    .map_err(|e| DbError::Str(e.to_string()))?;
                 if !self
                     .project_repo
                     .create_dao(&project)

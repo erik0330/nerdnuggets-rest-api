@@ -100,6 +100,7 @@ impl UserService {
     ) -> Result<User, ApiError> {
         let id = Uuid::from_str(id)
             .map_err(|_| ApiError::DbError(DbError::Str("Invalid UUID format".to_string())))?;
+        let wallet_address = payload.wallet_address.filter(|w| !w.is_empty());
         self.user_repo
             .update_user_onboarding(
                 id,
@@ -108,7 +109,7 @@ impl UserService {
                 &payload.bio,
                 payload.roles,
                 payload.interests,
-                payload.wallet_address,
+                wallet_address,
             )
             .await
             .map_err(|_| DbError::Str("Update user onboarding failed".to_string()).into())
@@ -392,7 +393,7 @@ impl UserService {
     ) -> Result<UserWalletSettingsResponse, ApiError> {
         let user = self
             .user_repo
-            .update_wallet_settings(user_id, payload.wallet_address)
+            .update_wallet_settings(user_id, payload.wallet_address.filter(|w| !w.is_empty()))
             .await
             .map_err(|_| DbError::Str("Failed to update wallet settings".to_string()))?;
 
