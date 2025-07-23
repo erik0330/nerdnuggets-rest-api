@@ -284,7 +284,7 @@ pub async fn get_similar_projects(
     Path(id): Path<String>,
     Query(opts): Query<GetSimilarProjectsOption>,
     State(state): State<AppState>,
-) -> Result<Json<Vec<ProjectInfo>>, ApiError> {
+) -> Result<Json<Vec<ProjectItemInfo>>, ApiError> {
     let similar_projects = state
         .service
         .project

@@ -749,7 +749,7 @@ impl ProjectService {
         &self,
         id: &str,
         limit: Option<i32>,
-    ) -> Result<Vec<ProjectInfo>, ApiError> {
+    ) -> Result<Vec<ProjectItemInfo>, ApiError> {
         let project = if let Ok(id) = uuid_from_str(id) {
             self.project_repo
                 .get_project_by_id(id)
@@ -768,14 +768,15 @@ impl ProjectService {
             .project_repo
             .get_similar_projects(&project, limit)
             .await
-            .map_err(|_| DbError::Str("Failed to get similar projects".to_string()))?;
+            .map_err(|e| DbError::Str(e.to_string()))?;
 
         let mut project_infos = Vec::new();
-        for project in similar_projects {
-            let project_info = self.project_to_info(&project).await?;
-            project_infos.push(project_info);
+        for pro in similar_projects {
+            if let Some(user) = self.user_repo.get_user_by_id(pro.user_id).await {
+                let category = self.util_repo.get_category_by_ids(&pro.category).await;
+                project_infos.push(pro.to_info(user.to_info(), None, category));
+            }
         }
-
         Ok(project_infos)
     }
 }

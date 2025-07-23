@@ -758,7 +758,7 @@ impl ProjectRepository {
         &self,
         project: &Project,
         limit: Option<i32>,
-    ) -> Result<Vec<Project>, SqlxError> {
+    ) -> Result<Vec<ProjectItem>, SqlxError> {
         let statuses = vec![
             ProjectStatus::DaoVoting as i16,
             ProjectStatus::Funding as i16,
@@ -766,11 +766,11 @@ impl ProjectRepository {
         ];
         // Find similar projects based on category, tags, and status
         // We'll look for projects that are public and have similar characteristics
-        let similar_projects = sqlx::query_as::<_, Project>(
+        let similar_projects = sqlx::query_as::<_, ProjectItem>(
             "
             SELECT p.* FROM project p
             WHERE p.id != $1 
-            AND p.status IN ($6)
+            AND p.status = ANY($6)
             AND (
                 -- Check for category overlap
                 EXISTS (
