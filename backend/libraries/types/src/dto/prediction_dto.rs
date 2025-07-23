@@ -14,3 +14,12 @@ pub struct GetPredictionsOption {
     pub offset: Option<i32>,
     pub limit: Option<i32>,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetMyPredictionStatsResponse {
+    pub total_invested: i32,
+    pub potential: i32,
+    pub active_bets: i32,
+    pub accuracy_rate: i32,
+}
