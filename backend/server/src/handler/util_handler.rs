@@ -6,9 +6,9 @@ use axum::{
 };
 use types::{
     dto::{
-        GetCategoryOption, GetCityOption, GetCityResponse, GetCountryOption, GetCountryResponse,
-        GetInstitutionDetailItem, GetInstitutionDetailOption, GetInstitutionsItem,
-        GetInstitutionsOption, RemoveFileFromS3Request,
+        ExtractProjectInfoRequest, GetCategoryOption, GetCityOption, GetCityResponse,
+        GetCountryOption, GetCountryResponse, GetInstitutionDetailItem, GetInstitutionDetailOption,
+        GetInstitutionsItem, GetInstitutionsOption, RemoveFileFromS3Request,
     },
     error::{ApiError, UploadError, ValidatedRequest},
     models::Category,
@@ -181,4 +181,12 @@ pub async fn remove_file_from_s3(
     Err(UploadError::SomethingWentWrong(
         "Url is invalid".to_string(),
     ))?
+}
+
+pub async fn extract_project_info(
+    Query(request): Query<ExtractProjectInfoRequest>,
+    State(state): State<AppState>,
+) -> Result<Json<types::dto::ExtractProjectInfoResponse>, ApiError> {
+    let result = state.service.util.extract_project_info(request).await?;
+    Ok(Json(result))
 }

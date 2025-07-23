@@ -27,6 +27,10 @@ pub struct Env {
     pub chain_id: u64,
     pub wallet_private_key: String,
     pub dao_duration: Duration,
+    pub apple_client_id: String,
+    pub apple_team_id: String,
+    pub apple_key_id: String,
+    pub apple_private_key: String,
 }
 
 impl Env {
@@ -100,6 +104,13 @@ impl Env {
             Duration::hours(2)
         };
 
+        let apple_client_id =
+            std::env::var("APPLE_CLIENT_ID").expect("APPLE_CLIENT_ID must be set");
+        let apple_team_id = std::env::var("APPLE_TEAM_ID").expect("APPLE_TEAM_ID must be set");
+        let apple_key_id = std::env::var("APPLE_KEY_ID").expect("APPLE_KEY_ID must be set");
+        let apple_private_key =
+            std::env::var("APPLE_PRIVATE_KEY").expect("APPLE_PRIVATE_KEY must be set");
+
         Self {
             port,
             jwt_secret,
@@ -124,6 +135,10 @@ impl Env {
             chain_id,
             wallet_private_key,
             dao_duration,
+            apple_client_id,
+            apple_team_id,
+            apple_key_id,
+            apple_private_key,
         }
     }
 

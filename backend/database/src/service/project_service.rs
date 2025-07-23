@@ -344,9 +344,13 @@ impl ProjectService {
                     .get_user_by_id(project.user_id)
                     .await
                     .ok_or(DbError::Str("Researcher not found".to_string()))?;
-                let wallet = researcher.wallet_address.ok_or(DbError::Str(
-                    "Can't find the wallet address of the researcher".to_string(),
-                ))?;
+                let wallet =
+                    researcher
+                        .wallet_address
+                        .filter(|w| !w.is_empty())
+                        .ok_or(DbError::Str(
+                            "Can't find the wallet address of the researcher".to_string(),
+                        ))?;
                 let milestones = self.project_repo.get_milestones(project.id).await;
                 let milestone_data = milestones
                     .iter()
@@ -360,7 +364,7 @@ impl ProjectService {
                         String::new(),
                     )
                     .await
-                    .map_err(|_| DbError::Str("Create Project Contract failed".to_string()))?;
+                    .map_err(|e| DbError::Str(e.to_string()))?;
                 if !self
                     .project_repo
                     .create_dao(&project)
@@ -739,5 +743,40 @@ impl ProjectService {
                 .ok();
         }
         Ok(true)
+    }
+
+    pub async fn get_similar_projects(
+        &self,
+        id: &str,
+        limit: Option<i32>,
+    ) -> Result<Vec<ProjectItemInfo>, ApiError> {
+        let project = if let Ok(id) = uuid_from_str(id) {
+            self.project_repo
+                .get_project_by_id(id)
+                .await
+                .ok_or_else(|| DbError::Str("Project not found".to_string()))?
+        } else if id.starts_with("RP-") {
+            self.project_repo
+                .get_project_by_nerd_id(id)
+                .await
+                .ok_or_else(|| DbError::Str("Project not found".to_string()))?
+        } else {
+            return Err(DbError::Str("Invalid id format".to_string()).into());
+        };
+
+        let similar_projects = self
+            .project_repo
+            .get_similar_projects(&project, limit)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        let mut project_infos = Vec::new();
+        for pro in similar_projects {
+            if let Some(user) = self.user_repo.get_user_by_id(pro.user_id).await {
+                let category = self.util_repo.get_category_by_ids(&pro.category).await;
+                project_infos.push(pro.to_info(user.to_info(), None, category));
+            }
+        }
+        Ok(project_infos)
     }
 }

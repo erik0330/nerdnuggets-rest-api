@@ -3,9 +3,9 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
     AssignEditorRequest, GetDaosOption, GetProjectCommentsOption, GetProjectsOption,
-    MakeDecisionRequest, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
-    ProjectUpdateStep3Request, SubmitDaoVoteRequest, SubmitProjectCommentRequest,
-    UpdateMilestoneRequest,
+    GetSimilarProjectsOption, MakeDecisionRequest, ProjectUpdateStep1Request,
+    ProjectUpdateStep2Request, ProjectUpdateStep3Request, SubmitDaoVoteRequest,
+    SubmitProjectCommentRequest, UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
@@ -78,9 +78,14 @@ pub async fn update_project_step_3(
 }
 
 pub async fn submit_project(
+    Extension(user): Extension<User>,
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<bool>, ApiError> {
+    let user = state.service.user.get_user_by_id(user.id).await?;
+    if user.wallet_address.filter(|w| !w.is_empty()).is_none() {
+        return Err(UserError::Str("Wallet address is not set".to_string()).into());
+    }
     let res = state.service.project.submit_project(&id).await?;
     Ok(Json(res))
 }
@@ -273,4 +278,17 @@ pub async fn submit_dao_vote(
         .submit_dao_vote(proposal_id, &payload.wallet, payload.support, weight)
         .await?;
     Ok(Json(res))
+}
+
+pub async fn get_similar_projects(
+    Path(id): Path<String>,
+    Query(opts): Query<GetSimilarProjectsOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ProjectItemInfo>>, ApiError> {
+    let similar_projects = state
+        .service
+        .project
+        .get_similar_projects(&id, opts.limit)
+        .await?;
+    Ok(Json(similar_projects))
 }

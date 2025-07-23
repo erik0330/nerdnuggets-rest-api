@@ -125,3 +125,9 @@ pub struct SubmitDaoVoteRequest {
     pub support: bool,
     pub weight: String,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSimilarProjectsOption {
+    pub limit: Option<i32>,
+}

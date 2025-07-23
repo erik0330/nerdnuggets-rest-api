@@ -753,4 +753,84 @@ impl ProjectRepository {
             .await?;
         Ok(prediction)
     }
+
+    pub async fn get_similar_projects(
+        &self,
+        project: &Project,
+        limit: Option<i32>,
+    ) -> Result<Vec<ProjectItem>, SqlxError> {
+        let statuses = vec![
+            ProjectStatus::DaoVoting as i16,
+            ProjectStatus::Funding as i16,
+            ProjectStatus::Completed as i16,
+        ];
+        // Find similar projects based on category, tags, and status
+        // We'll look for projects that are public and have similar characteristics
+        let similar_projects = sqlx::query_as::<_, ProjectItem>(
+            "
+            SELECT p.* FROM project p
+            WHERE p.id != $1 
+            AND p.status = ANY($6)
+            AND (
+                -- Check for category overlap
+                EXISTS (
+                    SELECT 1 FROM unnest(p.category) cat1
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest($2) cat2
+                        WHERE cat1 = cat2
+                    )
+                )
+                OR
+                -- Check for tag overlap
+                (
+                    p.tags IS NOT NULL 
+                    AND $3 IS NOT NULL 
+                    AND EXISTS (
+                        SELECT 1 FROM unnest(p.tags) tag1
+                        WHERE EXISTS (
+                            SELECT 1 FROM unnest($3) tag2
+                            WHERE tag1 ILIKE '%' || tag2 || '%' OR tag2 ILIKE '%' || tag1 || '%'
+                        )
+                    )
+                )
+                OR
+                -- Check for similar funding goals (within 50% range)
+                (
+                    p.funding_goal IS NOT NULL 
+                    AND $4 IS NOT NULL
+                    AND p.funding_goal BETWEEN $4 * 0.5 AND $4 * 1.5
+                )
+            )
+            ORDER BY 
+                -- Priority: category match (3 points), tag match (2 points), funding similarity (1 point)
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM unnest(p.category) cat1
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest($2) cat2
+                        WHERE cat1 = cat2
+                    )
+                ) THEN 3 ELSE 0 END +
+                CASE WHEN p.tags IS NOT NULL AND $3 IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM unnest(p.tags) tag1
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest($3) tag2
+                        WHERE tag1 ILIKE '%' || tag2 || '%' OR tag2 ILIKE '%' || tag1 || '%'
+                    )
+                ) THEN 2 ELSE 0 END +
+                CASE WHEN p.funding_goal IS NOT NULL AND $4 IS NOT NULL AND p.funding_goal BETWEEN $4 * 0.5 AND $4 * 1.5 THEN 1 ELSE 0 END DESC,
+                p.created_at DESC
+            LIMIT $5
+            ",
+        )
+        .bind(project.id)
+        .bind(&project.category)
+        .bind(&project.tags)
+        .bind(project.funding_goal)
+        .bind(limit.unwrap_or(3))
+        .bind(&statuses)
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+
+        Ok(similar_projects)
+    }
 }
