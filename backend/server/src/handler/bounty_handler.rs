@@ -2,6 +2,7 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
+use third_party_api::arweave::upload_bounty_creation;
 use types::dto::{
     BountyChatListResponse, BountyCreateRequest, BountyUpdateRequest, GetBidsOption,
     GetBountyChatNumbersResponse, GetBountyChatsOption, GetBountysOption, GetMyBidsOption,
@@ -31,18 +32,47 @@ pub async fn create_bounty(
         .bounty
         .create_bounty(user.id, payload.clone())
         .await?;
-    // let tags = vec![
-    //     ("Content-Type".to_string(), "application/json".to_string()),
-    //     ("App-Name".to_string(), "NerdNuggets".to_string()),
-    //     ("Type".to_string(), "Bounty".to_string()),
-    // ];
-    // if let Ok(link) =
-    //     upload_metadata_to_arweave(&tags, &serde_json::to_string(&payload).unwrap()).await
-    // {
-    //     println!("link: {}", link);
-    // } else {
-    //     println!("link error");
-    // }
+
+    // Upload bounty metadata to Arweave
+    let bounty_info = serde_json::json!({
+        "id": bounty.id,
+        "nerd_id": bounty.nerd_id,
+        "contract_id": bounty.contract_id,
+        "created_at": bounty.created_at,
+    });
+
+    let user_info = serde_json::json!({
+        "id": user.id,
+        "email": user.email,
+    });
+
+    match upload_bounty_creation(
+        &bounty.id.to_string(),
+        &bounty.nerd_id,
+        &user.id.to_string(),
+        &serde_json::to_value(&payload).unwrap(),
+        &bounty_info,
+        &user_info,
+    )
+    .await
+    {
+        Ok(arweave_id) => {
+            // println!("Bounty uploaded to Arweave with ID: {}", arweave_id);
+            // Store the Arweave ID in the database for future reference
+            if let Err(_e) = state
+                .service
+                .bounty
+                .update_bounty_arweave_tx_id(bounty.id, &arweave_id)
+                .await
+            {
+                // println!("Failed to store Arweave transaction ID: {:?}", e);
+            }
+        }
+        Err(_e) => {
+            // println!("Failed to upload bounty to Arweave: {:?}", e);
+        }
+    }
+
     Ok(Json(bounty))
 }
 

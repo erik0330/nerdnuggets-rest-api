@@ -768,7 +768,7 @@ impl ProjectService {
             .project_repo
             .get_similar_projects(&project, limit)
             .await
-            .map_err(|e| DbError::Str(e.to_string()))?;
+            .map_err(|_| DbError::Str("Failed to get similar projects".to_string()))?;
 
         let mut project_infos = Vec::new();
         for pro in similar_projects {
@@ -777,6 +777,29 @@ impl ProjectService {
                 project_infos.push(pro.to_info(user.to_info(), None, category));
             }
         }
+
         Ok(project_infos)
+    }
+
+    pub async fn update_project_arweave_tx_id(
+        &self,
+        project_id: Uuid,
+        arweave_tx_id: &str,
+    ) -> Result<bool, ApiError> {
+        self.project_repo
+            .update_project_arweave_tx_id(project_id, arweave_tx_id)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()).into())
+    }
+
+    pub async fn update_milestone_arweave_tx_id(
+        &self,
+        milestone_id: Uuid,
+        arweave_tx_id: &str,
+    ) -> Result<bool, ApiError> {
+        self.project_repo
+            .update_milestone_arweave_tx_id(milestone_id, arweave_tx_id)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()).into())
     }
 }

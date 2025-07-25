@@ -680,4 +680,15 @@ impl BountyService {
 
         Ok(chat_list)
     }
+
+    pub async fn update_bounty_arweave_tx_id(
+        &self,
+        bounty_id: Uuid,
+        arweave_tx_id: &str,
+    ) -> Result<bool, ApiError> {
+        self.bounty_repo
+            .update_bounty_arweave_tx_id(bounty_id, arweave_tx_id)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()).into())
+    }
 }
