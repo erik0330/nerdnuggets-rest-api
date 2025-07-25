@@ -40,6 +40,8 @@ pub struct Project {
     pub funding_amount: i32,
     pub count_contributors: i32,
 
+    pub arweave_tx_id: Option<String>,
+
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub dao_at: Option<DateTime<Utc>>,
@@ -85,6 +87,8 @@ pub struct ProjectInfo {
     pub funding_amount: i32,
     pub count_contributors: i32,
 
+    pub arweave_tx_id: Option<String>,
+
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub dao_at: Option<DateTime<Utc>>,
@@ -125,6 +129,7 @@ pub struct Milestone {
     pub count_contributors: i32,
     pub days_after_start: i32,
     pub days_of_prediction: i32,
+    pub arweave_tx_id: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -165,6 +170,7 @@ pub struct ProjectItem {
     pub funding_goal: Option<i32>,
     pub duration: Option<i32>,
     pub tags: Vec<String>,
+    pub arweave_tx_id: Option<String>,
 
     pub funding_amount: i32,
     pub count_contributors: i32,
@@ -191,7 +197,7 @@ pub struct ProjectItemInfo {
     pub funding_goal: Option<i32>,
     pub duration: Option<i32>,
     pub tags: Vec<String>,
-
+    pub arweave_tx_id: Option<String>,
     pub funding_amount: i32,
     pub count_contributors: i32,
 
@@ -291,6 +297,7 @@ impl Project {
             ai_innovation: self.ai_innovation,
             funding_amount: self.funding_amount,
             count_contributors: self.count_contributors,
+            arweave_tx_id: self.arweave_tx_id.clone(),
             created_at: self.created_at,
             updated_at: self.updated_at,
             dao_at: self.dao_at,
@@ -320,6 +327,7 @@ impl ProjectItem {
             funding_goal: self.funding_goal,
             duration: self.duration,
             tags: self.tags.clone(),
+            arweave_tx_id: self.arweave_tx_id.clone(),
             funding_amount: self.funding_amount,
             count_contributors: self.count_contributors,
             created_at: self.created_at,

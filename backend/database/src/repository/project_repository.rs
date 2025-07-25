@@ -194,7 +194,7 @@ impl ProjectRepository {
 
     pub async fn get_milestones(&self, project_id: Uuid) -> Vec<Milestone> {
         sqlx::query_as::<_, Milestone>(
-            "SELECT * FROM milestone WHERE project_id = $1 ORDER BY created_at",
+            "SELECT * FROM milestone WHERE project_id = $1 ORDER BY number",
         )
         .bind(project_id)
         .fetch_all(self.db_conn.get_pool())
@@ -263,7 +263,7 @@ impl ProjectRepository {
     ) -> Result<Vec<ProjectItem>, SqlxError> {
         let mut filters = Vec::new();
         let mut index = 3;
-        let mut query = format!("SELECT p.id, p.nerd_id, p.proposal_id, p.user_id, p.title, p.description, p.cover_photo, p.category, p.status, p.funding_goal, p.duration, p.tags, p.funding_amount, p.count_contributors, p.created_at, p.updated_at, p.dao_at, p.started_at FROM project p");
+        let mut query = format!("SELECT p.id, p.nerd_id, p.proposal_id, p.user_id, p.title, p.description, p.cover_photo, p.category, p.status, p.funding_goal, p.duration, p.tags, p.arweave_tx_id, p.funding_amount, p.count_contributors, p.created_at, p.updated_at, p.dao_at, p.started_at FROM project p");
         if title.as_ref().map_or(false, |s| !s.is_empty()) {
             filters.push(format!("p.title ILIKE ${index}"));
             index += 1;
@@ -832,5 +832,31 @@ impl ProjectRepository {
         .await?;
 
         Ok(similar_projects)
+    }
+
+    pub async fn update_project_arweave_tx_id(
+        &self,
+        id: Uuid,
+        arweave_tx_id: &str,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE project SET arweave_tx_id = $1 WHERE id = $2")
+            .bind(arweave_tx_id)
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn update_milestone_arweave_tx_id(
+        &self,
+        id: Uuid,
+        arweave_tx_id: &str,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE milestone SET arweave_tx_id = $1 WHERE id = $2")
+            .bind(arweave_tx_id)
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
     }
 }

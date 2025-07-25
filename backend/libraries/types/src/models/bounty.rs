@@ -27,6 +27,7 @@ pub struct Bounty {
     pub by_milestone: bool,
     pub admin_notes: Option<String>,
     pub cancellation_reason: Option<String>,
+    pub arweave_tx_id: Option<String>,
 
     pub count_view: i32,
     pub count_comment: i32,
@@ -65,6 +66,7 @@ pub struct BountyInfo {
     pub milestones: Vec<BountyMilestone>,
     pub admin_notes: Option<String>,
     pub cancellation_reason: Option<String>,
+    pub arweave_tx_id: Option<String>,
     pub count_view: i32,
     pub count_comment: i32,
     pub count_bid: i32,
@@ -303,6 +305,7 @@ impl Bounty {
             milestones,
             admin_notes: self.admin_notes.clone(),
             cancellation_reason: self.cancellation_reason.clone(),
+            arweave_tx_id: self.arweave_tx_id.clone(),
             count_view: self.count_view,
             count_comment: self.count_comment,
             count_bid: self.count_bid,

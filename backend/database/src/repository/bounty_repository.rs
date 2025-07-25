@@ -464,6 +464,19 @@ impl BountyRepository {
             .await?;
         Ok(row.rows_affected() == 1)
     }
+
+    pub async fn update_bounty_arweave_tx_id(
+        &self,
+        id: Uuid,
+        arweave_tx_id: &str,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bounty SET arweave_tx_id = $1 WHERE id = $2")
+            .bind(arweave_tx_id)
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
     
     pub async fn get_bounty_chats(
         &self,

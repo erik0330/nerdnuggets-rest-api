@@ -1,6 +1,7 @@
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
+use third_party_api::arweave::upload_project_submission;
 use types::dto::{
     AssignEditorRequest, GetDaosOption, GetProjectCommentsOption, GetProjectsOption,
     GetSimilarProjectsOption, MakeDecisionRequest, ProjectUpdateStep1Request,
@@ -87,6 +88,31 @@ pub async fn submit_project(
         return Err(UserError::Str("Wallet address is not set".to_string()).into());
     }
     let res = state.service.project.submit_project(&id).await?;
+
+    let project_info = state.service.project.get_project_by_id(&id).await?;
+    if res {
+        // Upload project submission metadata to Arweave
+        let project_data = serde_json::json!(project_info);
+
+        match upload_project_submission(
+            &project_info.id.to_string(),
+            &project_info.nerd_id,
+            &user.id.to_string(),
+            &project_data,
+        )
+        .await
+        {
+            Ok(arweave_id) => {
+                state
+                    .service
+                    .project
+                    .update_project_arweave_tx_id(project_info.id, &arweave_id)
+                    .await?;
+            }
+            Err(_e) => {}
+        }
+    }
+
     Ok(Json(res))
 }
 
