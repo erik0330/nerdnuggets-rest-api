@@ -131,3 +131,17 @@ pub struct SubmitDaoVoteRequest {
 pub struct GetSimilarProjectsOption {
     pub limit: Option<i32>,
 }
+
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectStatusCount {
+    pub status: i16,
+    pub count: i64,
+}
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectStatusCounts {
+    pub counts: Vec<ProjectStatusCount>,
+    pub total: i64,
+}

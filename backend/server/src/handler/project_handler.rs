@@ -4,7 +4,7 @@ use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
     AssignEditorRequest, GetDaosOption, GetProjectCommentsOption, GetProjectsOption,
-    GetSimilarProjectsOption, MakeDecisionRequest, ProjectUpdateStep1Request,
+    GetSimilarProjectsOption, MakeDecisionRequest, ProjectStatusCounts, ProjectUpdateStep1Request,
     ProjectUpdateStep2Request, ProjectUpdateStep3Request, SubmitDaoVoteRequest,
     SubmitProjectCommentRequest, UpdateMilestoneRequest,
 };
@@ -317,4 +317,11 @@ pub async fn get_similar_projects(
         .get_similar_projects(&id, opts.limit)
         .await?;
     Ok(Json(similar_projects))
+}
+
+pub async fn get_project_counts_by_status(
+    State(state): State<AppState>,
+) -> Result<Json<ProjectStatusCounts>, ApiError> {
+    let counts = state.service.project.get_project_counts_by_status().await?;
+    Ok(Json(counts))
 }
