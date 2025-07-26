@@ -3,6 +3,7 @@ use chrono::{DateTime, Duration, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::{
+    dto::ProjectStatusCount,
     models::{
         CompletedDao, Dao, DaoVote, Milestone, Prediction, PredictionStatus, Project,
         ProjectComment, ProjectIds, ProjectItem, TeamMember,
@@ -858,5 +859,14 @@ impl ProjectRepository {
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_project_counts_by_status(&self) -> Result<Vec<ProjectStatusCount>, SqlxError> {
+        let query =
+            "SELECT p.status, COUNT(*) as count FROM project p GROUP BY p.status ORDER BY p.status";
+        let counts = sqlx::query_as::<_, ProjectStatusCount>(query)
+            .fetch_all(self.db_conn.get_pool())
+            .await?;
+        Ok(counts)
     }
 }

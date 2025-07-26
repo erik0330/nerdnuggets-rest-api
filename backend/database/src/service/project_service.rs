@@ -4,8 +4,8 @@ use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
-        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-        UpdateMilestoneRequest,
+        ProjectStatusCounts, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+        ProjectUpdateStep3Request, UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -797,9 +797,23 @@ impl ProjectService {
         milestone_id: Uuid,
         arweave_tx_id: &str,
     ) -> Result<bool, ApiError> {
-        self.project_repo
+        let res = self
+            .project_repo
             .update_milestone_arweave_tx_id(milestone_id, arweave_tx_id)
             .await
-            .map_err(|e| DbError::Str(e.to_string()).into())
+            .map_err(|_| DbError::Str("Update milestone arweave tx id failed".to_string()))?;
+        Ok(res)
+    }
+
+    pub async fn get_project_counts_by_status(&self) -> Result<ProjectStatusCounts, ApiError> {
+        let counts = self
+            .project_repo
+            .get_project_counts_by_status()
+            .await
+            .map_err(|_| DbError::Str("Get project counts by status failed".to_string()))?;
+
+        let total = counts.iter().map(|c| c.count).sum();
+
+        Ok(ProjectStatusCounts { counts, total })
     }
 }
