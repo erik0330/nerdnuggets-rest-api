@@ -7,10 +7,13 @@ use types::dto::{
     BountyChatListResponse, BountyCreateRequest, BountyUpdateRequest, GetBidsOption,
     GetBountyChatNumbersResponse, GetBountyChatsOption, GetBountysOption, GetMyBidsOption,
     GetMyBountyStatsResponse, GetSimilarBountiesOption, OffsetAndLimitOption, ReviewBountyRequest,
-    SendBountyChatRequest, SubmitBidRequest, SubmitBountyCommentRequest,
+    ReviewBountyWorkSubmissionRequest, SendBountyChatRequest, SubmitBidRequest,
+    SubmitBountyCommentRequest, SubmitBountyWorkRequest,
 };
 use types::error::{ApiError, DbError, ValidatedRequest};
-use types::models::{BidInfo, BountyChatInfo, BountyCommentInfo, BountyInfo, User};
+use types::models::{
+    BidInfo, BountyChatInfo, BountyCommentInfo, BountyInfo, BountyWorkSubmissionInfo, User,
+};
 use types::UserRoleType;
 use utils::commons::uuid_from_str;
 
@@ -349,4 +352,66 @@ pub async fn get_bounty_chat_list(
         .get_bounty_chat_list(user.id, opts.offset, opts.limit)
         .await?;
     Ok(Json(chat_list))
+}
+
+// Bounty Work Submission Handlers
+pub async fn save_bounty_work(
+    Extension(user): Extension<User>,
+    Path(bid_id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SubmitBountyWorkRequest>,
+) -> Result<Json<BountyWorkSubmissionInfo>, ApiError> {
+    let submission = state
+        .service
+        .bounty
+        .submit_bounty_work(&bid_id, user, payload)
+        .await?;
+
+    Ok(Json(submission))
+}
+
+pub async fn get_bounty_work_submission(
+    Path(submission_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<BountyWorkSubmissionInfo>, ApiError> {
+    let submission = state
+        .service
+        .bounty
+        .get_bounty_work_submission(&submission_id)
+        .await?;
+    Ok(Json(submission))
+}
+
+pub async fn finalize_bounty_work_submission(
+    Extension(user): Extension<User>,
+    Path(submission_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<bool>, ApiError> {
+    let success = state
+        .service
+        .bounty
+        .finalize_bounty_work_submission(&submission_id, user)
+        .await?;
+    Ok(Json(success))
+}
+
+pub async fn review_bounty_work_submission(
+    Path(submission_id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<ReviewBountyWorkSubmissionRequest>,
+) -> Result<Json<bool>, ApiError> {
+    let status = match payload.status {
+        types::models::BountyReviewType::Approve => types::models::BountySubmissionStatus::Approved,
+        types::models::BountyReviewType::RequestRevision => {
+            types::models::BountySubmissionStatus::RequestRevision
+        }
+        types::models::BountyReviewType::Reject => types::models::BountySubmissionStatus::Rejected,
+    };
+
+    let success = state
+        .service
+        .bounty
+        .review_bounty_work_submission(&submission_id, status, payload.admin_notes)
+        .await?;
+    Ok(Json(success))
 }

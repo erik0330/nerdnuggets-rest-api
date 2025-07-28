@@ -203,6 +203,89 @@ pub struct BountyChatInfo {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyWorkSubmission {
+    pub id: Uuid,
+    pub bounty_id: Uuid,
+    pub bid_id: Uuid,
+    pub nerd_id: String,
+    pub user_id: Uuid,
+    pub title: String,
+    pub description: String,
+    pub deliverable_files: Vec<String>,
+    pub additional_notes: Option<String>,
+    pub status: BountySubmissionStatus,
+    pub admin_notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub submitted_at: Option<DateTime<Utc>>,
+    pub reviewed_at: Option<DateTime<Utc>>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub rejected_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyWorkSubmissionInfo {
+    pub id: Uuid,
+    pub bounty_id: Uuid,
+    pub bid_id: Uuid,
+    pub nerd_id: String,
+    pub user: UserInfo,
+    pub title: String,
+    pub description: String,
+    pub deliverable_files: Vec<String>,
+    pub additional_notes: Option<String>,
+    pub status: BountySubmissionStatus,
+    pub admin_notes: Option<String>,
+    pub milestone_submissions: Vec<BountyMilestoneSubmissionInfo>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub submitted_at: Option<DateTime<Utc>>,
+    pub reviewed_at: Option<DateTime<Utc>>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub rejected_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyMilestoneSubmission {
+    pub id: Uuid,
+    pub work_submission_id: Uuid,
+    pub milestone_number: i16,
+    pub title: String,
+    pub description: String,
+    pub deliverable_files: Vec<String>,
+    pub additional_notes: Option<String>,
+    pub status: BountySubmissionStatus,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub submitted_at: Option<DateTime<Utc>>,
+    pub reviewed_at: Option<DateTime<Utc>>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub rejected_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyMilestoneSubmissionInfo {
+    pub id: Uuid,
+    pub work_submission_id: Uuid,
+    pub milestone_number: i16,
+    pub title: String,
+    pub description: String,
+    pub deliverable_files: Vec<String>,
+    pub additional_notes: Option<String>,
+    pub status: BountySubmissionStatus,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub submitted_at: Option<DateTime<Utc>>,
+    pub reviewed_at: Option<DateTime<Utc>>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub rejected_at: Option<DateTime<Utc>>,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
 pub enum BountyStatus {
     PendingApproval,
@@ -273,6 +356,25 @@ define_pg_enum!(BidStatus {
     InProgress = 4,
     Completed = 5,
     Cancelled = 6,
+});
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
+pub enum BountySubmissionStatus {
+    Draft,
+    Submitted,
+    UnderReview,
+    Approved,
+    Rejected,
+    RequestRevision,
+}
+
+define_pg_enum!(BountySubmissionStatus {
+    Draft = 0,
+    Submitted = 1,
+    UnderReview = 2,
+    Approved = 3,
+    Rejected = 4,
+    RequestRevision = 5,
 });
 
 impl Bounty {
@@ -366,6 +468,56 @@ impl BountyChat {
             file_urls: self.file_urls.clone(),
             created_at: self.created_at,
             updated_at: self.updated_at,
+        }
+    }
+}
+
+impl BountyWorkSubmission {
+    pub fn to_info(
+        &self,
+        user: UserInfo,
+        milestone_submissions: Vec<BountyMilestoneSubmissionInfo>,
+    ) -> BountyWorkSubmissionInfo {
+        BountyWorkSubmissionInfo {
+            id: self.id,
+            bounty_id: self.bounty_id,
+            bid_id: self.bid_id,
+            nerd_id: self.nerd_id.clone(),
+            user,
+            title: self.title.clone(),
+            description: self.description.clone(),
+            deliverable_files: self.deliverable_files.clone(),
+            additional_notes: self.additional_notes.clone(),
+            status: self.status,
+            admin_notes: self.admin_notes.clone(),
+            milestone_submissions,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            submitted_at: self.submitted_at,
+            reviewed_at: self.reviewed_at,
+            approved_at: self.approved_at,
+            rejected_at: self.rejected_at,
+        }
+    }
+}
+
+impl BountyMilestoneSubmission {
+    pub fn to_info(&self) -> BountyMilestoneSubmissionInfo {
+        BountyMilestoneSubmissionInfo {
+            id: self.id,
+            work_submission_id: self.work_submission_id,
+            milestone_number: self.milestone_number,
+            title: self.title.clone(),
+            description: self.description.clone(),
+            deliverable_files: self.deliverable_files.clone(),
+            additional_notes: self.additional_notes.clone(),
+            status: self.status,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            submitted_at: self.submitted_at,
+            reviewed_at: self.reviewed_at,
+            approved_at: self.approved_at,
+            rejected_at: self.rejected_at,
         }
     }
 }

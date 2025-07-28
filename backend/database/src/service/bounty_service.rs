@@ -4,12 +4,13 @@ use std::sync::Arc;
 use types::{
     dto::{
         BountyChatBountyInfo, BountyChatListResponse, BountyChatUserInfo, BountyCreateRequest,
-        BountyUpdateRequest, ChatNumberInfo, SubmitBidRequest,
+        BountyUpdateRequest, ChatNumberInfo, SubmitBidRequest, SubmitBountyWorkRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
         BidInfo, BidStatus, Bounty, BountyChatInfo, BountyCommentInfo, BountyDifficulty,
-        BountyInfo, BountyReviewType, BountyStatus, User,
+        BountyInfo, BountyMilestoneSubmissionInfo, BountyReviewType, BountyStatus,
+        BountyWorkSubmissionInfo, User,
     },
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -690,5 +691,233 @@ impl BountyService {
             .update_bounty_arweave_tx_id(bounty_id, arweave_tx_id)
             .await
             .map_err(|e| DbError::Str(e.to_string()).into())
+    }
+
+    // Bounty Work Submission Methods
+    pub async fn submit_bounty_work(
+        &self,
+        bid_id: &str,
+        user: User,
+        payload: SubmitBountyWorkRequest,
+    ) -> Result<BountyWorkSubmissionInfo, ApiError> {
+        let bid_uuid = uuid_from_str(bid_id)?;
+
+        // Get the bid to verify it exists and user is the winner
+        let bid = self
+            .bounty_repo
+            .get_bid_by_id(bid_uuid)
+            .await
+            .map_err(|_| DbError::Str("Bid not found".to_string()))?;
+
+        // Verify the user is the bid owner
+        if bid.user_id != user.id {
+            return Err(
+                DbError::Str("You can only submit work for your own bid".to_string()).into(),
+            );
+        }
+
+        // Verify the bid is accepted (winner)
+        if bid.status != BidStatus::Accepted {
+            return Err(
+                DbError::Str("You can only submit work for accepted bids".to_string()).into(),
+            );
+        }
+
+        // Get the bounty to get nerd_id
+        let bounty = self
+            .bounty_repo
+            .get_bounty_by_id(bid.bounty_id)
+            .await
+            .ok_or_else(|| DbError::Str("Bounty not found".to_string()))?;
+
+        // Check if work submission already exists
+        if let Some(_existing) = self
+            .bounty_repo
+            .get_bounty_work_submission_by_bid_id(bid_uuid)
+            .await
+        {
+            return Err(
+                DbError::Str("Work submission already exists for this bid".to_string()).into(),
+            );
+        }
+
+        // Create the work submission
+        let work_submission = self
+            .bounty_repo
+            .create_bounty_work_submission(
+                bounty.id,
+                bid_uuid,
+                &bounty.nerd_id,
+                user.id,
+                payload.title,
+                payload.description,
+                payload.deliverable_files,
+                payload.additional_notes,
+            )
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        // Create milestone submissions if provided
+        let mut milestone_submissions = Vec::new();
+        if let Some(milestone_payloads) = payload.milestone_submissions {
+            for milestone_payload in milestone_payloads {
+                let milestone_submission = self
+                    .bounty_repo
+                    .create_bounty_milestone_submission(
+                        work_submission.id,
+                        milestone_payload.milestone_number,
+                        milestone_payload.title,
+                        milestone_payload.description,
+                        milestone_payload.deliverable_files,
+                        milestone_payload.additional_notes,
+                    )
+                    .await
+                    .map_err(|e| DbError::Str(e.to_string()))?;
+
+                milestone_submissions.push(milestone_submission.to_info());
+            }
+        }
+
+        // Convert to info format
+        Ok(work_submission.to_info(user.to_info(), milestone_submissions))
+    }
+
+    pub async fn get_bounty_work_submission(
+        &self,
+        submission_id: &str,
+    ) -> Result<BountyWorkSubmissionInfo, ApiError> {
+        let submission_uuid = uuid_from_str(submission_id)?;
+
+        let work_submission = self
+            .bounty_repo
+            .get_bounty_work_submission_by_id(submission_uuid)
+            .await
+            .ok_or_else(|| DbError::Str("Work submission not found".to_string()))?;
+
+        let user = self
+            .user_repo
+            .get_user_by_id(work_submission.user_id)
+            .await
+            .ok_or_else(|| ApiError::UserError(UserError::UserNotFound))?;
+
+        let milestone_submissions = self
+            .bounty_repo
+            .get_bounty_milestone_submissions(work_submission.id)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        let milestone_infos: Vec<BountyMilestoneSubmissionInfo> = milestone_submissions
+            .into_iter()
+            .map(|ms| ms.to_info())
+            .collect();
+
+        Ok(work_submission.to_info(user.to_info(), milestone_infos))
+    }
+
+    pub async fn finalize_bounty_work_submission(
+        &self,
+        submission_id: &str,
+        user: User,
+    ) -> Result<bool, ApiError> {
+        let submission_uuid = uuid_from_str(submission_id)?;
+
+        let work_submission = self
+            .bounty_repo
+            .get_bounty_work_submission_by_id(submission_uuid)
+            .await
+            .ok_or_else(|| DbError::Str("Work submission not found".to_string()))?;
+
+        // Verify the user is the submission owner
+        if work_submission.user_id != user.id {
+            return Err(
+                DbError::Str("You can only finalize your own work submission".to_string()).into(),
+            );
+        }
+
+        // Submit the work (change status to Submitted)
+        let success = self
+            .bounty_repo
+            .submit_bounty_work(submission_uuid)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        if success {
+            // Update bounty status to UnderReview
+            let bounty = self
+                .bounty_repo
+                .get_bounty_by_id(work_submission.bounty_id)
+                .await
+                .ok_or_else(|| DbError::Str("Bounty not found".to_string()))?;
+
+            let _ = self
+                .bounty_repo
+                .update_bounty_status(
+                    bounty.id,
+                    BountyStatus::UnderReview,
+                    bounty.admin_notes,
+                    bounty.approved_at,
+                    bounty.rejected_at,
+                    Some(Utc::now()),
+                )
+                .await;
+        }
+
+        Ok(success)
+    }
+
+    pub async fn review_bounty_work_submission(
+        &self,
+        submission_id: &str,
+        status: types::models::BountySubmissionStatus,
+        admin_notes: Option<String>,
+    ) -> Result<bool, ApiError> {
+        let submission_uuid = uuid_from_str(submission_id)?;
+
+        let work_submission = self
+            .bounty_repo
+            .get_bounty_work_submission_by_id(submission_uuid)
+            .await
+            .ok_or_else(|| DbError::Str("Work submission not found".to_string()))?;
+
+        // Update the submission status
+        let success = self
+            .bounty_repo
+            .update_bounty_work_submission_status(submission_uuid, status, admin_notes)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        if success {
+            // Update bounty status based on submission status
+            let bounty = self
+                .bounty_repo
+                .get_bounty_by_id(work_submission.bounty_id)
+                .await
+                .ok_or_else(|| DbError::Str("Bounty not found".to_string()))?;
+
+            let new_bounty_status = match status {
+                types::models::BountySubmissionStatus::Approved => BountyStatus::Completed,
+                types::models::BountySubmissionStatus::Rejected => BountyStatus::InProgress,
+                types::models::BountySubmissionStatus::RequestRevision => {
+                    BountyStatus::RequestRevision
+                }
+                _ => bounty.status, // Keep current status for other cases
+            };
+
+            if new_bounty_status != bounty.status {
+                let _ = self
+                    .bounty_repo
+                    .update_bounty_status(
+                        bounty.id,
+                        new_bounty_status,
+                        bounty.admin_notes,
+                        bounty.approved_at,
+                        bounty.rejected_at,
+                        Some(Utc::now()),
+                    )
+                    .await;
+            }
+        }
+
+        Ok(success)
     }
 }
