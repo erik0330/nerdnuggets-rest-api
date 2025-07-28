@@ -195,3 +195,30 @@ pub struct BountyChatUserInfo {
     pub name: String,
     pub avatar: Option<String>,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ReviewBountyWorkSubmissionRequest {
+    pub status: BountyReviewType,
+    pub admin_notes: Option<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitBountyWorkRequest {
+    pub title: String,
+    pub description: String,
+    pub deliverable_files: Vec<String>,
+    pub additional_notes: Option<String>,
+    pub milestone_submissions: Option<Vec<BountyMilestoneSubmission>>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyMilestoneSubmission {
+    pub milestone_number: i16,
+    pub title: String,
+    pub description: String,
+    pub deliverable_files: Vec<String>,
+    pub additional_notes: Option<String>,
+}

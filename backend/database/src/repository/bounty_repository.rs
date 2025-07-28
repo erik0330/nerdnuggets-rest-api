@@ -2,7 +2,7 @@ use crate::pool::DatabasePool;
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::{models::{Bid, BidMilestone, BidStatus, Bounty, BountyChat, BountyComment, BountyDifficulty, BountyMilestone, BountyStatus}, UserRoleType};
+use types::{models::{Bid, BidMilestone, BidStatus, Bounty, BountyChat, BountyComment, BountyDifficulty, BountyMilestone, BountyStatus, BountyWorkSubmission, BountyMilestoneSubmission, BountySubmissionStatus}, UserRoleType};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -740,5 +740,159 @@ impl BountyRepository {
             .collect();
 
         Ok(result)
+    }
+
+    // Bounty Work Submission Methods
+    pub async fn create_bounty_work_submission(
+        &self,
+        bounty_id: Uuid,
+        bid_id: Uuid,
+        nerd_id: &str,
+        user_id: Uuid,
+        title: String,
+        description: String,
+        deliverable_files: Vec<String>,
+        additional_notes: Option<String>,
+    ) -> Result<BountyWorkSubmission, SqlxError> {
+        let submission = sqlx::query_as::<_, BountyWorkSubmission>(
+            "INSERT INTO bounty_work_submission (bounty_id, bid_id, nerd_id, user_id, title, description, deliverable_files, additional_notes, status) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *"
+        )
+        .bind(bounty_id)
+        .bind(bid_id)
+        .bind(nerd_id)
+        .bind(user_id)
+        .bind(title)
+        .bind(description)
+        .bind(deliverable_files)
+        .bind(additional_notes)
+        .bind(BountySubmissionStatus::Draft)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(submission)
+    }
+
+    pub async fn get_bounty_work_submission_by_id(
+        &self,
+        submission_id: Uuid,
+    ) -> Option<BountyWorkSubmission> {
+        sqlx::query_as::<_, BountyWorkSubmission>(
+            "SELECT * FROM bounty_work_submission WHERE id = $1"
+        )
+        .bind(submission_id)
+        .fetch_optional(self.db_conn.get_pool())
+        .await
+        .unwrap_or(None)
+    }
+
+    pub async fn get_bounty_work_submission_by_bid_id(
+        &self,
+        bid_id: Uuid,
+    ) -> Option<BountyWorkSubmission> {
+        sqlx::query_as::<_, BountyWorkSubmission>(
+            "SELECT * FROM bounty_work_submission WHERE bid_id = $1"
+        )
+        .bind(bid_id)
+        .fetch_optional(self.db_conn.get_pool())
+        .await
+        .unwrap_or(None)
+    }
+
+    pub async fn submit_bounty_work(
+        &self,
+        submission_id: Uuid,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE bounty_work_submission SET status = $1, submitted_at = $2, updated_at = $2 WHERE id = $3"
+        )
+        .bind(BountySubmissionStatus::Submitted)
+        .bind(Utc::now())
+        .bind(submission_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn update_bounty_work_submission_status(
+        &self,
+        submission_id: Uuid,
+        status: BountySubmissionStatus,
+        admin_notes: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let now = Utc::now();
+        let row = sqlx::query(
+            "UPDATE bounty_work_submission SET status = $1, admin_notes = $2, updated_at = $3, 
+             reviewed_at = CASE WHEN $1 IN (2, 3, 4, 5) THEN $3 ELSE reviewed_at END,
+             approved_at = CASE WHEN $1 = 3 THEN $3 ELSE approved_at END,
+             rejected_at = CASE WHEN $1 = 4 THEN $3 ELSE rejected_at END
+             WHERE id = $4"
+        )
+        .bind(status)
+        .bind(admin_notes)
+        .bind(now)
+        .bind(submission_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn create_bounty_milestone_submission(
+        &self,
+        work_submission_id: Uuid,
+        milestone_number: i16,
+        title: String,
+        description: String,
+        deliverable_files: Vec<String>,
+        additional_notes: Option<String>,
+    ) -> Result<BountyMilestoneSubmission, SqlxError> {
+        let submission = sqlx::query_as::<_, BountyMilestoneSubmission>(
+            "INSERT INTO bounty_milestone_submission (work_submission_id, milestone_number, title, description, deliverable_files, additional_notes, status) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"
+        )
+        .bind(work_submission_id)
+        .bind(milestone_number)
+        .bind(title)
+        .bind(description)
+        .bind(deliverable_files)
+        .bind(additional_notes)
+        .bind(BountySubmissionStatus::Draft)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(submission)
+    }
+
+    pub async fn get_bounty_milestone_submissions(
+        &self,
+        work_submission_id: Uuid,
+    ) -> Result<Vec<BountyMilestoneSubmission>, SqlxError> {
+        let submissions = sqlx::query_as::<_, BountyMilestoneSubmission>(
+            "SELECT * FROM bounty_milestone_submission WHERE work_submission_id = $1 ORDER BY milestone_number"
+        )
+        .bind(work_submission_id)
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(submissions)
+    }
+
+    pub async fn update_bounty_milestone_submission_status(
+        &self,
+        milestone_submission_id: Uuid,
+        status: BountySubmissionStatus,
+    ) -> Result<bool, SqlxError> {
+        let now = Utc::now();
+        let row = sqlx::query(
+            "UPDATE bounty_milestone_submission SET status = $1, updated_at = $2,
+             submitted_at = CASE WHEN $1 = 1 THEN $2 ELSE submitted_at END,
+             reviewed_at = CASE WHEN $1 IN (2, 3, 4, 5) THEN $2 ELSE reviewed_at END,
+             approved_at = CASE WHEN $1 = 3 THEN $2 ELSE approved_at END,
+             rejected_at = CASE WHEN $1 = 4 THEN $2 ELSE rejected_at END
+             WHERE id = $3"
+        )
+        .bind(status)
+        .bind(now)
+        .bind(milestone_submission_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
     }
 }
