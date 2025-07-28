@@ -10,6 +10,7 @@ pub struct UserLoginWithEmailRequest {
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UserLoginWithGoogleRequest {
     pub access_token: String,
 }
