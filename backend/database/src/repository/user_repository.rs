@@ -110,13 +110,14 @@ impl UserRepository {
         name: &str,
     ) -> Result<User, SqlxError> {
         let user = sqlx::query_as::<_, User>(
-            "INSERT INTO users (email, verified_email, gmail, name)
-            VALUES ($1, $2, $3, $4) RETURNING *",
+            "INSERT INTO users (email, verified_email, gmail, name, tier)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *",
         )
         .bind(gmail)
         .bind(true)
         .bind(gmail)
         .bind(name)
+        .bind(UserTierType::Bronze.to_string())
         .fetch_one(self.db_conn.get_pool())
         .await?;
         return Ok(user);
