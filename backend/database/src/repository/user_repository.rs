@@ -130,13 +130,14 @@ impl UserRepository {
         name: Option<String>,
     ) -> Result<User, SqlxError> {
         let user = sqlx::query_as::<_, User>(
-            "INSERT INTO users (email, verified_email, apple_id, name)
-            VALUES ($1, $2, $3, $4) RETURNING *",
+            "INSERT INTO users (email, verified_email, apple_id, name, tier)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *",
         )
         .bind(email.map(|e| e.to_lowercase()).unwrap_or_default())
         .bind(false)
         .bind(apple_id)
         .bind(name)
+        .bind(UserTierType::Bronze.to_string())
         .fetch_one(self.db_conn.get_pool())
         .await?;
         return Ok(user);
