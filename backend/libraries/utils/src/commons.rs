@@ -25,6 +25,7 @@ pub async fn send_auth_email(
     passkey: String,
     message_type: EmailVerifyType,
     ses_client: &aws_sdk_sesv2::Client,
+    reset_url: Option<String>,
 ) -> bool {
     let (subject, content) = match message_type {
         EmailVerifyType::VerifyEmail | EmailVerifyType::AddEmail => (
@@ -54,33 +55,50 @@ pub async fn send_auth_email(
                 passkey
             ),
         ),
-        EmailVerifyType::ResetPassword => (
-            format!("Request To Reset Your NERDNUGGETS Password(nerdnuggets.com)"),
-            format!(
-                r#"<div style="width: 100%; padding: 10 auto;">
-                    <div style="max-width: 1000px;">
-                        <div style="font-size: 40px; font-weight: bold;display: flex; justify-content: center; max-width: 1600px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;padding-top: 30px;">
-                            <span style="font-size: 40;">Request To Reset Your NERDNUGGETS Password</span>
+        EmailVerifyType::ResetPassword => {
+            let reset_link = if let Some(url) = reset_url {
+                format!(
+                    r#"<p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Click the link below to reset your password:</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">
+                        <a href="{}" style="color: #1155cc; text-decoration: underline;">Reset Password</a>
+                    </p>"#,
+                    url
+                )
+            } else {
+                format!(
+                    r#"<p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Enter the verification code provided below:</p>
+                    <p style="font-size: 20px;font-weight: bold;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;">Verification Code: {}</p>"#,
+                    passkey
+                )
+            };
+
+            (
+                format!("Request To Reset Your NERDNUGGETS Password(nerdnuggets.com)"),
+                format!(
+                    r#"<div style="width: 100%; padding: 10 auto;">
+                        <div style="max-width: 1000px;">
+                            <div style="font-size: 40px; font-weight: bold;display: flex; justify-content: center; max-width: 1600px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;padding-top: 30px;">
+                                <span style="font-size: 40;">Request To Reset Your NERDNUGGETS Password</span>
+                            </div>
+                            <div style="width: 100%; margin: 30px;">
+                                <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Hi</p>
+                                <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">A request to reset your password has been detected on NOBLEBLOCKS. To proceed, please</p>
+                                {}
+                                <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">For your security, this link will expire in 15 minutes and is valid for only one use.</p>
+                                <br />
+                                <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Best regards</p>
+                                <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">NOBLEBLOCKS Team</p>
+                                <a href="https://nerdnuggets.com" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.com</a>
+                                <p style="background: #888888; width: 100%; height: 2px;"></p>
+                                <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;"><i>Please do not reply to this email as it is automatically generated.</i></p>
+                                <p style="background: #888888; width: 100%; height: 2px;"></p>
+                            </div>
                         </div>
-                        <div style="width: 100%; margin: 30px;">
-                            <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Hi</a></p>
-                            <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">A request to reset your password has been detected on NOBLEBLOCKS. To proceed, please</p>
-                            <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Enter the verification code provided below:</p>
-                            <p style="font-size: 20px;font-weight: bold;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;">Verification Code: {}</p>
-                            <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">For your security, this code will expire in 3 minutes and is valid for only one use.</p>
-                            <br />
-                            <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Best regards</p>
-                            <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">NOBLEBLOCKS Team</p>
-                            <a href="https://nerdnuggets.com" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.com</a>
-                            <p style="background: #888888; width: 100%; height: 2px;"></p>
-                            <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;"><i>Please do not reply to this email as it is automatically generated.</i></p>
-                            <p style="background: #888888; width: 100%; height: 2px;"></p>
-                        </div>
-                    </div>
-                </div>"#,
-                passkey
-            ),
-        ),
+                    </div>"#,
+                    reset_link
+                ),
+            )
+        }
     };
 
     match ses_client

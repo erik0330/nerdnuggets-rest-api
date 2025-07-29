@@ -459,4 +459,14 @@ impl UserRepository {
         .await?;
         Ok(user)
     }
+
+    pub async fn update_password(&self, id: Uuid, password: &str) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE users SET password = $1, updated_at = $2 WHERE id = $3")
+            .bind(password)
+            .bind(Utc::now())
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() >= 1)
+    }
 }

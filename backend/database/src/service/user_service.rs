@@ -255,6 +255,13 @@ impl UserService {
             .map_err(|_| DbError::Str("Failed to verify user email".to_string()).into())
     }
 
+    pub async fn update_password(&self, user_id: Uuid, password: &str) -> Result<bool, ApiError> {
+        self.user_repo
+            .update_password(user_id, password)
+            .await
+            .map_err(|_| DbError::Str("Failed to update password".to_string()).into())
+    }
+
     // ========================= USER SETTINGS SERVICE METHODS =========================
 
     pub async fn get_all_user_settings(

@@ -462,6 +462,7 @@ pub async fn register_with_email(
         passkey,
         EmailVerifyType::VerifyEmail,
         &state.ses_client,
+        None,
     )
     .await
     {
@@ -501,6 +502,7 @@ pub async fn resend_verification_email(
             passkey.to_owned(),
             EmailVerifyType::VerifyEmail,
             &state.ses_client,
+            None,
         )
         .await
         {
@@ -601,6 +603,101 @@ pub async fn verify_email(
         }));
     }
     Err(UserError::TempUserNotFound)?
+}
+
+pub async fn forgot_password(
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<types::dto::ForgotPasswordRequest>,
+) -> Result<Json<types::dto::ForgotPasswordResponse>, ApiError> {
+    if !is_valid_email(&payload.email) {
+        return Err(ApiError::UserError(UserError::Str(
+            "The email is invalid".to_string(),
+        )));
+    }
+
+    // Check if user exists
+    let user = state.service.user.get_user_by_email(&payload.email).await?;
+
+    // Generate reset token
+    let reset_token = state.service.token.generate_reset_token(user.id)?;
+
+    // Create reset URL with token
+    let reset_url = format!(
+        "{}/reset-password?token={}",
+        state.env.frontend_url, reset_token
+    );
+
+    // Send email with reset link
+    if !send_auth_email(
+        payload.email,
+        reset_token,
+        EmailVerifyType::ResetPassword,
+        &state.ses_client,
+        Some(reset_url),
+    )
+    .await
+    {
+        return Err(UserError::CantSendEmail)?;
+    }
+
+    let now = state.env.now();
+    let iat = now.timestamp();
+    let exp = now
+        .checked_add_signed(Duration::minutes(15))
+        .unwrap()
+        .timestamp();
+
+    Ok(Json(types::dto::ForgotPasswordResponse {
+        message: "Password reset email sent successfully".to_string(),
+        iat,
+        exp,
+    }))
+}
+
+pub async fn reset_password(
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<types::dto::ResetPasswordRequest>,
+) -> Result<Json<types::dto::ResetPasswordResponse>, ApiError> {
+    // Validate token
+    let token_data = state
+        .service
+        .token
+        .retrieve_token_claims(&payload.token)
+        .map_err(|_| ApiError::UserError(UserError::Str("Invalid or expired token".to_string())))?;
+
+    // Check if token is for password reset
+    if token_data.claims.role != "reset_password" {
+        return Err(ApiError::UserError(UserError::Str(
+            "Invalid token type".to_string(),
+        )));
+    }
+
+    // Check if token is expired
+    if token_data.claims.exp < state.env.now().timestamp() {
+        return Err(UserError::ExpiredPasskey)?;
+    }
+
+    // Get user by ID from token
+    let user = state
+        .service
+        .user
+        .get_user_by_id(token_data.claims.sub)
+        .await?;
+
+    // Hash the new password
+    let hashed_password = bcrypt::hash(&payload.new_password, 12)
+        .map_err(|_| ApiError::UserError(UserError::Str("Failed to hash password".to_string())))?;
+
+    // Update user password
+    state
+        .service
+        .user
+        .update_password(user.id, &hashed_password)
+        .await?;
+
+    Ok(Json(types::dto::ResetPasswordResponse {
+        message: "Password reset successfully".to_string(),
+    }))
 }
 
 // pub async fn send_email_forgot_password(

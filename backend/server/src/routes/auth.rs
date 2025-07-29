@@ -1,7 +1,8 @@
 use crate::{
     handler::auth_handler::{
-        check_email, login_or_register_with_apple, login_or_register_with_google, login_with_email,
-        register_with_email, resend_verification_email, verify_email,
+        check_email, forgot_password, login_or_register_with_apple, login_or_register_with_google,
+        login_with_email, register_with_email, resend_verification_email, reset_password,
+        verify_email,
     },
     state::AppState,
 };
@@ -19,4 +20,6 @@ pub fn routes() -> Router<AppState> {
         .route("/auth/register", post(register_with_email))
         .route("/auth/email/verify/resend", post(resend_verification_email))
         .route("/auth/email/verify", post(verify_email))
+        .route("/auth/forgot-password", post(forgot_password))
+        .route("/auth/reset-password", post(reset_password))
 }
