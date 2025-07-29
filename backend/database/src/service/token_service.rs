@@ -1,6 +1,7 @@
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use types::{dto::TokenClaimsDto, error::TokenError, models::User};
 use utils::env::Env;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct TokenService {
@@ -39,6 +40,31 @@ impl TokenService {
             iat,
             exp,
             role,
+        };
+
+        let token = encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(self.secret.as_ref()),
+        )
+        .map_err(|e| TokenError::TokenCreationError(e.to_string()))?;
+
+        Ok(token)
+    }
+
+    pub fn generate_reset_token(&self, user_id: Uuid) -> Result<String, TokenError> {
+        let iat = chrono::Utc::now().timestamp();
+        // Reset tokens expire in 15 minutes
+        let exp = chrono::Utc::now()
+            .checked_add_signed(chrono::Duration::minutes(15))
+            .unwrap()
+            .timestamp();
+
+        let claims = TokenClaimsDto {
+            sub: user_id,
+            iat,
+            exp,
+            role: "reset_password".to_string(),
         };
 
         let token = encode(

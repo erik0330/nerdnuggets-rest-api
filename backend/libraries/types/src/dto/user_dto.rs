@@ -244,3 +244,30 @@ pub struct UserAllSettingsResponse {
     pub wallet: UserWalletSettingsResponse,
     pub preferences: UserPreferencesSettingsResponse,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ForgotPasswordRequest {
+    pub email: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ResetPasswordRequest {
+    pub token: String,
+    pub new_password: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ForgotPasswordResponse {
+    pub message: String,
+    pub iat: i64,
+    pub exp: i64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResetPasswordResponse {
+    pub message: String,
+}
