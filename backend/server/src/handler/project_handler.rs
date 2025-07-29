@@ -89,7 +89,11 @@ pub async fn submit_project(
     }
     let res = state.service.project.submit_project(&id).await?;
 
-    let project_info = state.service.project.get_project_by_id(&id).await?;
+    let project_info = state
+        .service
+        .project
+        .get_project_by_id_without_increment(&id)
+        .await?;
     if res {
         // Upload project submission metadata to Arweave
         let project_data = serde_json::json!(project_info);
