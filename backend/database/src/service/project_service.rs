@@ -59,6 +59,28 @@ impl ProjectService {
         } else {
             return Err(DbError::Str("Invalid id format".to_string()).into());
         };
+        // Increment view count
+        let _ = self.project_repo.increment_view_count(project.id).await;
+        self.project_to_info(&project).await
+    }
+
+    pub async fn get_project_by_id_without_increment(
+        &self,
+        id: &str,
+    ) -> Result<ProjectInfo, ApiError> {
+        let project = if let Ok(id) = uuid_from_str(id) {
+            self.project_repo
+                .get_project_by_id(id)
+                .await
+                .ok_or_else(|| DbError::Str("Project not found".to_string()))?
+        } else if id.starts_with("RP-") {
+            self.project_repo
+                .get_project_by_nerd_id(id)
+                .await
+                .ok_or_else(|| DbError::Str("Project not found".to_string()))?
+        } else {
+            return Err(DbError::Str("Invalid id format".to_string()).into());
+        };
         self.project_to_info(&project).await
     }
 

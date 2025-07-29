@@ -45,6 +45,16 @@ impl BountyService {
 
     pub async fn get_bounty_info_by_id(&self, id: &str) -> Result<BountyInfo, ApiError> {
         let bounty = self.get_bounty_by_id_or_nerd_id(id).await?;
+        // Increment view count
+        let _ = self.bounty_repo.increment_view_count(bounty.id).await;
+        self.bounty_to_info(&bounty).await
+    }
+
+    pub async fn get_bounty_info_by_id_without_increment(
+        &self,
+        id: &str,
+    ) -> Result<BountyInfo, ApiError> {
+        let bounty = self.get_bounty_by_id_or_nerd_id(id).await?;
         self.bounty_to_info(&bounty).await
     }
 

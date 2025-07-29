@@ -895,4 +895,12 @@ impl BountyRepository {
         .await?;
         Ok(row.rows_affected() == 1)
     }
+
+    pub async fn increment_view_count(&self, id: Uuid) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bounty SET count_view = count_view + 1 WHERE id = $1")
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
 }

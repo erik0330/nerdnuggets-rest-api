@@ -264,7 +264,7 @@ impl ProjectRepository {
     ) -> Result<Vec<ProjectItem>, SqlxError> {
         let mut filters = Vec::new();
         let mut index = 3;
-        let mut query = format!("SELECT p.id, p.nerd_id, p.proposal_id, p.user_id, p.title, p.description, p.cover_photo, p.category, p.status, p.funding_goal, p.duration, p.tags, p.arweave_tx_id, p.funding_amount, p.count_contributors, p.created_at, p.updated_at, p.dao_at, p.started_at FROM project p");
+        let mut query = format!("SELECT p.id, p.nerd_id, p.proposal_id, p.user_id, p.title, p.description, p.cover_photo, p.category, p.status, p.funding_goal, p.duration, p.tags, p.arweave_tx_id, p.funding_amount, p.count_contributors, p.count_view, p.created_at, p.updated_at, p.dao_at, p.started_at FROM project p");
         if title.as_ref().map_or(false, |s| !s.is_empty()) {
             filters.push(format!("p.title ILIKE ${index}"));
             index += 1;
@@ -868,5 +868,13 @@ impl ProjectRepository {
             .fetch_all(self.db_conn.get_pool())
             .await?;
         Ok(counts)
+    }
+
+    pub async fn increment_view_count(&self, id: Uuid) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE project SET count_view = count_view + 1 WHERE id = $1")
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
     }
 }
