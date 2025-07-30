@@ -870,6 +870,19 @@ impl ProjectRepository {
         Ok(counts)
     }
 
+    pub async fn get_project_counts_by_status_for_user(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<ProjectStatusCount>, SqlxError> {
+        let query =
+            "SELECT p.status, COUNT(*) as count FROM project p WHERE p.user_id = $1 GROUP BY p.status ORDER BY p.status";
+        let counts = sqlx::query_as::<_, ProjectStatusCount>(query)
+            .bind(user_id)
+            .fetch_all(self.db_conn.get_pool())
+            .await?;
+        Ok(counts)
+    }
+
     pub async fn increment_view_count(&self, id: Uuid) -> Result<bool, SqlxError> {
         let row = sqlx::query("UPDATE project SET count_view = count_view + 1 WHERE id = $1")
             .bind(id)
