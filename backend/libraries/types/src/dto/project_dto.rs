@@ -145,3 +145,14 @@ pub struct ProjectStatusCounts {
     pub counts: Vec<ProjectStatusCount>,
     pub total: i64,
 }
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectCountsResponse {
+    pub all: i64,
+    pub my_project: i64,
+    pub funding: i64,
+    pub featured: i64,
+    pub trending: i64,
+    pub funded: i64,
+}

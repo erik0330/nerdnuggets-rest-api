@@ -4,7 +4,7 @@ use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
-        ProjectStatusCounts, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+        ProjectCountsResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
         ProjectUpdateStep3Request, UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
@@ -827,15 +827,50 @@ impl ProjectService {
         Ok(res)
     }
 
-    pub async fn get_project_counts_by_status(&self) -> Result<ProjectStatusCounts, ApiError> {
-        let counts = self
+    pub async fn get_project_counts_by_status_for_user(
+        &self,
+        user_id: Option<Uuid>,
+    ) -> Result<ProjectCountsResponse, ApiError> {
+        let all_counts = self
             .project_repo
             .get_project_counts_by_status()
             .await
             .map_err(|_| DbError::Str("Get project counts by status failed".to_string()))?;
 
-        let total = counts.iter().map(|c| c.count).sum();
+        let my_project_count = if let Some(user_id) = user_id {
+            let user_counts = self
+                .project_repo
+                .get_project_counts_by_status_for_user(user_id)
+                .await
+                .map_err(|_| {
+                    DbError::Str("Get user project counts by status failed".to_string())
+                })?;
+            user_counts.iter().map(|c| c.count).sum()
+        } else {
+            0
+        };
 
-        Ok(ProjectStatusCounts { counts, total })
+        let funding_count = all_counts
+            .iter()
+            .find(|c| c.status == ProjectStatus::Funding.to_i16())
+            .map_or(0, |c| c.count);
+        let funded_count = all_counts
+            .iter()
+            .find(|c| c.status == ProjectStatus::Completed.to_i16())
+            .map_or(0, |c| c.count);
+        let all_count = funding_count + funded_count;
+
+        // For now, set featured and trending to 0 as they're not implemented yet
+        let featured_count = 0;
+        let trending_count = 0;
+
+        Ok(ProjectCountsResponse {
+            all: all_count,
+            my_project: my_project_count,
+            funding: funding_count,
+            featured: featured_count,
+            trending: trending_count,
+            funded: funded_count,
+        })
     }
 }
