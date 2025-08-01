@@ -3,8 +3,8 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
-    AssignEditorRequest, GetDaosOption, GetProjectCommentsOption, GetProjectsOption,
-    GetSimilarProjectsOption, MakeDecisionRequest, ProjectCountsResponse,
+    AdminProjectDashboardCounts, AssignEditorRequest, GetDaosOption, GetProjectCommentsOption,
+    GetProjectsOption, GetSimilarProjectsOption, MakeDecisionRequest, ProjectCountsResponse,
     ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
     SubmitDaoVoteRequest, SubmitProjectCommentRequest, UpdateMilestoneRequest,
 };
@@ -331,6 +331,22 @@ pub async fn get_project_counts_by_status(
         .service
         .project
         .get_project_counts_by_status_for_user(user.map(|u| u.id))
+        .await?;
+    Ok(Json(counts))
+}
+
+pub async fn get_admin_project_dashboard_counts(
+    Extension(role): Extension<String>,
+    State(state): State<AppState>,
+) -> Result<Json<AdminProjectDashboardCounts>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+
+    let counts = state
+        .service
+        .project
+        .get_admin_project_dashboard_counts()
         .await?;
     Ok(Json(counts))
 }

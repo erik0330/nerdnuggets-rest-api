@@ -156,3 +156,17 @@ pub struct ProjectCountsResponse {
     pub trending: i64,
     pub funded: i64,
 }
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminProjectDashboardCounts {
+    pub all: i64,
+    pub pending_review: i64,
+    pub under_review: i64,
+    pub approved: i64,
+    pub dao_voting: i64,
+    pub needs_revision: i64,
+    pub rejected: i64,
+    pub funding: i64,
+    pub completed: i64,
+}
