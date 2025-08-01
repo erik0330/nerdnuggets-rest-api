@@ -93,6 +93,7 @@ pub struct UserRegisterWithEmailRequest {
 pub struct GetEditorsOption {
     pub offset: Option<i32>,
     pub limit: Option<i32>,
+    pub name: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
