@@ -84,10 +84,11 @@ impl UserService {
         &self,
         offset: Option<i32>,
         limit: Option<i32>,
+        name: Option<String>,
     ) -> Result<Vec<UserInfo>, ApiError> {
         let users = self
             .user_repo
-            .get_editors(offset, limit)
+            .get_editors(offset, limit, name)
             .await
             .map_err(|_| DbError::Str("Get editors failed".to_string()))?;
         Ok(users.iter().map(|u| u.to_info()).collect())

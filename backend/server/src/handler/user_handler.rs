@@ -27,7 +27,7 @@ pub async fn get_editors(
     let mut users = state
         .service
         .user
-        .get_editors(opts.offset, opts.limit)
+        .get_editors(opts.offset, opts.limit, opts.name)
         .await?;
     users.retain(|u| u.id != user.id);
     Ok(Json(users))

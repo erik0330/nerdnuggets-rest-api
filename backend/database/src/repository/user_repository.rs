@@ -169,15 +169,28 @@ impl UserRepository {
         &self,
         offset: Option<i32>,
         limit: Option<i32>,
+        name: Option<String>,
     ) -> Result<Vec<User>, SqlxError> {
-        let users = sqlx::query_as::<_, User>(
-            "SELECT * FROM users WHERE $1 = ANY(roles) LIMIT $2 OFFSET $3",
-        )
-        .bind(UserRoleType::Editor.to_string())
-        .bind(limit.unwrap_or(10))
-        .bind(offset.unwrap_or(0))
-        .fetch_all(self.db_conn.get_pool())
-        .await?;
+        let users = if let Some(name_filter) = name {
+            sqlx::query_as::<_, User>(
+                "SELECT * FROM users WHERE $1 = ANY(roles) AND name ILIKE $2 LIMIT $3 OFFSET $4",
+            )
+            .bind(UserRoleType::Editor.to_string())
+            .bind(format!("%{}%", name_filter))
+            .bind(limit.unwrap_or(10))
+            .bind(offset.unwrap_or(0))
+            .fetch_all(self.db_conn.get_pool())
+            .await?
+        } else {
+            sqlx::query_as::<_, User>(
+                "SELECT * FROM users WHERE $1 = ANY(roles) LIMIT $2 OFFSET $3",
+            )
+            .bind(UserRoleType::Editor.to_string())
+            .bind(limit.unwrap_or(10))
+            .bind(offset.unwrap_or(0))
+            .fetch_all(self.db_conn.get_pool())
+            .await?
+        };
         Ok(users)
     }
 
