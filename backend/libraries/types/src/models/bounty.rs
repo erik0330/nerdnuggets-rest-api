@@ -181,7 +181,8 @@ pub struct BountyCommentInfo {
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
 pub struct BountyChat {
     pub id: Uuid,
-    pub user_id: Uuid,
+    pub sender_id: Uuid,
+    pub receiver_id: Uuid,
     pub bounty_id: Uuid,
     pub nerd_id: String,
     pub chat_number: String,
@@ -196,7 +197,8 @@ pub struct BountyChat {
 #[serde(rename_all = "camelCase")]
 pub struct BountyChatInfo {
     pub id: Uuid,
-    pub user: UserInfo,
+    pub sender: UserInfo,
+    pub receiver: UserInfo,
     pub message: String,
     pub file_urls: Vec<String>,
     pub created_at: DateTime<Utc>,
@@ -460,10 +462,11 @@ impl BountyComment {
 }
 
 impl BountyChat {
-    pub fn to_info(&self, user: UserInfo) -> BountyChatInfo {
+    pub fn to_info(&self, sender: UserInfo, receiver: UserInfo) -> BountyChatInfo {
         BountyChatInfo {
             id: self.id,
-            user,
+            sender,
+            receiver,
             message: self.message.clone(),
             file_urls: self.file_urls.clone(),
             created_at: self.created_at,

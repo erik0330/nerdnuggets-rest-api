@@ -4,9 +4,9 @@ use axum::{Extension, Json};
 
 use third_party_api::arweave::upload_bounty_creation;
 use types::dto::{
-    BountyChatListResponse, BountyCreateRequest, BountyUpdateRequest, GetBidsOption,
-    GetBountyChatNumbersResponse, GetBountyChatsOption, GetBountysOption, GetMyBidsOption,
-    GetMyBountyStatsResponse, GetSimilarBountiesOption, OffsetAndLimitOption, ReviewBountyRequest,
+    BountyCreateRequest, BountyUpdateRequest, GetBidsOption, GetBountyChatNumbersResponse,
+    GetBountyChatsOption, GetBountysOption, GetMyBidsOption, GetMyBountyStatsResponse,
+    GetSimilarBountiesOption, OffsetAndLimitOption, ReviewBountyRequest,
     ReviewBountyWorkSubmissionRequest, SendBountyChatRequest, SubmitBidRequest,
     SubmitBountyCommentRequest, SubmitBountyWorkRequest,
 };
@@ -259,6 +259,7 @@ pub async fn send_bounty_chat(
         .send_bounty_chat(
             &id,
             user.id,
+            payload.receiver_id,
             &payload.message,
             payload.file_urls.unwrap_or_default(),
             &payload.chat_number,
@@ -268,23 +269,25 @@ pub async fn send_bounty_chat(
 }
 
 pub async fn get_bounty_chat_numbers(
-    Path(id): Path<String>,
+    Extension(user): Extension<User>,
     State(state): State<AppState>,
 ) -> Result<Json<GetBountyChatNumbersResponse>, ApiError> {
-    let chat_numbers = state.service.bounty.get_bounty_chat_numbers(&id).await?;
+    let chat_numbers = state
+        .service
+        .bounty
+        .get_bounty_chat_numbers(user.id)
+        .await?;
     let mut chat_info = Vec::new();
-
     for chat_number in &chat_numbers {
         if let Ok(info) = state
             .service
             .bounty
-            .get_chat_number_info(&id, chat_number)
+            .get_chat_number_info(user.id, chat_number)
             .await
         {
             chat_info.push(info);
         }
     }
-
     Ok(Json(GetBountyChatNumbersResponse {
         chat_numbers,
         chat_info,
@@ -322,7 +325,7 @@ pub async fn create_bidder_chat(
     let chat_number = state
         .service
         .bounty
-        .get_or_create_chat_number(user.id, &bounty.nerd_id, &id, bidder_uuid)
+        .get_or_create_chat_number(user.id, bidder_uuid, &id, &bounty.nerd_id)
         .await?;
 
     Ok(Json(chat_number))
@@ -341,18 +344,18 @@ pub async fn get_similar_bounties(
     Ok(Json(similar_bounties))
 }
 
-pub async fn get_bounty_chat_list(
-    Extension(user): Extension<User>,
-    Query(opts): Query<OffsetAndLimitOption>,
-    State(state): State<AppState>,
-) -> Result<Json<Vec<BountyChatListResponse>>, ApiError> {
-    let chat_list = state
-        .service
-        .bounty
-        .get_bounty_chat_list(user.id, opts.offset, opts.limit)
-        .await?;
-    Ok(Json(chat_list))
-}
+// pub async fn get_bounty_chat_list(
+//     Extension(user): Extension<User>,
+//     Query(opts): Query<OffsetAndLimitOption>,
+//     State(state): State<AppState>,
+// ) -> Result<Json<Vec<BountyChatListResponse>>, ApiError> {
+//     let chat_list = state
+//         .service
+//         .bounty
+//         .get_bounty_chat_list(user.id, opts.offset, opts.limit)
+//         .await?;
+//     Ok(Json(chat_list))
+// }
 
 // Bounty Work Submission Handlers
 pub async fn save_bounty_work(

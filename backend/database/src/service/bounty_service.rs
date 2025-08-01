@@ -3,8 +3,8 @@ use chrono::{Datelike, NaiveDate, Utc};
 use std::sync::Arc;
 use types::{
     dto::{
-        BountyChatBountyInfo, BountyChatListResponse, BountyChatUserInfo, BountyCreateRequest,
-        BountyUpdateRequest, ChatNumberInfo, SubmitBidRequest, SubmitBountyWorkRequest,
+        BountyCreateRequest, BountyUpdateRequest, ChatNumberInfo, SubmitBidRequest,
+        SubmitBountyWorkRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -478,8 +478,10 @@ impl BountyService {
             .unwrap_or_default();
         let mut pc_infos = Vec::new();
         for pc in bounty_chats {
-            if let Some(user) = self.user_repo.get_user_by_id(pc.user_id).await {
-                pc_infos.push(pc.to_info(user.to_info()));
+            if let Some(sender) = self.user_repo.get_user_by_id(pc.sender_id).await {
+                if let Some(receiver) = self.user_repo.get_user_by_id(pc.receiver_id).await {
+                    pc_infos.push(pc.to_info(sender.to_info(), receiver.to_info()));
+                }
             }
         }
         Ok(pc_infos)
@@ -488,7 +490,8 @@ impl BountyService {
     pub async fn send_bounty_chat(
         &self,
         id: &str,
-        user_id: Uuid,
+        sender_id: Uuid,
+        receiver_id: Uuid,
         message: &str,
         file_urls: Vec<String>,
         chat_number: &str,
@@ -497,7 +500,8 @@ impl BountyService {
         {
             self.bounty_repo
                 .send_bounty_chat(
-                    user_id,
+                    sender_id,
+                    receiver_id,
                     bounty.id,
                     &bounty.nerd_id,
                     chat_number,
@@ -512,10 +516,10 @@ impl BountyService {
         Ok(res)
     }
 
-    pub async fn get_bounty_chat_numbers(&self, id: &str) -> Result<Vec<String>, ApiError> {
+    pub async fn get_bounty_chat_numbers(&self, user_id: Uuid) -> Result<Vec<String>, ApiError> {
         let chat_numbers = self
             .bounty_repo
-            .get_bounty_chat_numbers(uuid_from_str(id)?)
+            .get_bounty_chat_numbers(user_id)
             .await
             .map_err(|_| DbError::Str("Failed to get chat numbers".to_string()))?;
         Ok(chat_numbers)
@@ -523,44 +527,44 @@ impl BountyService {
 
     pub async fn get_chat_number_info(
         &self,
-        id: &str,
+        user_id: Uuid,
         chat_number: &str,
     ) -> Result<ChatNumberInfo, ApiError> {
-        // Extract bidder ID from chat number (format: "{bounty_nerd_id}-{bidder_id}")
-        let bidder_id = self.extract_bidder_id_from_chat_number(chat_number)?;
-
-        if let Some((bidder_name, bidder_id, last_message, last_message_time, unread_count)) = self
+        if let Some((
+            sender_name,
+            sender_id,
+            receiver_name,
+            receiver_id,
+            last_message,
+            last_message_time,
+            unread_count,
+        )) = self
             .bounty_repo
-            .get_chat_number_info(uuid_from_str(id)?, chat_number, bidder_id)
+            .get_chat_number_info(chat_number)
             .await
             .map_err(|_| DbError::Str("Failed to get chat info".to_string()))?
         {
-            Ok(ChatNumberInfo {
-                chat_number: chat_number.to_string(),
-                bidder_name,
-                bidder_id,
-                last_message,
-                last_message_time,
-                unread_count: unread_count as i32,
-            })
+            if sender_id == user_id {
+                Ok(ChatNumberInfo {
+                    chat_number: chat_number.to_string(),
+                    username: receiver_name,
+                    user_id: receiver_id,
+                    last_message,
+                    last_message_time,
+                    unread_count: unread_count as i32,
+                })
+            } else {
+                Ok(ChatNumberInfo {
+                    chat_number: chat_number.to_string(),
+                    username: sender_name,
+                    user_id: sender_id,
+                    last_message,
+                    last_message_time,
+                    unread_count: unread_count as i32,
+                })
+            }
         } else {
             Err(DbError::Str("Chat not found".to_string()).into())
-        }
-    }
-
-    fn extract_bidder_id_from_chat_number(&self, chat_number: &str) -> Result<Uuid, ApiError> {
-        // Chat number format: "{bounty_nerd_id}-{bidder_id}"
-        // Example: "BT-2024-1234-550e8400-e29b-41d4-a716-446655440000"
-        let parts: Vec<&str> = chat_number.split('-').collect();
-        if parts.len() >= 5 {
-            // The UUID part starts from the 4th element (index 3)
-            let uuid_str = parts[3..].join("-");
-            uuid_from_str(&uuid_str).map_err(|_| {
-                DbError::Str("Invalid chat number format: cannot extract bidder ID".to_string())
-                    .into()
-            })
-        } else {
-            Err(DbError::Str("Invalid chat number format".to_string()).into())
         }
     }
 
@@ -578,18 +582,23 @@ impl BountyService {
         Ok(res)
     }
 
-    pub fn generate_chat_number(&self, nerd_id: &str, bidder_id: Uuid) -> String {
-        format!("{}-{}", nerd_id, bidder_id)
+    pub fn generate_chat_number(
+        &self,
+        nerd_id: &str,
+        sender_id: Uuid,
+        receiver_id: Uuid,
+    ) -> String {
+        format!("{}-{}-{}", nerd_id, sender_id, receiver_id)
     }
 
     pub async fn get_or_create_chat_number(
         &self,
-        user_id: Uuid,
-        nerd_id: &str,
+        sender_id: Uuid,
+        receiver_id: Uuid,
         bounty_id: &str,
-        bidder_id: Uuid,
+        nerd_id: &str,
     ) -> Result<String, ApiError> {
-        let chat_number = self.generate_chat_number(nerd_id, bidder_id);
+        let chat_number = self.generate_chat_number(nerd_id, sender_id, receiver_id);
 
         // Check if this chat number already exists
         let existing_chats = self
@@ -603,11 +612,12 @@ impl BountyService {
             let _ = self
                 .bounty_repo
                 .send_bounty_chat(
-                    user_id, // funder's user_id
+                    sender_id,
+                    receiver_id,
                     uuid_from_str(bounty_id)?,
                     nerd_id,
                     &chat_number,
-                    "",
+                    "Connected",
                     Vec::new(),
                 )
                 .await;
@@ -637,60 +647,60 @@ impl BountyService {
         Ok(bounty_infos)
     }
 
-    pub async fn get_bounty_chat_list(
-        &self,
-        user_id: Uuid,
-        offset: Option<i32>,
-        limit: Option<i32>,
-    ) -> Result<Vec<BountyChatListResponse>, ApiError> {
-        let chat_list_data = self
-            .bounty_repo
-            .get_bounty_chat_list(user_id, offset, limit)
-            .await
-            .map_err(|_| DbError::Str("Failed to get bounty chat list".to_string()))?;
+    // pub async fn get_bounty_chat_list(
+    //     &self,
+    //     user_id: Uuid,
+    //     offset: Option<i32>,
+    //     limit: Option<i32>,
+    // ) -> Result<Vec<BountyChatListResponse>, ApiError> {
+    //     let chat_list_data = self
+    //         .bounty_repo
+    //         .get_bounty_chat_list(user_id, offset, limit)
+    //         .await
+    //         .map_err(|_| DbError::Str("Failed to get bounty chat list".to_string()))?;
 
-        let mut chat_list = Vec::new();
-        for (
-            chat_number,
-            bounty_id,
-            nerd_id,
-            bounty_title,
-            bounty_status,
-            funder_id,
-            funder_name,
-            funder_avatar,
-            created_at,
-            last_message,
-            last_message_at,
-            unread_count,
-        ) in chat_list_data
-        {
-            let funder = BountyChatUserInfo {
-                id: funder_id,
-                name: funder_name,
-                avatar: funder_avatar,
-            };
+    //     let mut chat_list = Vec::new();
+    //     for (
+    //         chat_number,
+    //         bounty_id,
+    //         nerd_id,
+    //         bounty_title,
+    //         bounty_status,
+    //         funder_id,
+    //         funder_name,
+    //         funder_avatar,
+    //         created_at,
+    //         last_message,
+    //         last_message_at,
+    //         unread_count,
+    //     ) in chat_list_data
+    //     {
+    //         let funder = BountyChatUserInfo {
+    //             id: funder_id,
+    //             name: funder_name,
+    //             avatar: funder_avatar,
+    //         };
 
-            let bounty = BountyChatBountyInfo {
-                id: bounty_id,
-                nerd_id,
-                title: bounty_title,
-                status: bounty_status,
-            };
+    //         let bounty = BountyChatBountyInfo {
+    //             id: bounty_id,
+    //             nerd_id,
+    //             title: bounty_title,
+    //             status: bounty_status,
+    //         };
 
-            chat_list.push(BountyChatListResponse {
-                chat_number,
-                bounty,
-                funder,
-                created_at,
-                last_message,
-                last_message_at,
-                unread_count: unread_count as i32, // Convert from i64 to i32 for DTO
-            });
-        }
+    //         chat_list.push(BountyChatListResponse {
+    //             chat_number,
+    //             bounty,
+    //             funder,
+    //             created_at,
+    //             last_message,
+    //             last_message_at,
+    //             unread_count: unread_count as i32, // Convert from i64 to i32 for DTO
+    //         });
+    //     }
 
-        Ok(chat_list)
-    }
+    //     Ok(chat_list)
+    // }
 
     pub async fn update_bounty_arweave_tx_id(
         &self,
