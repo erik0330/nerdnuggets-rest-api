@@ -155,11 +155,11 @@ pub struct GetBountyChatNumbersResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ChatNumberInfo {
     pub chat_number: String,
-    pub username: String,
-    pub user_id: Uuid,
     pub last_message: String,
     pub last_message_time: Option<DateTime<Utc>>,
     pub unread_count: i32,
+    pub bounty: BountyChatBountyInfo,
+    pub user: BountyChatUserInfo,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
@@ -185,8 +185,7 @@ pub struct BountyChatListResponse {
 pub struct BountyChatBountyInfo {
     pub id: Uuid,
     pub nerd_id: String,
-    pub title: String,
-    pub status: BountyStatus,
+    pub title: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]

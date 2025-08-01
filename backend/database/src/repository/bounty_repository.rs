@@ -532,24 +532,30 @@ impl BountyRepository {
     pub async fn get_chat_number_info(
         &self,
         chat_number: &str,
-    ) -> Result<Option<(String, Uuid, String, Uuid, String, Option<DateTime<Utc>>, i64)>, SqlxError> {
+    ) -> Result<Option<(String, Uuid, Option<String>, String, Uuid, Option<String>, String, Option<DateTime<Utc>>, i64, Uuid, String, Option<String>)>, SqlxError> {
         let result = sqlx::query!(
             r#"
             SELECT 
                 sender_user.name as sender_name,
                 sender_user.id as sender_id,
+                sender_user.avatar_url as sender_avatar,
                 receiver_user.name as receiver_name,
                 receiver_user.id as receiver_id,
+                receiver_user.avatar_url as receiver_avatar,
                 bc.message as last_message,
                 bc.created_at as last_message_time,
                 (
                     SELECT COUNT(*)::int 
                     FROM bounty_chat 
                     WHERE chat_number = $1 AND is_read = false AND receiver_id = bc.receiver_id
-                ) as unread_count
+                ) as unread_count,
+                b.id as bounty_id,
+                b.nerd_id as bounty_nerd_id,
+                b.title as bounty_title
             FROM bounty_chat bc
             JOIN users sender_user ON bc.sender_id = sender_user.id
             JOIN users receiver_user ON bc.receiver_id = receiver_user.id
+            JOIN bounty b ON bc.bounty_id = b.id
             WHERE bc.chat_number = $1
             ORDER BY bc.created_at DESC
             LIMIT 1
@@ -562,11 +568,16 @@ impl BountyRepository {
         Ok(result.map(|row| (
             row.sender_name.unwrap_or_default(),
             row.sender_id,
+            row.sender_avatar,
             row.receiver_name.unwrap_or_default(),
             row.receiver_id,
+            row.receiver_avatar,
             row.last_message,
             row.last_message_time,
             row.unread_count.unwrap_or(0) as i64,
+            row.bounty_id,
+            row.bounty_nerd_id,
+            row.bounty_title,
         )))
     }
 
