@@ -4,8 +4,8 @@ use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
-        ProjectCountsResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
-        ProjectUpdateStep3Request, UpdateMilestoneRequest,
+        AdminProjectDashboardCounts, ProjectCountsResponse, ProjectUpdateStep1Request,
+        ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -872,5 +872,41 @@ impl ProjectService {
             trending: trending_count,
             funded: funded_count,
         })
+    }
+
+    pub async fn get_admin_project_dashboard_counts(
+        &self,
+    ) -> Result<AdminProjectDashboardCounts, ApiError> {
+        let all_counts = self
+            .project_repo
+            .get_project_counts_by_status()
+            .await
+            .map_err(|_| DbError::Str("Get project counts by status failed".to_string()))?;
+
+        let mut dashboard_counts = AdminProjectDashboardCounts::default();
+
+        // Calculate total count
+        dashboard_counts.all = all_counts.iter().map(|c| c.count).sum();
+
+        // Map status counts to dashboard fields
+        for count in all_counts {
+            match ProjectStatus::from(count.status) {
+                ProjectStatus::PendingReview => dashboard_counts.pending_review = count.count,
+                ProjectStatus::UnderReview => dashboard_counts.under_review = count.count,
+                ProjectStatus::ApprovedEditor => dashboard_counts.approved = count.count,
+                ProjectStatus::DaoVoting => dashboard_counts.dao_voting = count.count,
+                ProjectStatus::RevisionEditor | ProjectStatus::RevisionAdmin => {
+                    dashboard_counts.needs_revision += count.count;
+                }
+                ProjectStatus::Rejected => dashboard_counts.rejected = count.count,
+                ProjectStatus::Funding => dashboard_counts.funding = count.count,
+                ProjectStatus::Completed => dashboard_counts.completed = count.count,
+                ProjectStatus::Creating => {
+                    // Creating status is not included in the dashboard counts
+                }
+            }
+        }
+
+        Ok(dashboard_counts)
     }
 }
