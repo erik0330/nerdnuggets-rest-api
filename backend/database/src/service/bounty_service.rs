@@ -3,8 +3,8 @@ use chrono::{Datelike, NaiveDate, Utc};
 use std::sync::Arc;
 use types::{
     dto::{
-        BountyCreateRequest, BountyUpdateRequest, ChatNumberInfo, SubmitBidRequest,
-        SubmitBountyWorkRequest,
+        BountyChatBountyInfo, BountyChatUserInfo, BountyCreateRequest, BountyUpdateRequest,
+        ChatNumberInfo, SubmitBidRequest, SubmitBountyWorkRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -489,30 +489,27 @@ impl BountyService {
 
     pub async fn send_bounty_chat(
         &self,
-        id: &str,
         sender_id: Uuid,
         receiver_id: Uuid,
         message: &str,
         file_urls: Vec<String>,
         chat_number: &str,
+        bounty_id: Uuid,
+        nerd_id: &str,
     ) -> Result<bool, ApiError> {
-        let res = if let Some(bounty) = self.bounty_repo.get_bounty_by_id(uuid_from_str(id)?).await
-        {
-            self.bounty_repo
-                .send_bounty_chat(
-                    sender_id,
-                    receiver_id,
-                    bounty.id,
-                    &bounty.nerd_id,
-                    chat_number,
-                    message,
-                    file_urls,
-                )
-                .await
-                .unwrap_or_default()
-        } else {
-            false
-        };
+        let res = self
+            .bounty_repo
+            .send_bounty_chat(
+                sender_id,
+                receiver_id,
+                bounty_id,
+                nerd_id,
+                chat_number,
+                message,
+                file_urls,
+            )
+            .await
+            .unwrap_or_default();
         Ok(res)
     }
 
@@ -533,36 +530,44 @@ impl BountyService {
         if let Some((
             sender_name,
             sender_id,
+            sender_avatar,
             receiver_name,
             receiver_id,
+            receiver_avatar,
             last_message,
             last_message_time,
             unread_count,
+            bounty_id,
+            bounty_nerd_id,
+            bounty_title,
         )) = self
             .bounty_repo
             .get_chat_number_info(chat_number)
             .await
             .map_err(|_| DbError::Str("Failed to get chat info".to_string()))?
         {
-            if sender_id == user_id {
-                Ok(ChatNumberInfo {
-                    chat_number: chat_number.to_string(),
-                    username: receiver_name,
-                    user_id: receiver_id,
-                    last_message,
-                    last_message_time,
-                    unread_count: unread_count as i32,
-                })
+            let (name, avatar_url, other_id) = if sender_id == user_id {
+                (receiver_name, receiver_avatar, receiver_id)
             } else {
-                Ok(ChatNumberInfo {
-                    chat_number: chat_number.to_string(),
-                    username: sender_name,
-                    user_id: sender_id,
-                    last_message,
-                    last_message_time,
-                    unread_count: unread_count as i32,
-                })
-            }
+                (sender_name, sender_avatar, sender_id)
+            };
+
+            Ok(ChatNumberInfo {
+                chat_number: chat_number.to_string(),
+                last_message,
+                last_message_time,
+                unread_count: unread_count as i32,
+                bounty: BountyChatBountyInfo {
+                    id: bounty_id,
+                    nerd_id: bounty_nerd_id,
+                    title: bounty_title,
+                },
+                user: BountyChatUserInfo {
+                    id: other_id,
+                    name,
+                    avatar: avatar_url,
+                },
+            })
         } else {
             Err(DbError::Str("Chat not found".to_string()).into())
         }
@@ -570,13 +575,12 @@ impl BountyService {
 
     pub async fn mark_chat_as_read(
         &self,
-        id: &str,
         chat_number: &str,
         user_id: Uuid,
     ) -> Result<bool, ApiError> {
         let res = self
             .bounty_repo
-            .mark_chat_as_read(uuid_from_str(id)?, chat_number, user_id)
+            .mark_chat_as_read(chat_number, user_id)
             .await
             .unwrap_or_default();
         Ok(res)

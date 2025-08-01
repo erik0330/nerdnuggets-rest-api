@@ -249,20 +249,27 @@ pub async fn get_bounty_chats(
 
 pub async fn send_bounty_chat(
     Extension(user): Extension<User>,
-    Path(id): Path<String>,
     State(state): State<AppState>,
     ValidatedRequest(payload): ValidatedRequest<SendBountyChatRequest>,
 ) -> Result<Json<bool>, ApiError> {
+    // Get bounty information from chat number
+    let chat_info = state
+        .service
+        .bounty
+        .get_chat_number_info(user.id, &payload.chat_number)
+        .await?;
+
     let res = state
         .service
         .bounty
         .send_bounty_chat(
-            &id,
             user.id,
             payload.receiver_id,
             &payload.message,
             payload.file_urls.unwrap_or_default(),
             &payload.chat_number,
+            chat_info.bounty.id,
+            &chat_info.bounty.nerd_id,
         )
         .await?;
     Ok(Json(res))
@@ -296,13 +303,13 @@ pub async fn get_bounty_chat_numbers(
 
 pub async fn mark_chat_as_read(
     Extension(user): Extension<User>,
-    Path((id, chat_number)): Path<(String, String)>,
+    Path(chat_number): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<bool>, ApiError> {
     let res = state
         .service
         .bounty
-        .mark_chat_as_read(&id, &chat_number, user.id)
+        .mark_chat_as_read(&chat_number, user.id)
         .await?;
     Ok(Json(res))
 }
