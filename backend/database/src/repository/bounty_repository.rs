@@ -497,15 +497,17 @@ impl BountyRepository {
 
     pub async fn send_bounty_chat(
         &self,
-        user_id: Uuid,
+        sender_id: Uuid,
+        receiver_id: Uuid,
         bounty_id: Uuid,
         nerd_id: &str,
         chat_number: &str,
         message: &str,
         file_urls: Vec<String>,
     ) -> Result<bool, SqlxError> {
-        let row = sqlx::query("INSERT INTO bounty_chat (user_id, bounty_id, nerd_id, chat_number, message, file_urls) VALUES ($1, $2, $3, $4, $5, $6)")
-            .bind(user_id)
+        let row = sqlx::query("INSERT INTO bounty_chat (sender_id, receiver_id, bounty_id, nerd_id, chat_number, message, file_urls) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+            .bind(sender_id)
+            .bind(receiver_id)
             .bind(bounty_id)
             .bind(nerd_id)
             .bind(chat_number)
@@ -518,53 +520,50 @@ impl BountyRepository {
 
     pub async fn get_bounty_chat_numbers(
         &self,
-        bounty_id: Uuid,
+        user_id: Uuid,
     ) -> Result<Vec<String>, SqlxError> {
         let chat_numbers = sqlx::query_scalar!(
-            "SELECT DISTINCT chat_number FROM bounty_chat WHERE bounty_id = $1 ORDER BY chat_number",
-            bounty_id
+            "SELECT DISTINCT chat_number FROM bounty_chat WHERE sender_id = $1 OR receiver_id = $1 ORDER BY chat_number",
+            user_id
         ).fetch_all(self.db_conn.get_pool()).await?;
         Ok(chat_numbers)
     }
 
     pub async fn get_chat_number_info(
         &self,
-        bounty_id: Uuid,
         chat_number: &str,
-        bidder_id: Uuid,
-    ) -> Result<Option<(String, Uuid, String, Option<DateTime<Utc>>, i64)>, SqlxError> {
+    ) -> Result<Option<(String, Uuid, String, Uuid, String, Option<DateTime<Utc>>, i64)>, SqlxError> {
         let result = sqlx::query!(
             r#"
             SELECT 
-                u.name as bidder_name,
-                u.id as bidder_id,
+                sender_user.name as sender_name,
+                sender_user.id as sender_id,
+                receiver_user.name as receiver_name,
+                receiver_user.id as receiver_id,
                 bc.message as last_message,
                 bc.created_at as last_message_time,
                 (
                     SELECT COUNT(*)::int 
                     FROM bounty_chat 
-                    WHERE bounty_id = $1 AND chat_number = $2 AND is_read = false AND user_id = $3
+                    WHERE chat_number = $1 AND is_read = false AND receiver_id = bc.receiver_id
                 ) as unread_count
-            FROM users u
-            LEFT JOIN LATERAL (
-                SELECT message, created_at
-                FROM bounty_chat
-                WHERE bounty_id = $1 AND chat_number = $2
-                ORDER BY created_at DESC
-                LIMIT 1
-            ) bc ON true
-            WHERE u.id = $3
+            FROM bounty_chat bc
+            JOIN users sender_user ON bc.sender_id = sender_user.id
+            JOIN users receiver_user ON bc.receiver_id = receiver_user.id
+            WHERE bc.chat_number = $1
+            ORDER BY bc.created_at DESC
+            LIMIT 1
             "#,
-            bounty_id,
-            chat_number,
-            bidder_id
+            chat_number
         )
         .fetch_optional(self.db_conn.get_pool())
         .await?;
 
         Ok(result.map(|row| (
-            row.bidder_name.unwrap_or_default(),
-            row.bidder_id,
+            row.sender_name.unwrap_or_default(),
+            row.sender_id,
+            row.receiver_name.unwrap_or_default(),
+            row.receiver_id,
             row.last_message,
             row.last_message_time,
             row.unread_count.unwrap_or(0) as i64,
@@ -578,7 +577,7 @@ impl BountyRepository {
         user_id: Uuid,
     ) -> Result<bool, SqlxError> {
         let row = sqlx::query(
-            "UPDATE bounty_chat SET is_read = true WHERE bounty_id = $1 AND chat_number = $2 AND user_id != $3"
+            "UPDATE bounty_chat SET is_read = true WHERE bounty_id = $1 AND chat_number = $2 AND (sender_id = $3 OR receiver_id = $3)"
         )
         .bind(bounty_id)
         .bind(chat_number)
@@ -645,102 +644,102 @@ impl BountyRepository {
         Ok(similar_bounties)
     }
 
-    pub async fn get_bounty_chat_list(
-        &self,
-        user_id: Uuid,
-        offset: Option<i32>,
-        limit: Option<i32>,
-    ) -> Result<Vec<(String, Uuid, String, String, BountyStatus, Uuid, String, Option<String>, DateTime<Utc>, String, DateTime<Utc>, i32)>, SqlxError> {
-        let chat_list = sqlx::query!(
-            r#"
-            WITH chat_summary AS (
-                SELECT 
-                    bc.chat_number,
-                    bc.bounty_id,
-                    b.nerd_id,
-                    b.title as bounty_title,
-                    b.status as bounty_status,
-                    b.user_id as funder_id,
-                    u.name as funder_name,
-                    u.avatar_url as funder_avatar,
-                    MIN(bc.created_at) as first_message_at,
-                    MAX(bc.created_at) as last_message_at,
-                    (
-                        SELECT message 
-                        FROM bounty_chat 
-                        WHERE bounty_id = bc.bounty_id 
-                        AND chat_number = bc.chat_number 
-                        ORDER BY created_at DESC 
-                        LIMIT 1
-                    ) as last_message,
-                    (
-                        SELECT COUNT(*)::int 
-                        FROM bounty_chat 
-                        WHERE bounty_id = bc.bounty_id 
-                        AND chat_number = bc.chat_number 
-                        AND is_read = false 
-                        AND user_id != $1
-                    ) as unread_count
-                FROM bounty_chat bc
-                JOIN bounty b ON bc.bounty_id = b.id
-                JOIN users u ON b.user_id = u.id
-                WHERE bc.user_id = $1 OR b.user_id = $1
-                GROUP BY bc.chat_number, bc.bounty_id, b.nerd_id, b.title, b.status, b.user_id, u.name, u.avatar_url
-            )
-            SELECT 
-                chat_number,
-                bounty_id,
-                nerd_id,
-                bounty_title,
-                bounty_status,
-                funder_id,
-                funder_name,
-                funder_avatar,
-                first_message_at,
-                last_message_at,
-                last_message,
-                unread_count
-            FROM chat_summary
-            ORDER BY last_message_at DESC
-            LIMIT $2 OFFSET $3
-            "#,
-            user_id,
-            limit.unwrap_or(20) as i64,
-            offset.unwrap_or(0) as i64
-        )
-        .fetch_all(self.db_conn.get_pool())
-        .await?;
+    // pub async fn get_bounty_chat_list(
+    //     &self,
+    //     user_id: Uuid,
+    //     offset: Option<i32>,
+    //     limit: Option<i32>,
+    // ) -> Result<Vec<(String, Uuid, String, String, BountyStatus, Uuid, String, Option<String>, DateTime<Utc>, String, DateTime<Utc>, i32)>, SqlxError> {
+    //     let chat_list = sqlx::query!(
+    //         r#"
+    //         WITH chat_summary AS (
+    //             SELECT 
+    //                 bc.chat_number,
+    //                 bc.bounty_id,
+    //                 b.nerd_id,
+    //                 b.title as bounty_title,
+    //                 b.status as bounty_status,
+    //                 b.user_id as funder_id,
+    //                 u.name as funder_name,
+    //                 u.avatar_url as funder_avatar,
+    //                 MIN(bc.created_at) as first_message_at,
+    //                 MAX(bc.created_at) as last_message_at,
+    //                 (
+    //                     SELECT message 
+    //                     FROM bounty_chat 
+    //                     WHERE bounty_id = bc.bounty_id 
+    //                     AND chat_number = bc.chat_number 
+    //                     ORDER BY created_at DESC 
+    //                     LIMIT 1
+    //                 ) as last_message,
+    //                 (
+    //                     SELECT COUNT(*)::int 
+    //                     FROM bounty_chat 
+    //                     WHERE bounty_id = bc.bounty_id 
+    //                     AND chat_number = bc.chat_number 
+    //                     AND is_read = false 
+    //                     AND receiver_id = $1
+    //                 ) as unread_count
+    //             FROM bounty_chat bc
+    //             JOIN bounty b ON bc.bounty_id = b.id
+    //             JOIN users u ON b.user_id = u.id
+    //             WHERE bc.sender_id = $1 OR bc.receiver_id = $1 OR b.user_id = $1
+    //             GROUP BY bc.chat_number, bc.bounty_id, b.nerd_id, b.title, b.status, b.user_id, u.name, u.avatar_url
+    //         )
+    //         SELECT 
+    //             chat_number,
+    //             bounty_id,
+    //             nerd_id,
+    //             bounty_title,
+    //             bounty_status,
+    //             funder_id,
+    //             funder_name,
+    //             funder_avatar,
+    //             first_message_at,
+    //             last_message_at,
+    //             last_message,
+    //             unread_count
+    //         FROM chat_summary
+    //         ORDER BY last_message_at DESC
+    //         LIMIT $2 OFFSET $3
+    //         "#,
+    //         user_id,
+    //         limit.unwrap_or(20) as i64,
+    //         offset.unwrap_or(0) as i64
+    //     )
+    //     .fetch_all(self.db_conn.get_pool())
+    //     .await?;
 
-        let result = chat_list
-            .into_iter()
-            .map(|row| (
-                row.chat_number,
-                row.bounty_id,
-                row.nerd_id,
-                row.bounty_title.unwrap_or_default(),
-                match row.bounty_status.unwrap_or(0) {
-                    0 => BountyStatus::PendingApproval,
-                    1 => BountyStatus::Open,
-                    2 => BountyStatus::Rejected,
-                    3 => BountyStatus::InProgress,
-                    4 => BountyStatus::UnderReview,
-                    5 => BountyStatus::Completed,
-                    6 => BountyStatus::Cancelled,
-                    7 => BountyStatus::RequestRevision,
-                    _ => BountyStatus::PendingApproval,
-                },
-                row.funder_id,
-                row.funder_name.unwrap_or_default(),
-                row.funder_avatar,
-                row.first_message_at.unwrap_or_default(),
-                row.last_message.unwrap_or_default(),
-                row.last_message_at.unwrap_or_default(),
-                row.unread_count.unwrap_or(0) as i32,
-            ))
-            .collect();
+    //     let result = chat_list
+    //         .into_iter()
+    //         .map(|row| (
+    //             row.chat_number,
+    //             row.bounty_id,
+    //             row.nerd_id,
+    //             row.bounty_title.unwrap_or_default(),
+    //             match row.bounty_status.unwrap_or(0) {
+    //                 0 => BountyStatus::PendingApproval,
+    //                 1 => BountyStatus::Open,
+    //                 2 => BountyStatus::Rejected,
+    //                 3 => BountyStatus::InProgress,
+    //                 4 => BountyStatus::UnderReview,
+    //                 5 => BountyStatus::Completed,
+    //                 6 => BountyStatus::Cancelled,
+    //                 7 => BountyStatus::RequestRevision,
+    //                 _ => BountyStatus::PendingApproval,
+    //             },
+    //             row.funder_id,
+    //             row.funder_name.unwrap_or_default(),
+    //             row.funder_avatar,
+    //             row.first_message_at.unwrap_or_default(),
+    //             row.last_message.unwrap_or_default(),
+    //             row.last_message_at.unwrap_or_default(),
+    //             row.unread_count.unwrap_or(0) as i32,
+    //         ))
+    //         .collect();
 
-        Ok(result)
-    }
+    //     Ok(result)
+    // }
 
     // Bounty Work Submission Methods
     pub async fn create_bounty_work_submission(

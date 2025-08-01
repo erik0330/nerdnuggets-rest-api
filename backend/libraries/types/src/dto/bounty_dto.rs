@@ -133,6 +133,7 @@ pub struct SendBountyChatRequest {
     pub message: String,
     pub file_urls: Option<Vec<String>>,
     pub chat_number: String,
+    pub receiver_id: Uuid,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
@@ -154,8 +155,8 @@ pub struct GetBountyChatNumbersResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ChatNumberInfo {
     pub chat_number: String,
-    pub bidder_name: String,
-    pub bidder_id: Uuid,
+    pub username: String,
+    pub user_id: Uuid,
     pub last_message: String,
     pub last_message_time: Option<DateTime<Utc>>,
     pub unread_count: i32,
