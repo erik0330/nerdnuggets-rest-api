@@ -8,7 +8,7 @@
             },
             {
                 "internalType": "address",
-                "name": "_projectFunding",
+                "name": "_fundWallet",
                 "type": "address"
             }
         ],
@@ -57,18 +57,12 @@
         "inputs": [
             {
                 "indexed": false,
-                "internalType": "uint256",
-                "name": "oldValue",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "newValue",
-                "type": "uint256"
+                "internalType": "address",
+                "name": "newFundWallet",
+                "type": "address"
             }
         ],
-        "name": "MinimumVotersUpdated",
+        "name": "FundWalletUpdated",
         "type": "event"
     },
     {
@@ -113,30 +107,30 @@
                 "type": "uint256"
             },
             {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "milestoneIndex",
+                "type": "uint256"
+            },
+            {
                 "indexed": false,
                 "internalType": "bool",
-                "name": "proceededToFunding",
+                "name": "success",
                 "type": "bool"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "upvotePercent",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "uniqueVoters",
-                "type": "uint256"
             }
         ],
-        "name": "ProjectApproved",
+        "name": "PredictionFinalized",
         "type": "event"
     },
     {
         "anonymous": false,
         "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
             {
                 "indexed": true,
                 "internalType": "uint256",
@@ -145,18 +139,30 @@
             },
             {
                 "indexed": true,
-                "internalType": "address",
-                "name": "researcher",
-                "type": "address"
+                "internalType": "uint256",
+                "name": "milestoneIndex",
+                "type": "uint256"
             },
             {
                 "indexed": false,
-                "internalType": "string",
-                "name": "metadataUrl",
-                "type": "string"
+                "internalType": "bool",
+                "name": "predictsSuccess",
+                "type": "bool"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "nerdAmount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "nerdTax",
+                "type": "uint256"
             }
         ],
-        "name": "ProjectCreated",
+        "name": "PredictionPlaced",
         "type": "event"
     },
     {
@@ -165,17 +171,55 @@
             {
                 "indexed": false,
                 "internalType": "address",
-                "name": "oldAddress",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "newAddress",
+                "name": "newProjectFundingContract",
                 "type": "address"
             }
         ],
-        "name": "ProjectFundingAddressUpdated",
+        "name": "ProjectFundingContractUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "milestoneIndex",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "nerdReward",
+                "type": "uint256"
+            }
+        ],
+        "name": "RewardClaimed",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "newTaxFeeBasisPoints",
+                "type": "uint256"
+            }
+        ],
+        "name": "TaxFeeUpdated",
         "type": "event"
     },
     {
@@ -192,121 +236,67 @@
         "type": "event"
     },
     {
-        "anonymous": false,
-        "inputs": [
+        "inputs": [],
+        "name": "BASIS_POINTS_DIVISOR",
+        "outputs": [
             {
-                "indexed": false,
                 "internalType": "uint256",
-                "name": "newDuration",
+                "name": "",
                 "type": "uint256"
             }
         ],
-        "name": "VoteDurationUpdated",
-        "type": "event"
+        "stateMutability": "view",
+        "type": "function"
     },
     {
-        "anonymous": false,
+        "inputs": [],
+        "name": "MAX_TAX_FEE_BPS",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_PREDICTION_AMOUNT",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
-                "indexed": true,
                 "internalType": "uint256",
                 "name": "projectId",
                 "type": "uint256"
             },
             {
-                "indexed": true,
+                "internalType": "uint256",
+                "name": "milestoneIndex",
+                "type": "uint256"
+            },
+            {
                 "internalType": "address",
-                "name": "voter",
+                "name": "user",
                 "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "bool",
-                "name": "support",
-                "type": "bool"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "weight",
-                "type": "uint256"
             }
         ],
-        "name": "Voted",
-        "type": "event"
-    },
-    {
-        "inputs": [],
-        "name": "MAX_METADATA_LENGTH",
+        "name": "calculatePotentialReward",
         "outputs": [
             {
                 "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "MAX_MILESTONES",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "MAX_VOTERS_LIMIT",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "MAX_VOTE_DURATION",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "MIN_VOTERS_LIMIT",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "MIN_VOTE_DURATION",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
+                "name": "potentialReward",
                 "type": "uint256"
             }
         ],
@@ -317,11 +307,16 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "_projectId",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "milestoneIndex",
                 "type": "uint256"
             }
         ],
-        "name": "approveProject",
+        "name": "claimReward",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -330,50 +325,57 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "_id",
+                "name": "projectId",
                 "type": "uint256"
             },
             {
-                "internalType": "address",
-                "name": "_researcher",
-                "type": "address"
+                "internalType": "uint256",
+                "name": "milestoneIndex",
+                "type": "uint256"
             },
             {
-                "components": [
-                    {
-                        "internalType": "uint256",
-                        "name": "duration",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "fundingGoal",
-                        "type": "uint256"
-                    }
-                ],
-                "internalType": "struct DAOContract.Milestone[]",
-                "name": "_milestones",
-                "type": "tuple[]"
-            },
-            {
-                "internalType": "string",
-                "name": "_metadataUrl",
-                "type": "string"
+                "internalType": "bool",
+                "name": "success",
+                "type": "bool"
             }
         ],
-        "name": "createProject",
+        "name": "finalizePrediction",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "finalized",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [],
-        "name": "getAllProjectIds",
+        "name": "fundWallet",
         "outputs": [
             {
-                "internalType": "uint256[]",
+                "internalType": "address",
                 "name": "",
-                "type": "uint256[]"
+                "type": "address"
             }
         ],
         "stateMutability": "view",
@@ -383,45 +385,36 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "_projectId",
-                "type": "uint256"
-            }
-        ],
-        "name": "getApprovalPercentage",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "_projectId",
+                "name": "projectId",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "index",
+                "name": "milestoneIndex",
                 "type": "uint256"
             }
         ],
-        "name": "getMilestone",
+        "name": "getMilestoneStats",
         "outputs": [
             {
                 "internalType": "uint256",
-                "name": "duration",
+                "name": "totalSuccess",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "fundingGoal",
+                "name": "totalFail",
                 "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "milestoneFinalized",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "outcome",
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
@@ -431,88 +424,36 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "_projectId",
+                "name": "projectId",
                 "type": "uint256"
-            }
-        ],
-        "name": "getMilestoneCount",
-        "outputs": [
+            },
             {
                 "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "_projectId",
-                "type": "uint256"
-            }
-        ],
-        "name": "getProject",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "createdAt",
+                "name": "milestoneIndex",
                 "type": "uint256"
             },
             {
                 "internalType": "address",
-                "name": "researcher",
+                "name": "user",
                 "type": "address"
-            },
-            {
-                "internalType": "string",
-                "name": "metadataUrl",
-                "type": "string"
-            },
+            }
+        ],
+        "name": "getPrediction",
+        "outputs": [
             {
                 "internalType": "uint256",
-                "name": "totalUpvoteWeight",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalDownvoteWeight",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalVoteWeight",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "uniqueVoters",
+                "name": "nerdAmount",
                 "type": "uint256"
             },
             {
                 "internalType": "bool",
-                "name": "voteConcluded",
+                "name": "predictsSuccess",
                 "type": "bool"
             },
             {
-                "internalType": "uint256",
-                "name": "voteSnapshotBlock",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getProjectCount",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
+                "internalType": "bool",
+                "name": "claimed",
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
@@ -522,68 +463,21 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "_projectId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "voter",
-                "type": "address"
-            }
-        ],
-        "name": "getVoteInfo",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "hasVoted",
-                "type": "bool"
-            },
-            {
-                "internalType": "bool",
-                "name": "support",
-                "type": "bool"
-            },
-            {
-                "internalType": "uint256",
-                "name": "weight",
+                "name": "",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "timestamp",
+                "name": "",
                 "type": "uint256"
             }
         ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "_projectId",
-                "type": "uint256"
-            }
-        ],
-        "name": "meetsMinimumVoters",
+        "name": "milestoneOutcome",
         "outputs": [
             {
                 "internalType": "bool",
                 "name": "",
                 "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "minimumVoters",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -629,16 +523,36 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "projectFunding",
-        "outputs": [
+        "inputs": [
             {
-                "internalType": "contract IProjectFunding",
-                "name": "",
+                "internalType": "address",
+                "name": "user",
                 "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "milestoneIndex",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "predictsSuccess",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "nerdAmount",
+                "type": "uint256"
             }
         ],
-        "stateMutability": "view",
+        "name": "placePrediction",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -647,14 +561,47 @@
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
-            }
-        ],
-        "name": "projectIds",
-        "outputs": [
+            },
             {
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "predictions",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "nerdAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "predictsSuccess",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "claimed",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "projectFundingContract",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
         "stateMutability": "view",
@@ -670,12 +617,12 @@
     {
         "inputs": [
             {
-                "internalType": "uint256",
-                "name": "newMinimumVoters",
-                "type": "uint256"
+                "internalType": "address",
+                "name": "newFundWallet",
+                "type": "address"
             }
         ],
-        "name": "setMinimumVoters",
+        "name": "setFundWallet",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -684,11 +631,11 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "newAddress",
+                "name": "_projectFundingContract",
                 "type": "address"
             }
         ],
-        "name": "setProjectFundingAddress",
+        "name": "setProjectFundingContract",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -697,13 +644,74 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "newDuration",
+                "name": "newTaxFeeBasisPoints",
                 "type": "uint256"
             }
         ],
-        "name": "setVoteDuration",
+        "name": "setTaxFee",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "taxFeeBasisPoints",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "totalNerdFail",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "totalNerdSuccess",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -717,37 +725,6 @@
         "name": "transferOwnership",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "_projectId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "support",
-                "type": "bool"
-            }
-        ],
-        "name": "vote",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "voteDuration",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     }
 ]

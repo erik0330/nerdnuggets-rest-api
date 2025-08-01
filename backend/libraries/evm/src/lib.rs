@@ -64,7 +64,6 @@ impl EVMClient {
             .map(|(duration, goal)| dao_contract::Milestone {
                 duration: U256::from(duration),
                 funding_goal: U256::from(goal),
-                prediction_deadline: U256::from(duration),
             })
             .collect::<Vec<dao_contract::Milestone>>();
 

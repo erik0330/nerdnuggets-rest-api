@@ -348,7 +348,10 @@ impl ProjectService {
             FeedbackStatus::Accepted if to_dao => {
                 (ProjectStatus::DaoVoting, Some(Utc::now()), None)
             }
-            FeedbackStatus::Accepted => (ProjectStatus::Funding, None, Some(Utc::now())),
+            FeedbackStatus::Accepted => {
+                return Err(DbError::Str("Coming soon...".to_string()).into());
+                // (ProjectStatus::Funding, None, Some(Utc::now()))
+            }
             FeedbackStatus::RevisionRequired => (ProjectStatus::RevisionAdmin, None, None),
             FeedbackStatus::Rejected => (ProjectStatus::Rejected, None, None),
             FeedbackStatus::Pending => {
@@ -383,7 +386,7 @@ impl ProjectService {
                         project.proposal_id as u64,
                         &wallet,
                         milestone_data,
-                        String::new(),
+                        project.arweave_tx_id.clone().unwrap_or_default(),
                     )
                     .await
                     .map_err(|e| DbError::Str(e.to_string()))?;
