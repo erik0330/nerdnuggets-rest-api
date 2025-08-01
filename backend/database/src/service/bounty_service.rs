@@ -489,30 +489,27 @@ impl BountyService {
 
     pub async fn send_bounty_chat(
         &self,
-        id: &str,
         sender_id: Uuid,
         receiver_id: Uuid,
         message: &str,
         file_urls: Vec<String>,
         chat_number: &str,
+        bounty_id: Uuid,
+        nerd_id: &str,
     ) -> Result<bool, ApiError> {
-        let res = if let Some(bounty) = self.bounty_repo.get_bounty_by_id(uuid_from_str(id)?).await
-        {
-            self.bounty_repo
-                .send_bounty_chat(
-                    sender_id,
-                    receiver_id,
-                    bounty.id,
-                    &bounty.nerd_id,
-                    chat_number,
-                    message,
-                    file_urls,
-                )
-                .await
-                .unwrap_or_default()
-        } else {
-            false
-        };
+        let res = self
+            .bounty_repo
+            .send_bounty_chat(
+                sender_id,
+                receiver_id,
+                bounty_id,
+                nerd_id,
+                chat_number,
+                message,
+                file_urls,
+            )
+            .await
+            .unwrap_or_default();
         Ok(res)
     }
 
@@ -578,13 +575,12 @@ impl BountyService {
 
     pub async fn mark_chat_as_read(
         &self,
-        id: &str,
         chat_number: &str,
         user_id: Uuid,
     ) -> Result<bool, ApiError> {
         let res = self
             .bounty_repo
-            .mark_chat_as_read(uuid_from_str(id)?, chat_number, user_id)
+            .mark_chat_as_read(chat_number, user_id)
             .await
             .unwrap_or_default();
         Ok(res)

@@ -27,8 +27,8 @@ pub fn routes() -> Router<AppState> {
         .route("/bounty/chat", get(get_bounty_chats))
         // .route("/bounty/chat/list", get(get_bounty_chat_list))
         .route("/bounty/chat/numbers", get(get_bounty_chat_numbers))
-        .route("/bounty/:id/chat", post(send_bounty_chat))
-        .route("/bounty/:id/chat/:chat_number/read", put(mark_chat_as_read))
+        .route("/bounty/chat", post(send_bounty_chat))
+        .route("/bounty/chat/:chat_number/read", put(mark_chat_as_read))
         .route(
             "/bounty/:id/chat/bidder/:bidder_id",
             post(create_bidder_chat),

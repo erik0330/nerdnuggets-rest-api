@@ -583,14 +583,12 @@ impl BountyRepository {
 
     pub async fn mark_chat_as_read(
         &self,
-        bounty_id: Uuid,
         chat_number: &str,
         user_id: Uuid,
     ) -> Result<bool, SqlxError> {
         let row = sqlx::query(
-            "UPDATE bounty_chat SET is_read = true WHERE bounty_id = $1 AND chat_number = $2 AND (sender_id = $3 OR receiver_id = $3)"
+            "UPDATE bounty_chat SET is_read = true WHERE chat_number = $1 AND receiver_id = $2"
         )
-        .bind(bounty_id)
         .bind(chat_number)
         .bind(user_id)
         .execute(self.db_conn.get_pool())
