@@ -310,6 +310,10 @@ impl BountyService {
             )
             .await
             .map_err(|e| DbError::Str(e.to_string()))?;
+
+        // Increment bid count
+        let _ = self.bounty_repo.increment_bid_count(bounty.id).await;
+
         let mut number = 1;
         let mut milestones = Vec::new();
         for m in payload.milestones {
@@ -415,10 +419,18 @@ impl BountyService {
     ) -> Result<bool, ApiError> {
         let res = if let Some(bounty) = self.bounty_repo.get_bounty_by_id(uuid_from_str(id)?).await
         {
-            self.bounty_repo
+            let comment_result = self
+                .bounty_repo
                 .submit_bounty_comment(user_id, bounty.id, &bounty.nerd_id, comment)
                 .await
-                .unwrap_or_default()
+                .unwrap_or_default();
+
+            if comment_result {
+                // Increment comment count
+                let _ = self.bounty_repo.increment_comment_count(bounty.id).await;
+            }
+
+            comment_result
         } else {
             false
         };
