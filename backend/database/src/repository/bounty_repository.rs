@@ -911,4 +911,20 @@ impl BountyRepository {
             .await?;
         Ok(row.rows_affected() == 1)
     }
+
+    pub async fn increment_bid_count(&self, id: Uuid) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bounty SET count_bid = count_bid + 1 WHERE id = $1")
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn increment_comment_count(&self, id: Uuid) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bounty SET count_comment = count_comment + 1 WHERE id = $1")
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
 }
