@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use email_address::EmailAddress;
 use rand::{thread_rng, Rng};
 use std::{
+    collections::HashSet,
     hash::{DefaultHasher, Hash, Hasher},
     str::FromStr,
 };
@@ -234,4 +235,75 @@ pub fn is_valid_email(email: &str) -> bool {
 
 pub fn get_article_id_from_proposal_id(proposal_id: &str) -> String {
     format!("NB{}A", proposal_id)
+}
+
+/// Generate a unique username from name or email following LinkedIn style
+/// This function creates a username by:
+/// 1. Using the full name if available, otherwise using the email prefix
+/// 2. Converting to lowercase and removing special characters
+/// 3. Adding numbers if the username already exists (like LinkedIn)
+pub fn generate_username(
+    name: Option<&str>,
+    email: &str,
+    existing_usernames: &HashSet<String>,
+) -> String {
+    // Extract the base username from name or email
+    let base_username = if let Some(name) = name {
+        // Use the full name (first + last name) like LinkedIn
+        let name_parts: Vec<&str> = name.split_whitespace().collect();
+        if name_parts.len() >= 2 {
+            // Combine first and last name
+            &format!("{}{}", name_parts[0], name_parts[1])
+        } else if name_parts.len() == 1 {
+            // Use just the first name if no last name
+            name_parts[0]
+        } else {
+            ""
+        }
+    } else {
+        // Use the email prefix (before @)
+        email.split('@').next().unwrap_or("")
+    };
+
+    // Clean the username: lowercase, alphanumeric only (no dots, underscores, etc.)
+    let clean_username = base_username
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .collect::<String>();
+
+    // If clean username is empty, use a default
+    let base = if clean_username.is_empty() {
+        "user".to_string()
+    } else {
+        clean_username
+    };
+
+    // Try the base username first
+    if !existing_usernames.contains(&base) {
+        return base;
+    }
+
+    // If base exists, try with numbers (like LinkedIn: johnsmith1, johnsmith2, etc.)
+    let mut rng = thread_rng();
+    for attempt in 1..=100 {
+        // Try numbers 1-99 first (more common like LinkedIn)
+        if attempt <= 99 {
+            let candidate = format!("{}{}", base, attempt);
+            if !existing_usernames.contains(&candidate) {
+                return candidate;
+            }
+        } else {
+            // If all common numbers are taken, use random numbers
+            let random_num = rng.gen_range(100..999999);
+            let candidate = format!("{}{}", base, random_num);
+            if !existing_usernames.contains(&candidate) {
+                return candidate;
+            }
+        }
+    }
+
+    // If all attempts fail, use timestamp-based username
+    let timestamp = chrono::Utc::now().timestamp();
+    format!("{}{}", base, timestamp)
 }

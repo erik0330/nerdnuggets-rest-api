@@ -564,6 +564,12 @@ impl BountyService {
                 (sender_name, sender_avatar, sender_id)
             };
 
+            // Get the user's username
+            let user = self.user_repo.get_user_by_id(other_id).await;
+            let username = user
+                .map(|u| u.username.unwrap_or_default())
+                .unwrap_or_default();
+
             Ok(ChatNumberInfo {
                 chat_number: chat_number.to_string(),
                 last_message,
@@ -576,6 +582,7 @@ impl BountyService {
                 },
                 user: BountyChatUserInfo {
                     id: other_id,
+                    username,
                     name,
                     avatar: avatar_url,
                 },

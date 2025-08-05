@@ -192,6 +192,7 @@ pub struct BountyChatBountyInfo {
 #[serde(rename_all = "camelCase")]
 pub struct BountyChatUserInfo {
     pub id: Uuid,
+    pub username: String,
     pub name: String,
     pub avatar: Option<String>,
 }

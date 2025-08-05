@@ -142,6 +142,7 @@ pub struct UserProfileSettingsRequest {
     pub avatar_url: Option<String>,
     pub email: String,
     pub name: Option<String>,
+    pub username: Option<String>,
     pub institution: Option<String>,
     pub bio: Option<String>,
     pub website: Option<String>,
@@ -152,6 +153,7 @@ pub struct UserProfileSettingsRequest {
 #[serde(rename_all = "camelCase")]
 pub struct UserProfileSettingsResponse {
     pub id: Uuid,
+    pub username: String,
     pub avatar_url: Option<String>,
     pub email: String,
     pub name: Option<String>,

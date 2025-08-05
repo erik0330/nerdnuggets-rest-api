@@ -84,6 +84,23 @@ impl UserRepository {
             .unwrap_or(None)
     }
 
+    pub async fn get_user_by_username(&self, username: &str) -> Option<User> {
+        sqlx::query_as::<_, User>("SELECT * FROM users WHERE username = $1")
+            .bind(username)
+            .fetch_optional(self.db_conn.get_pool())
+            .await
+            .unwrap_or(None)
+    }
+
+    pub async fn get_all_usernames(&self) -> Result<Vec<String>, SqlxError> {
+        let usernames = sqlx::query_scalar::<_, String>(
+            "SELECT username FROM users WHERE username IS NOT NULL",
+        )
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(usernames)
+    }
+
     pub async fn create_user_with_email(
         &self,
         name: &str,
@@ -97,6 +114,28 @@ impl UserRepository {
         .bind(name)
         .bind(email)
         .bind(password)
+        .bind(UserTierType::Bronze.to_string())
+        .bind(false)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        return Ok(user);
+    }
+
+    pub async fn create_user_with_email_and_username(
+        &self,
+        name: &str,
+        email: &str,
+        password: &str,
+        username: &str,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>(
+            "INSERT INTO users (name, email, password, username, tier, verified_email)
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+        )
+        .bind(name)
+        .bind(email)
+        .bind(password)
+        .bind(username)
         .bind(UserTierType::Bronze.to_string())
         .bind(false)
         .fetch_one(self.db_conn.get_pool())
@@ -123,6 +162,27 @@ impl UserRepository {
         return Ok(user);
     }
 
+    pub async fn create_user_with_google_and_username(
+        &self,
+        gmail: &str,
+        name: &str,
+        username: &str,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>(
+            "INSERT INTO users (email, verified_email, gmail, name, username, tier)
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+        )
+        .bind(gmail)
+        .bind(true)
+        .bind(gmail)
+        .bind(name)
+        .bind(username)
+        .bind(UserTierType::Bronze.to_string())
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        return Ok(user);
+    }
+
     pub async fn create_user_with_apple(
         &self,
         apple_id: &str,
@@ -137,6 +197,28 @@ impl UserRepository {
         .bind(false)
         .bind(apple_id)
         .bind(name)
+        .bind(UserTierType::Bronze.to_string())
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        return Ok(user);
+    }
+
+    pub async fn create_user_with_apple_and_username(
+        &self,
+        apple_id: &str,
+        email: Option<String>,
+        name: Option<String>,
+        username: &str,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>(
+            "INSERT INTO users (email, verified_email, apple_id, name, username, tier)
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+        )
+        .bind(email.map(|e| e.to_lowercase()).unwrap_or_default())
+        .bind(false)
+        .bind(apple_id)
+        .bind(name)
+        .bind(username)
         .bind(UserTierType::Bronze.to_string())
         .fetch_one(self.db_conn.get_pool())
         .await?;
