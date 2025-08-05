@@ -74,6 +74,11 @@ pub struct UserCheckEmailOption {
     pub email: Option<String>,
 }
 
+#[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+pub struct UserCheckUsernameOption {
+    pub username: Option<String>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserCheckResponse {

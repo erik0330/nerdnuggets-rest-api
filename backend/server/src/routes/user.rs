@@ -1,6 +1,6 @@
 use crate::{
     handler::user_handler::{
-        change_role, get_editors, get_my_activities, get_user, get_user_settings,
+        change_role, check_username, get_editors, get_my_activities, get_user, get_user_settings,
         update_notification_settings, update_preferences_settings, update_privacy_settings,
         update_profile_settings, update_user_onboarding, update_wallet_settings,
     },
@@ -18,6 +18,7 @@ pub fn routes() -> Router<AppState> {
         .route("/user/onboarding/:id", post(update_user_onboarding))
         .route("/user/relogin", post(change_role))
         .route("/user/activities/me", get(get_my_activities))
+        .route("/user/check-username", get(check_username))
         // User Settings Routes
         .route("/user/settings", get(get_user_settings))
         .route("/user/settings/profile", put(update_profile_settings))

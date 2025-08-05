@@ -3,10 +3,11 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use types::dto::{
     ChangeRoleRequest, GetEditorsOption, LoginAndRegisterResponse, OffsetAndLimitOption,
-    UserAllSettingsResponse, UserNotificationSettingsRequest, UserNotificationSettingsResponse,
-    UserOnboardingRequest, UserPreferencesSettingsRequest, UserPreferencesSettingsResponse,
-    UserPrivacySettingsRequest, UserPrivacySettingsResponse, UserProfileSettingsRequest,
-    UserProfileSettingsResponse, UserWalletSettingsRequest, UserWalletSettingsResponse,
+    UserAllSettingsResponse, UserCheckResponse, UserCheckUsernameOption,
+    UserNotificationSettingsRequest, UserNotificationSettingsResponse, UserOnboardingRequest,
+    UserPreferencesSettingsRequest, UserPreferencesSettingsResponse, UserPrivacySettingsRequest,
+    UserPrivacySettingsResponse, UserProfileSettingsRequest, UserProfileSettingsResponse,
+    UserWalletSettingsRequest, UserWalletSettingsResponse,
 };
 use types::error::UserError;
 use types::models::{ActivityHistory, User, UserInfo};
@@ -73,19 +74,27 @@ pub async fn get_my_activities(
     Ok(Json(res))
 }
 
-// pub async fn check_username(
-//     Extension(user): Extension<User>,
-//     opts: Option<Query<UserCheckUsernameOption>>,
-//     State(state): State<AppState>,
-// ) -> Result<Json<UserCheckResponse>, ApiError> {
-//     let Query(opts) = opts.unwrap_or_default();
-//     let res = state
-//         .service
-//         .user
-//         .check_username(user.id, &opts.username.unwrap_or_default())
-//         .await?;
-//     Ok(Json(res))
-// }
+pub async fn check_username(
+    Query(opts): Query<UserCheckUsernameOption>,
+    State(state): State<AppState>,
+) -> Result<Json<UserCheckResponse>, ApiError> {
+    let username = opts.username.unwrap_or_default();
+    if username.is_empty() {
+        return Ok(Json(UserCheckResponse {
+            is_available: false,
+        }));
+    }
+
+    // Validate username format: only alphanumeric (letters and numbers)
+    if !username.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return Ok(Json(UserCheckResponse {
+            is_available: false,
+        }));
+    }
+
+    let res = state.service.user.check_username(&username).await?;
+    Ok(Json(res))
+}
 
 // pub async fn update_username(
 //     Extension(user): Extension<User>,
