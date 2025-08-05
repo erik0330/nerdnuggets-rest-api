@@ -1,5 +1,5 @@
 use crate::{pool::DatabasePool, repository::UserRepository, UtilRepository};
-use std::{str::FromStr, sync::Arc};
+use std::{collections::HashSet, str::FromStr, sync::Arc};
 use types::{
     dto::{
         UserAllSettingsResponse, UserCheckResponse, UserNotificationSettingsRequest,
@@ -11,6 +11,7 @@ use types::{
     error::{ApiError, DbError, UserError},
     models::{ActivityHistory, TempUser, User, UserInfo},
 };
+use utils::commons;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -60,6 +61,20 @@ impl UserService {
             .get_user_by_wallet(wallet)
             .await
             .ok_or_else(|| UserError::UserNotFound.into())
+    }
+
+    pub async fn get_user_by_username(&self, username: &str) -> Result<User, ApiError> {
+        self.user_repo
+            .get_user_by_username(username)
+            .await
+            .ok_or_else(|| UserError::UserNotFound.into())
+    }
+
+    pub async fn get_all_usernames(&self) -> Result<Vec<String>, ApiError> {
+        self.user_repo
+            .get_all_usernames()
+            .await
+            .map_err(|err| DbError::Str(err.to_string()).into())
     }
 
     pub async fn update_gmail(&self, id: Uuid, gmail: Option<String>) -> Result<bool, ApiError> {
@@ -117,8 +132,13 @@ impl UserService {
     }
 
     pub async fn create_user_with_google(&self, gmail: &str, name: &str) -> Result<User, ApiError> {
+        // Generate unique username
+        let existing_usernames = self.get_all_usernames().await.unwrap_or_default();
+        let existing_usernames_set: HashSet<String> = existing_usernames.into_iter().collect();
+        let username = commons::generate_username(Some(name), gmail, &existing_usernames_set);
+
         self.user_repo
-            .create_user_with_google(gmail, name)
+            .create_user_with_google_and_username(gmail, name, &username)
             .await
             .map_err(|err| DbError::Str(err.to_string()).into())
     }
@@ -129,8 +149,15 @@ impl UserService {
         email: Option<String>,
         name: Option<String>,
     ) -> Result<User, ApiError> {
+        // Generate unique username
+        let existing_usernames = self.get_all_usernames().await.unwrap_or_default();
+        let existing_usernames_set: HashSet<String> = existing_usernames.into_iter().collect();
+        let email_str = email.as_deref().unwrap_or("");
+        let username =
+            commons::generate_username(name.as_deref(), email_str, &existing_usernames_set);
+
         self.user_repo
-            .create_user_with_apple(apple_id, email, name)
+            .create_user_with_apple_and_username(apple_id, email, name, &username)
             .await
             .map_err(|err| DbError::Str(err.to_string()).into())
     }
@@ -138,6 +165,16 @@ impl UserService {
     pub async fn check_email(&self, email: &str) -> Result<UserCheckResponse, ApiError> {
         Ok(UserCheckResponse {
             is_available: self.user_repo.get_user_by_email(email).await.is_none(),
+        })
+    }
+
+    pub async fn check_username(&self, username: &str) -> Result<UserCheckResponse, ApiError> {
+        Ok(UserCheckResponse {
+            is_available: self
+                .user_repo
+                .get_user_by_username(username)
+                .await
+                .is_none(),
         })
     }
 
@@ -154,9 +191,15 @@ impl UserService {
         if self.user_repo.get_user_by_email(email).await.is_some() {
             return Err(UserError::UserAlreadyExists)?;
         }
+
+        // Generate unique username
+        let existing_usernames = self.get_all_usernames().await.unwrap_or_default();
+        let existing_usernames_set: HashSet<String> = existing_usernames.into_iter().collect();
+        let username = commons::generate_username(Some(name), email, &existing_usernames_set);
+
         match self
             .user_repo
-            .create_user_with_email(name, email, password)
+            .create_user_with_email_and_username(name, email, password, &username)
             .await
         {
             Ok(user) => Ok(user),
