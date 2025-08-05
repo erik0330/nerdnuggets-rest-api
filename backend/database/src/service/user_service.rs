@@ -178,6 +178,21 @@ impl UserService {
         })
     }
 
+    pub async fn update_username(&self, user_id: Uuid, username: &str) -> Result<bool, ApiError> {
+        // Check if username is already taken by another user
+        let existing_user = self.user_repo.get_user_by_username(username).await;
+        if let Some(existing_user) = existing_user {
+            if existing_user.id != user_id {
+                return Err(UserError::UsernameAlreadyExists)?;
+            }
+        }
+
+        self.user_repo
+            .update_username(user_id, username)
+            .await
+            .map_err(|_| DbError::Str("Failed to update username".to_string()).into())
+    }
+
     pub fn verify_password(&self, user: &User, password: &str) -> bool {
         bcrypt::verify(password, user.password.clone().unwrap().as_str()).unwrap_or(false)
     }
@@ -357,6 +372,11 @@ impl UserService {
         user_id: Uuid,
         payload: UserProfileSettingsRequest,
     ) -> Result<UserProfileSettingsResponse, ApiError> {
+        // Handle username update if provided
+        if let Some(username) = &payload.username.filter(|u| !u.is_empty()) {
+            self.update_username(user_id, username).await?;
+        }
+
         let user = self
             .user_repo
             .update_profile_settings(
