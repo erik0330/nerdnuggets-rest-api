@@ -317,6 +317,7 @@ impl UserService {
         Ok(UserAllSettingsResponse {
             profile: UserProfileSettingsResponse {
                 id: user.id,
+                username: user.username.unwrap_or_default(),
                 avatar_url: user.avatar_url,
                 email: user.email,
                 name: user.name,
@@ -373,6 +374,7 @@ impl UserService {
 
         Ok(UserProfileSettingsResponse {
             id: user.id,
+            username: user.username.unwrap_or_default(),
             avatar_url: user.avatar_url,
             email: user.email,
             name: user.name,
