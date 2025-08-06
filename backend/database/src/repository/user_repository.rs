@@ -556,12 +556,52 @@ impl UserRepository {
     }
 
     pub async fn update_password(&self, id: Uuid, password: &str) -> Result<bool, SqlxError> {
-        let row = sqlx::query("UPDATE users SET password = $1, updated_at = $2 WHERE id = $3")
+        let row = sqlx::query("UPDATE users SET password = $1 WHERE id = $2")
             .bind(password)
-            .bind(Utc::now())
             .bind(id)
             .execute(self.db_conn.get_pool())
             .await?;
-        Ok(row.rows_affected() >= 1)
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn count_user_projects(&self, user_id: Uuid) -> Result<i64, SqlxError> {
+        let count = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM project WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(count)
+    }
+
+    pub async fn count_user_bounties(&self, user_id: Uuid) -> Result<i64, SqlxError> {
+        let count = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM bounty WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(count)
+    }
+
+    pub async fn count_user_predictions(&self, user_id: Uuid) -> Result<i64, SqlxError> {
+        let count =
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM prediction WHERE user_id = $1")
+                .bind(user_id)
+                .fetch_one(self.db_conn.get_pool())
+                .await?;
+        Ok(count)
+    }
+
+    pub async fn count_user_contributions(&self, user_id: Uuid) -> Result<i64, SqlxError> {
+        // Count successful bids (accepted bids) and completed work submissions
+        // BidStatus::Accepted = 2, BountySubmissionStatus::Approved = 3
+        let count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM (
+                SELECT id FROM bid WHERE user_id = $1 AND status = 2
+                UNION ALL
+                SELECT id FROM bounty_work_submission WHERE user_id = $1 AND status = 3
+            ) as contributions",
+        )
+        .bind(user_id)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(count)
     }
 }

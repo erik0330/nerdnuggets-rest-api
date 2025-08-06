@@ -5,8 +5,8 @@ use types::{
         UserAllSettingsResponse, UserCheckResponse, UserNotificationSettingsRequest,
         UserNotificationSettingsResponse, UserOnboardingRequest, UserPreferencesSettingsRequest,
         UserPreferencesSettingsResponse, UserPrivacySettingsRequest, UserPrivacySettingsResponse,
-        UserProfileSettingsRequest, UserProfileSettingsResponse, UserWalletSettingsRequest,
-        UserWalletSettingsResponse,
+        UserProfileResponse, UserProfileSettingsRequest, UserProfileSettingsResponse,
+        UserWalletSettingsRequest, UserWalletSettingsResponse,
     },
     error::{ApiError, DbError, UserError},
     models::{ActivityHistory, TempUser, User, UserInfo},
@@ -497,6 +497,60 @@ impl UserService {
             language: user.language,
             timezone: user.timezone,
             display_currency: user.display_currency,
+        })
+    }
+
+    pub async fn get_user_profile_by_username(
+        &self,
+        username: &str,
+    ) -> Result<UserProfileResponse, ApiError> {
+        let user = self.get_user_by_username(username).await?;
+
+        // Get counts
+        let projects_count = self
+            .user_repo
+            .count_user_projects(user.id)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+
+        let bounties_count = self
+            .user_repo
+            .count_user_bounties(user.id)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+
+        let predictions_count = self
+            .user_repo
+            .count_user_predictions(user.id)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+
+        let contributions_count = self
+            .user_repo
+            .count_user_contributions(user.id)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+
+        Ok(UserProfileResponse {
+            id: user.id,
+            username: user.username.unwrap_or_default(),
+            name: user.name.unwrap_or_default(),
+            email: user.email,
+            roles: user.roles,
+            institution: user.institution.unwrap_or_default(),
+            interests: user.interests,
+            avatar_url: user.avatar_url,
+            bio: user.bio,
+            website: user.website,
+            tier: user.tier,
+            nerd_balance: user.nerd_balance,
+            wallet_address: user.wallet_address,
+            created_at: user.created_at.to_string(),
+            updated_at: user.updated_at.to_string(),
+            projects_count,
+            bounties_count,
+            predictions_count,
+            contributions_count,
         })
     }
 }

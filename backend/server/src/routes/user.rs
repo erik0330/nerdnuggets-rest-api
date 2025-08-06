@@ -1,8 +1,9 @@
 use crate::{
     handler::user_handler::{
-        change_role, check_username, get_editors, get_my_activities, get_user, get_user_settings,
-        update_notification_settings, update_preferences_settings, update_privacy_settings,
-        update_profile_settings, update_user_onboarding, update_wallet_settings,
+        change_role, check_username, get_editors, get_my_activities, get_user,
+        get_user_profile_by_username, get_user_settings, update_notification_settings,
+        update_preferences_settings, update_privacy_settings, update_profile_settings,
+        update_user_onboarding, update_wallet_settings,
     },
     state::AppState,
 };
@@ -14,6 +15,7 @@ use axum::{
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/user", get(get_user))
+        .route("/user/profile/:username", get(get_user_profile_by_username))
         .route("/user/editors", get(get_editors))
         .route("/user/onboarding/:id", post(update_user_onboarding))
         .route("/user/relogin", post(change_role))
