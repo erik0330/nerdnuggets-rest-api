@@ -6,8 +6,8 @@ use types::dto::{
     UserAllSettingsResponse, UserCheckResponse, UserCheckUsernameOption,
     UserNotificationSettingsRequest, UserNotificationSettingsResponse, UserOnboardingRequest,
     UserPreferencesSettingsRequest, UserPreferencesSettingsResponse, UserPrivacySettingsRequest,
-    UserPrivacySettingsResponse, UserProfileSettingsRequest, UserProfileSettingsResponse,
-    UserWalletSettingsRequest, UserWalletSettingsResponse,
+    UserPrivacySettingsResponse, UserProfileResponse, UserProfileSettingsRequest,
+    UserProfileSettingsResponse, UserWalletSettingsRequest, UserWalletSettingsResponse,
 };
 use types::error::UserError;
 use types::models::{ActivityHistory, User, UserInfo};
@@ -1328,4 +1328,16 @@ pub async fn update_preferences_settings(
         .update_preferences_settings(user.id, payload)
         .await?;
     Ok(Json(result))
+}
+
+pub async fn get_user_profile_by_username(
+    Path(username): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<UserProfileResponse>, ApiError> {
+    let profile = state
+        .service
+        .user
+        .get_user_profile_by_username(&username)
+        .await?;
+    Ok(Json(profile))
 }

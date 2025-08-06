@@ -279,3 +279,28 @@ pub struct ForgotPasswordResponse {
 pub struct ResetPasswordResponse {
     pub message: String,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserProfileResponse {
+    pub id: Uuid,
+    pub username: String,
+    pub name: String,
+    pub email: String,
+    pub roles: Vec<String>,
+    pub institution: String,
+    pub interests: Vec<String>,
+    pub avatar_url: Option<String>,
+    pub bio: Option<String>,
+    pub website: Option<String>,
+    pub tier: String,
+    pub nerd_balance: i64,
+    pub wallet_address: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+    // Counts
+    pub projects_count: i64,
+    pub bounties_count: i64,
+    pub predictions_count: i64,
+    pub contributions_count: i64,
+}
