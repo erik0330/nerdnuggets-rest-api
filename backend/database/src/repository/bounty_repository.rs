@@ -2,7 +2,7 @@ use crate::pool::DatabasePool;
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::{models::{Bid, BidMilestone, BidMilestoneStatus, BidStatus, Bounty, BountyChat, BountyComment, BountyDifficulty, BountyMilestone, BountyStatus, BountyWorkSubmission, BountyMilestoneSubmission, BountySubmissionStatus}, UserRoleType};
+use types::{models::{Bid, BidMilestone, BidMilestoneStatus, BidMilestoneSubmission, BidMilestoneSubmissionStatus, BidStatus, Bounty, BountyChat, BountyComment, BountyDifficulty, BountyMilestone, BountyMilestoneSubmission, BountyStatus, BountySubmissionStatus, BountyWorkSubmission}, UserRoleType};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -385,6 +385,17 @@ impl BountyRepository {
             .fetch_all(self.db_conn.get_pool())
             .await?;
         Ok(milestones)
+    }
+
+    pub async fn get_bid_milestone_by_id(
+        &self,
+        milestone_id: Uuid
+    ) -> Option<BidMilestone> {
+        sqlx::query_as::<_, BidMilestone>("SELECT * FROM bid_milestone WHERE id = $1")
+            .bind(milestone_id)
+            .fetch_optional(self.db_conn.get_pool())
+            .await
+            .unwrap_or(None)
     }
 
     pub async fn get_winning_bid_milestones_by_bounty_id(
@@ -957,6 +968,97 @@ impl BountyRepository {
     pub async fn increment_comment_count(&self, id: Uuid) -> Result<bool, SqlxError> {
         let row = sqlx::query("UPDATE bounty SET count_comment = count_comment + 1 WHERE id = $1")
             .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    // Bid Milestone Submission Methods
+    pub async fn create_bid_milestone_submission(
+        &self,
+        bid_milestone_id: Uuid,
+        bid_id: Uuid,
+        bounty_id: Uuid,
+        nerd_id: &str,
+        milestone_number: i16,
+        notes: String,
+        attached_file_urls: Vec<String>,
+    ) -> Result<BidMilestoneSubmission, SqlxError> {
+        let submission = sqlx::query_as::<_, BidMilestoneSubmission>(
+            "INSERT INTO bid_milestone_submission (bid_milestone_id, bid_id, bounty_id, nerd_id, milestone_number, notes, attached_file_urls, status) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *"
+        )
+        .bind(bid_milestone_id)
+        .bind(bid_id)
+        .bind(bounty_id)
+        .bind(nerd_id)
+        .bind(milestone_number)
+        .bind(notes)
+        .bind(attached_file_urls)
+        .bind(BidMilestoneSubmissionStatus::Submitted)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(submission)
+    }
+
+    pub async fn get_bid_milestone_submission_by_id(
+        &self,
+        submission_id: Uuid,
+    ) -> Option<BidMilestoneSubmission> {
+        sqlx::query_as::<_, BidMilestoneSubmission>(
+            "SELECT * FROM bid_milestone_submission WHERE id = $1"
+        )
+        .bind(submission_id)
+        .fetch_optional(self.db_conn.get_pool())
+        .await
+        .unwrap_or(None)
+    }
+
+    pub async fn get_bid_milestone_submissions(
+        &self,
+        bid_milestone_id: Uuid,
+    ) -> Result<Vec<BidMilestoneSubmission>, SqlxError> {
+        let submissions = sqlx::query_as::<_, BidMilestoneSubmission>(
+            "SELECT * FROM bid_milestone_submission WHERE bid_milestone_id = $1 ORDER BY milestone_number"
+        )
+        .bind(bid_milestone_id)
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(submissions)
+    }
+
+    pub async fn update_bid_milestone_submission_status(
+        &self,
+        submission_id: Uuid,
+        status: BidMilestoneSubmissionStatus,
+        feedback: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let now = Utc::now();
+        let row = sqlx::query(
+            "UPDATE bid_milestone_submission SET status = $1, updated_at = $2, reviewed_at = $2,
+             approved_at = CASE WHEN $1 = 1 THEN $2 ELSE approved_at END,
+             rejected_at = CASE WHEN $1 = 2 THEN $2 ELSE rejected_at END,
+             feedback = $3
+             WHERE id = $4"
+        )
+        .bind(status)
+        .bind(now)
+        .bind(feedback)
+        .bind(submission_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn update_bid_milestone_status(
+        &self,
+        bid_milestone_id: Uuid,
+        status: BidMilestoneStatus,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bid_milestone SET status = $1, updated_at = $2 WHERE id = $3")
+            .bind(status)
+            .bind(Utc::now())
+            .bind(bid_milestone_id)
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)

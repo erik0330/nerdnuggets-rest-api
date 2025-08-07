@@ -6,13 +6,15 @@ use third_party_api::arweave::upload_bounty_creation;
 use types::dto::{
     BountyCreateRequest, BountyUpdateRequest, GetBidsOption, GetBountyChatNumbersResponse,
     GetBountyChatsOption, GetBountysOption, GetMyBidsOption, GetMyBountyStatsResponse,
-    GetSimilarBountiesOption, OffsetAndLimitOption, ReviewBountyRequest,
-    ReviewBountyWorkSubmissionRequest, SendBountyChatRequest, SubmitBidRequest,
-    SubmitBountyCommentRequest, SubmitBountyWorkRequest,
+    GetSimilarBountiesOption, OffsetAndLimitOption, ReviewBidMilestoneSubmissionRequest,
+    ReviewBountyRequest, ReviewBountyWorkSubmissionRequest, SendBountyChatRequest,
+    SubmitBidMilestoneWorkRequest, SubmitBidRequest, SubmitBountyCommentRequest,
+    SubmitBountyWorkRequest,
 };
 use types::error::{ApiError, DbError, ValidatedRequest};
 use types::models::{
-    BidInfo, BountyChatInfo, BountyCommentInfo, BountyInfo, BountyWorkSubmissionInfo, User,
+    BidInfo, BidMilestoneSubmission, BidMilestoneSubmissionStatus, BountyChatInfo,
+    BountyCommentInfo, BountyInfo, BountyWorkSubmissionInfo, User,
 };
 use types::UserRoleType;
 use utils::commons::uuid_from_str;
@@ -435,6 +437,59 @@ pub async fn review_bounty_work_submission(
         .service
         .bounty
         .review_bounty_work_submission(&submission_id, status, payload.admin_notes)
+        .await?;
+    Ok(Json(success))
+}
+
+// Bid Milestone Submission Handlers
+pub async fn submit_bid_milestone_work(
+    Extension(user): Extension<User>,
+    Path(bid_milestone_id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SubmitBidMilestoneWorkRequest>,
+) -> Result<Json<BidMilestoneSubmission>, ApiError> {
+    let submission = state
+        .service
+        .bounty
+        .submit_bid_milestone_work(&bid_milestone_id, user.id, payload)
+        .await?;
+
+    Ok(Json(submission))
+}
+
+pub async fn get_bid_milestone_submissions(
+    Path(bid_milestone_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<BidMilestoneSubmission>>, ApiError> {
+    let submissions = state
+        .service
+        .bounty
+        .get_bid_milestone_submissions(&bid_milestone_id)
+        .await?;
+    Ok(Json(submissions))
+}
+
+pub async fn review_bid_milestone_submission(
+    Path(submission_id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<ReviewBidMilestoneSubmissionRequest>,
+) -> Result<Json<bool>, ApiError> {
+    let status = match payload.status {
+        BidMilestoneSubmissionStatus::Approved => {
+            types::models::BidMilestoneSubmissionStatus::Approved
+        }
+        BidMilestoneSubmissionStatus::Rejected => {
+            types::models::BidMilestoneSubmissionStatus::Rejected
+        }
+        BidMilestoneSubmissionStatus::Submitted => {
+            return Err(DbError::Str("Invalid review status".to_string()).into());
+        }
+    };
+
+    let success = state
+        .service
+        .bounty
+        .review_bid_milestone_submission(&submission_id, status, payload.feedback)
         .await?;
     Ok(Json(success))
 }

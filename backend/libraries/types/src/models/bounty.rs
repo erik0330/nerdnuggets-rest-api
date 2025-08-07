@@ -289,6 +289,40 @@ pub struct BountyMilestoneSubmissionInfo {
     pub rejected_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BidMilestoneSubmission {
+    pub id: Uuid,
+    pub bid_milestone_id: Uuid,
+    pub bid_id: Uuid,
+    pub bounty_id: Uuid,
+    pub nerd_id: String,
+    pub milestone_number: i16,
+    pub notes: Option<String>,
+    pub attached_file_urls: Vec<String>,
+    pub status: BidMilestoneSubmissionStatus,
+    pub feedback: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub reviewed_at: Option<DateTime<Utc>>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub rejected_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub enum BidMilestoneSubmissionStatus {
+    Submitted,
+    Approved,
+    Rejected,
+}
+
+define_pg_enum!(BidMilestoneSubmissionStatus {
+    Submitted = 0,
+    Approved = 1,
+    Rejected = 2,
+});
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
 pub enum BountyStatus {
     PendingApproval,

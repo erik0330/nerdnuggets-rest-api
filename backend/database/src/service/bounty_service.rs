@@ -4,13 +4,13 @@ use std::sync::Arc;
 use types::{
     dto::{
         BountyChatBountyInfo, BountyChatUserInfo, BountyCreateRequest, BountyUpdateRequest,
-        ChatNumberInfo, SubmitBidRequest, SubmitBountyWorkRequest,
+        ChatNumberInfo, SubmitBidMilestoneWorkRequest, SubmitBidRequest, SubmitBountyWorkRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
-        BidInfo, BidStatus, Bounty, BountyChatInfo, BountyCommentInfo, BountyDifficulty,
-        BountyInfo, BountyMilestoneSubmissionInfo, BountyReviewType, BountyStatus,
-        BountyWorkSubmissionInfo, User,
+        BidInfo, BidMilestoneStatus, BidMilestoneSubmission, BidStatus, Bounty, BountyChatInfo,
+        BountyCommentInfo, BountyDifficulty, BountyInfo, BountyMilestoneSubmissionInfo,
+        BountyReviewType, BountyStatus, BountyWorkSubmissionInfo, User,
     },
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -971,6 +971,115 @@ impl BountyService {
                     )
                     .await;
             }
+        }
+
+        Ok(success)
+    }
+
+    pub async fn submit_bid_milestone_work(
+        &self,
+        bid_milestone_id: &str,
+        user_id: Uuid,
+        payload: SubmitBidMilestoneWorkRequest,
+    ) -> Result<BidMilestoneSubmission, ApiError> {
+        let milestone_uuid = uuid_from_str(bid_milestone_id)?;
+
+        // Get the bid milestone by ID
+        let bid_milestone = self
+            .bounty_repo
+            .get_bid_milestone_by_id(milestone_uuid)
+            .await
+            .ok_or_else(|| DbError::Str("Bid milestone not found".to_string()))?;
+
+        // Get the bid to verify the user is the bidder
+        let bid = self
+            .bounty_repo
+            .get_bid_by_id(bid_milestone.bid_id)
+            .await
+            .map_err(|_| DbError::Str("Bid not found".to_string()))?;
+
+        // Verify the user is the bid owner
+        if bid.user_id != user_id {
+            return Err(
+                DbError::Str("You can only submit work for your own bid".to_string()).into(),
+            );
+        }
+
+        // Verify the milestone status is InProgress
+        if bid_milestone.status != BidMilestoneStatus::InProgress {
+            return Err(DbError::Str(
+                "You can only submit work for milestones that are in progress".to_string(),
+            )
+            .into());
+        }
+
+        // Create the milestone submission
+        let submission = self
+            .bounty_repo
+            .create_bid_milestone_submission(
+                milestone_uuid,
+                bid.id,
+                bid.bounty_id,
+                &bid.nerd_id,
+                bid_milestone.number,
+                payload.notes,
+                payload.attached_file_urls,
+            )
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        Ok(submission)
+    }
+
+    pub async fn get_bid_milestone_submissions(
+        &self,
+        bid_milestone_id: &str,
+    ) -> Result<Vec<BidMilestoneSubmission>, ApiError> {
+        let bid_milestone_uuid = uuid_from_str(bid_milestone_id)?;
+
+        let submission = self
+            .bounty_repo
+            .get_bid_milestone_submissions(bid_milestone_uuid)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        Ok(submission)
+    }
+
+    pub async fn review_bid_milestone_submission(
+        &self,
+        submission_id: &str,
+        status: types::models::BidMilestoneSubmissionStatus,
+        feedback: Option<String>,
+    ) -> Result<bool, ApiError> {
+        let submission_uuid = uuid_from_str(submission_id)?;
+
+        let submission = self
+            .bounty_repo
+            .get_bid_milestone_submission_by_id(submission_uuid)
+            .await
+            .ok_or_else(|| DbError::Str("Milestone submission not found".to_string()))?;
+
+        // Update the submission status
+        let success = self
+            .bounty_repo
+            .update_bid_milestone_submission_status(submission_uuid, status, feedback)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        if success {
+            // Update the milestone status based on submission status
+            let new_milestone_status = match status {
+                types::models::BidMilestoneSubmissionStatus::Approved => {
+                    BidMilestoneStatus::Completed
+                }
+                _ => BidMilestoneStatus::InProgress,
+            };
+
+            let _ = self
+                .bounty_repo
+                .update_bid_milestone_status(submission.bid_milestone_id, new_milestone_status)
+                .await;
         }
 
         Ok(success)
