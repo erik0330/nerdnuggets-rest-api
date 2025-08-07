@@ -162,10 +162,11 @@ pub async fn submit_bid(
 }
 
 pub async fn select_as_winner(
+    Extension(user): Extension<User>,
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<bool>, ApiError> {
-    let res = state.service.bounty.select_as_winner(&id).await?;
+    let res = state.service.bounty.select_as_winner(&id, user.id).await?;
     Ok(Json(res))
 }
 
