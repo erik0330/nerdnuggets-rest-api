@@ -1,10 +1,11 @@
 use crate::{
     handler::bounty_handler::{
         create_bidder_chat, create_bounty, delete_bounty, finalize_bounty_work_submission,
-        get_bids, get_bounty_chat_numbers, get_bounty_chats, get_bounty_comments,
-        get_bounty_work_submission, get_my_bids, get_my_bounty_stats, get_winning_bid_milestones,
-        mark_chat_as_read, reject_bid, review_bounty, review_bounty_work_submission,
-        save_bounty_work, select_as_winner, send_bounty_chat, submit_bid, submit_bounty_comment,
+        get_bid_milestone_submissions, get_bids, get_bounty_chat_numbers, get_bounty_chats,
+        get_bounty_comments, get_bounty_work_submission, get_my_bids, get_my_bounty_stats,
+        get_winning_bid_milestones, mark_chat_as_read, reject_bid, review_bid_milestone_submission,
+        review_bounty, review_bounty_work_submission, save_bounty_work, select_as_winner,
+        send_bounty_chat, submit_bid, submit_bid_milestone_work, submit_bounty_comment,
         update_bounty,
     },
     state::AppState,
@@ -53,5 +54,17 @@ pub fn routes() -> Router<AppState> {
         .route(
             "/bounty-work/:submission_id/review",
             post(review_bounty_work_submission),
+        )
+        .route(
+            "/bounty/bid-milestone/:bid_milestone_id/submit-work",
+            post(submit_bid_milestone_work),
+        )
+        .route(
+            "/bounty/bid-milestone/:bid_milestone_id/submissions",
+            get(get_bid_milestone_submissions),
+        )
+        .route(
+            "/bounty/bid-milestone-submission/:submission_id/review",
+            post(review_bid_milestone_submission),
         )
 }

@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::models::{BidStatus, BountyDifficulty, BountyReviewType, BountyStatus};
+use crate::models::{
+    BidMilestoneSubmissionStatus, BidStatus, BountyDifficulty, BountyReviewType, BountyStatus,
+};
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -222,4 +224,18 @@ pub struct BountyMilestoneSubmission {
     pub description: String,
     pub deliverable_files: Vec<String>,
     pub additional_notes: Option<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitBidMilestoneWorkRequest {
+    pub notes: String,
+    pub attached_file_urls: Vec<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ReviewBidMilestoneSubmissionRequest {
+    pub status: BidMilestoneSubmissionStatus,
+    pub feedback: Option<String>,
 }
