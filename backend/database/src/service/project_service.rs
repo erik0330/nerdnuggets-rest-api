@@ -4,8 +4,9 @@ use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
-        AdminProjectDashboardCounts, ProjectCountsResponse, ProjectUpdateStep1Request,
-        ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
+        AdminProjectDashboardCounts, EditorDashboardCounts, ProjectCountsResponse,
+        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+        UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -911,5 +912,22 @@ impl ProjectService {
         }
 
         Ok(dashboard_counts)
+    }
+
+    pub async fn get_editor_dashboard_counts(
+        &self,
+        editor_id: Uuid,
+    ) -> Result<EditorDashboardCounts, ApiError> {
+        let (pending_reviews, completed_reviews, total_assigned) = self
+            .project_repo
+            .get_editor_dashboard_counts(editor_id)
+            .await
+            .map_err(|_| DbError::Str("Get editor dashboard counts failed".to_string()))?;
+
+        Ok(EditorDashboardCounts {
+            pending_reviews,
+            completed_reviews,
+            total_assigned,
+        })
     }
 }

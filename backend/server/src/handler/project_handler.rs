@@ -3,10 +3,11 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
-    AdminProjectDashboardCounts, AssignEditorRequest, GetDaosOption, GetProjectCommentsOption,
-    GetProjectsOption, GetSimilarProjectsOption, MakeDecisionRequest, ProjectCountsResponse,
-    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-    SubmitDaoVoteRequest, SubmitProjectCommentRequest, UpdateMilestoneRequest,
+    AdminProjectDashboardCounts, AssignEditorRequest, EditorDashboardCounts, GetDaosOption,
+    GetProjectCommentsOption, GetProjectsOption, GetSimilarProjectsOption, MakeDecisionRequest,
+    ProjectCountsResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+    ProjectUpdateStep3Request, SubmitDaoVoteRequest, SubmitProjectCommentRequest,
+    UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
@@ -347,6 +348,22 @@ pub async fn get_admin_project_dashboard_counts(
         .service
         .project
         .get_admin_project_dashboard_counts()
+        .await?;
+    Ok(Json(counts))
+}
+
+pub async fn get_editor_dashboard_counts(
+    Extension(user): Extension<User>,
+    Extension(role): Extension<String>,
+    State(state): State<AppState>,
+) -> Result<Json<EditorDashboardCounts>, ApiError> {
+    if role != UserRoleType::Editor.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+    let counts = state
+        .service
+        .project
+        .get_editor_dashboard_counts(user.id)
         .await?;
     Ok(Json(counts))
 }

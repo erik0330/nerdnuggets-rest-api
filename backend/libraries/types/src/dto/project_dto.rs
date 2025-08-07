@@ -170,3 +170,11 @@ pub struct AdminProjectDashboardCounts {
     pub funding: i64,
     pub completed: i64,
 }
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct EditorDashboardCounts {
+    pub pending_reviews: i64,
+    pub completed_reviews: i64,
+    pub total_assigned: i64,
+}
