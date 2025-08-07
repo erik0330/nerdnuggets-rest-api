@@ -113,27 +113,26 @@ impl BountyService {
             )
             .await
             .map_err(|err| DbError::Str(err.to_string()))?;
-        if payload.by_milestone {
-            let mut number = 1;
-            for milestone in payload.milestones.unwrap_or_default() {
-                match self
-                    .bounty_repo
-                    .create_milestone(
-                        bounty.id,
-                        number,
-                        milestone.title,
-                        milestone.description,
-                        milestone.reward_amount,
-                        milestone.timeline,
-                        milestone.requirements.unwrap_or_default(),
-                        milestone.deliverables.unwrap_or_default(),
-                    )
-                    .await
-                {
-                    Ok(f) if f => number += 1,
-                    Ok(f) => println!("{f}"),
-                    Err(e) => println!("{:?}", e),
-                }
+
+        let mut number = 1;
+        for milestone in payload.milestones.unwrap_or_default() {
+            match self
+                .bounty_repo
+                .create_milestone(
+                    bounty.id,
+                    number,
+                    milestone.title,
+                    milestone.description,
+                    milestone.reward_amount,
+                    milestone.timeline,
+                    milestone.requirements.unwrap_or_default(),
+                    milestone.deliverables.unwrap_or_default(),
+                )
+                .await
+            {
+                Ok(f) if f => number += 1,
+                Ok(f) => println!("{f}"),
+                Err(e) => println!("{:?}", e),
             }
         }
         self.bounty_to_info(&bounty).await
