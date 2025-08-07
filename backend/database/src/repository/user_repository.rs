@@ -590,11 +590,11 @@ impl UserRepository {
     }
 
     pub async fn count_user_contributions(&self, user_id: Uuid) -> Result<i64, SqlxError> {
-        // Count successful bids (accepted bids) and completed work submissions
-        // BidStatus::Accepted = 2, BountySubmissionStatus::Approved = 3
+        // Count successful bids (accepted or in progress bids) and completed work submissions
+        // BidStatus::Accepted = 2, BidStatus::InProgress = 4, BountySubmissionStatus::Approved = 3
         let count = sqlx::query_scalar::<_, i64>(
             "SELECT COUNT(*) FROM (
-                SELECT id FROM bid WHERE user_id = $1 AND status = 2
+                SELECT id FROM bid WHERE user_id = $1 AND (status = 2 OR status = 4)
                 UNION ALL
                 SELECT id FROM bounty_work_submission WHERE user_id = $1 AND status = 3
             ) as contributions",

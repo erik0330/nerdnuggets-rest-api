@@ -2,7 +2,7 @@ use crate::pool::DatabasePool;
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::{models::{Bid, BidMilestone, BidStatus, Bounty, BountyChat, BountyComment, BountyDifficulty, BountyMilestone, BountyStatus, BountyWorkSubmission, BountyMilestoneSubmission, BountySubmissionStatus}, UserRoleType};
+use types::{models::{Bid, BidMilestone, BidMilestoneStatus, BidStatus, Bounty, BountyChat, BountyComment, BountyDifficulty, BountyMilestone, BountyStatus, BountyWorkSubmission, BountyMilestoneSubmission, BountySubmissionStatus}, UserRoleType};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -340,7 +340,7 @@ impl BountyRepository {
         bid_id: Uuid,    
     ) -> Result<bool, SqlxError> {
         let row = sqlx::query("UPDATE bid SET status = $1, updated_at = $2, accepted_at = $2 WHERE id = $3")
-            .bind(BidStatus::Accepted)
+            .bind(BidStatus::InProgress)
             .bind(Utc::now())
             .bind(bid_id)
             .execute(self.db_conn.get_pool())
@@ -356,6 +356,9 @@ impl BountyRepository {
                 .bind(BidStatus::UnderReview)
                 .execute(self.db_conn.get_pool())
                 .await?;
+            
+            // Update the first milestone status to InProgress
+            let _ = self.update_first_milestone_to_in_progress(bid_id).await;
         }
         Ok(res)
     }
@@ -391,11 +394,12 @@ impl BountyRepository {
         let bid_milestones = sqlx::query_as::<_, BidMilestone>(
             "SELECT bm.* FROM bid_milestone bm 
              INNER JOIN bid b ON bm.bid_id = b.id 
-             WHERE bm.bounty_id = $1 AND b.status = $2 
+             WHERE bm.bounty_id = $1 AND (b.status = $2 OR b.status = $3) 
              ORDER BY bm.number"
         )
         .bind(bounty_id)
         .bind(BidStatus::Accepted)
+        .bind(BidStatus::InProgress)
         .fetch_all(self.db_conn.get_pool())
         .await?;
         Ok(bid_milestones)
@@ -424,6 +428,19 @@ impl BountyRepository {
             .fetch_one(self.db_conn.get_pool())
             .await?;
         Ok(bid_milestone)
+    }
+
+    pub async fn update_first_milestone_to_in_progress(
+        &self,
+        bid_id: Uuid,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bid_milestone SET status = $1, updated_at = $2 WHERE bid_id = $3 AND number = 1")
+            .bind(BidMilestoneStatus::InProgress)
+            .bind(Utc::now())
+            .bind(bid_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
     }
 
     pub async fn get_bounty_comments(
