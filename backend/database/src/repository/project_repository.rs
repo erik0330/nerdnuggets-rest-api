@@ -890,4 +890,41 @@ impl ProjectRepository {
             .await?;
         Ok(row.rows_affected() == 1)
     }
+
+    pub async fn get_editor_dashboard_counts(
+        &self,
+        editor_id: Uuid,
+    ) -> Result<(i64, i64, i64), SqlxError> {
+        // Get pending reviews (status = 0)
+        let pending_reviews = sqlx::query!(
+            "SELECT COUNT(*) as count FROM project_editor WHERE user_id = $1 AND status = 0",
+            editor_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        // Get completed reviews (status = 1, 2, or 3)
+        let completed_reviews = sqlx::query!(
+            "SELECT COUNT(*) as count FROM project_editor WHERE user_id = $1 AND status IN (1, 2, 3)",
+            editor_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        // Get total assigned projects
+        let total_assigned = sqlx::query!(
+            "SELECT COUNT(*) as count FROM project_editor WHERE user_id = $1",
+            editor_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        Ok((pending_reviews, completed_reviews, total_assigned))
+    }
 }

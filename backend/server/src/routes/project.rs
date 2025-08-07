@@ -3,10 +3,10 @@ use crate::{
         prediction_handler::get_my_prediction_stats,
         project_handler::{
             assign_editor, create_project, delete_project, get_admin_project_dashboard_counts,
-            get_dao_by_id, get_milestones, get_my_dao_vote, get_project_by_id,
-            get_project_comments, make_decision, submit_dao_vote, submit_project,
-            submit_project_comment, update_milestone, update_project_step_1, update_project_step_2,
-            update_project_step_3,
+            get_dao_by_id, get_editor_dashboard_counts, get_milestones, get_my_dao_vote,
+            get_project_by_id, get_project_comments, make_decision, submit_dao_vote,
+            submit_project, submit_project_comment, update_milestone, update_project_step_1,
+            update_project_step_2, update_project_step_3,
         },
     },
     state::AppState,
@@ -39,4 +39,5 @@ pub fn routes() -> Router<AppState> {
             "/project/admin/counts",
             get(get_admin_project_dashboard_counts),
         )
+        .route("/project/editor/counts", get(get_editor_dashboard_counts))
 }
