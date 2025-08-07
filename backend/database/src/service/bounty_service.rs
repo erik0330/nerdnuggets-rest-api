@@ -338,7 +338,7 @@ impl BountyService {
         Ok(bid.to_info(user.to_info(), milestones))
     }
 
-    pub async fn select_as_winner(&self, id: &str) -> Result<bool, ApiError> {
+    pub async fn select_as_winner(&self, id: &str, user_id: Uuid) -> Result<bool, ApiError> {
         let bid_id = uuid_from_str(id)?;
         let bid = self
             .bounty_repo
@@ -350,7 +350,7 @@ impl BountyService {
             .get_bounty_by_id(bid.bounty_id)
             .await
             .ok_or(DbError::Str("Bounty not found".to_string()))?;
-        if bounty.user_id != bid.user_id {
+        if bounty.user_id != user_id {
             return Err(DbError::Str("You are not the owner of this bounty".to_string()).into());
         }
         if bounty.status != BountyStatus::Open {
