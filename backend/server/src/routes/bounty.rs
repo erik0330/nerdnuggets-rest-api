@@ -2,9 +2,10 @@ use crate::{
     handler::bounty_handler::{
         create_bidder_chat, create_bounty, delete_bounty, finalize_bounty_work_submission,
         get_bids, get_bounty_chat_numbers, get_bounty_chats, get_bounty_comments,
-        get_bounty_work_submission, get_my_bids, get_my_bounty_stats, mark_chat_as_read,
-        reject_bid, review_bounty, review_bounty_work_submission, save_bounty_work,
-        select_as_winner, send_bounty_chat, submit_bid, submit_bounty_comment, update_bounty,
+        get_bounty_work_submission, get_my_bids, get_my_bounty_stats, get_winning_bid_milestones,
+        mark_chat_as_read, reject_bid, review_bounty, review_bounty_work_submission,
+        save_bounty_work, select_as_winner, send_bounty_chat, submit_bid, submit_bounty_comment,
+        update_bounty,
     },
     state::AppState,
 };
@@ -20,6 +21,10 @@ pub fn routes() -> Router<AppState> {
         .route("/bounty/:id", delete(delete_bounty))
         .route("/bounty/:id/bid", get(get_bids))
         .route("/bounty/:id/bid", post(submit_bid))
+        .route(
+            "/bounty/:id/bid-milestones",
+            get(get_winning_bid_milestones),
+        )
         .route("/bounty/:id/comment", get(get_bounty_comments))
         .route("/bounty/:id/comment", post(submit_bounty_comment))
         .route("/bounty/:id/review", post(review_bounty))

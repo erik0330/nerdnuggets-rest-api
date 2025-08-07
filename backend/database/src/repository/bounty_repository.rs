@@ -384,6 +384,23 @@ impl BountyRepository {
         Ok(milestones)
     }
 
+    pub async fn get_winning_bid_milestones_by_bounty_id(
+        &self,
+        bounty_id: Uuid
+    ) -> Result<Vec<BidMilestone>, SqlxError> {
+        let bid_milestones = sqlx::query_as::<_, BidMilestone>(
+            "SELECT bm.* FROM bid_milestone bm 
+             INNER JOIN bid b ON bm.bid_id = b.id 
+             WHERE bm.bounty_id = $1 AND b.status = $2 
+             ORDER BY bm.number"
+        )
+        .bind(bounty_id)
+        .bind(BidStatus::Accepted)
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(bid_milestones)
+    }
+
     pub async fn create_bid_milestone(
         &self,
         bid_id: Uuid,

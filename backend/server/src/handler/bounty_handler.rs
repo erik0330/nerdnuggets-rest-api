@@ -138,6 +138,18 @@ pub async fn get_bids(
     Ok(Json(bids))
 }
 
+pub async fn get_winning_bid_milestones(
+    Path(bounty_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<types::models::BidMilestone>>, ApiError> {
+    let milestones = state
+        .service
+        .bounty
+        .get_winning_bid_milestones_by_bounty_id(&bounty_id)
+        .await?;
+    Ok(Json(milestones))
+}
+
 pub async fn get_my_bids(
     Extension(user): Extension<User>,
     State(state): State<AppState>,

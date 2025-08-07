@@ -250,6 +250,19 @@ impl BountyService {
         Ok(bid_infos)
     }
 
+    pub async fn get_winning_bid_milestones_by_bounty_id(
+        &self,
+        bounty_id: &str,
+    ) -> Result<Vec<types::models::BidMilestone>, ApiError> {
+        let bounty = self.get_bounty_by_id_or_nerd_id(bounty_id).await?;
+        let milestones = self
+            .bounty_repo
+            .get_winning_bid_milestones_by_bounty_id(bounty.id)
+            .await
+            .map_err(|_| DbError::Str("Failed to get winning bid milestones".to_string()))?;
+        Ok(milestones)
+    }
+
     pub async fn get_my_bids(
         &self,
         user: User,

@@ -154,6 +154,7 @@ pub struct BidMilestone {
     pub description: String,
     pub amount: i32,
     pub timeline: String,
+    pub status: BidMilestoneStatus,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -377,6 +378,23 @@ define_pg_enum!(BountySubmissionStatus {
     Approved = 3,
     Rejected = 4,
     RequestRevision = 5,
+});
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
+pub enum BidMilestoneStatus {
+    Pending,
+    InProgress,
+    Submitted,
+    Completed,
+    Rejected,
+}
+
+define_pg_enum!(BidMilestoneStatus {
+    Pending = 0,
+    InProgress = 1,
+    Submitted = 2,
+    Completed = 3,
+    Rejected = 4,
 });
 
 impl Bounty {
