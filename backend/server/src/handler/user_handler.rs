@@ -75,6 +75,7 @@ pub async fn get_my_activities(
 }
 
 pub async fn check_username(
+    Extension(user): Extension<User>,
     Query(opts): Query<UserCheckUsernameOption>,
     State(state): State<AppState>,
 ) -> Result<Json<UserCheckResponse>, ApiError> {
@@ -83,6 +84,9 @@ pub async fn check_username(
         return Ok(Json(UserCheckResponse {
             is_available: false,
         }));
+    }
+    if username == user.username.unwrap_or_default() {
+        return Ok(Json(UserCheckResponse { is_available: true }));
     }
 
     // Validate username format: only alphanumeric (letters and numbers)
