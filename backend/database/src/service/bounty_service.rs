@@ -771,8 +771,8 @@ impl BountyService {
             );
         }
 
-        // Verify the bid is accepted (winner)
-        if bid.status != BidStatus::Accepted {
+        // Verify the bid is accepted (winner) or in progress
+        if bid.status != BidStatus::Accepted && bid.status != BidStatus::InProgress {
             return Err(
                 DbError::Str("You can only submit work for accepted bids".to_string()).into(),
             );
