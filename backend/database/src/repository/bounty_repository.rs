@@ -510,6 +510,30 @@ impl BountyRepository {
         Ok(row.rows_affected() == 1)
     }
 
+    pub async fn update_bounty_status_with_reason(
+        &self,
+        id: Uuid,
+        status: BountyStatus,
+        admin_notes: Option<String>,
+        approved_at: Option<DateTime<Utc>>,
+        canceled_at: Option<DateTime<Utc>>,
+        started_at: Option<DateTime<Utc>>,
+        cancellation_reason: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bounty SET status = $1, admin_notes = $2, updated_at = $3, approved_at = $4, canceled_at = $5, started_at = $6, cancellation_reason = $7 WHERE id = $8")
+            .bind(status)
+            .bind(admin_notes)
+            .bind(Utc::now())
+            .bind(approved_at)
+            .bind(canceled_at)
+            .bind(started_at)
+            .bind(cancellation_reason)
+            .bind(id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
     pub async fn update_bounty_arweave_tx_id(
         &self,
         id: Uuid,
@@ -1059,6 +1083,35 @@ impl BountyRepository {
             .bind(status)
             .bind(Utc::now())
             .bind(bid_milestone_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_next_bid_milestone(
+        &self,
+        bid_id: Uuid,
+        milestone_number: i16,
+    ) -> Option<BidMilestone> {
+        sqlx::query_as::<_, BidMilestone>(
+            "SELECT * FROM bid_milestone WHERE bid_id = $1 AND number = $2 + 1 ORDER BY number ASC LIMIT 1"
+        )
+        .bind(bid_id)
+        .bind(milestone_number)
+        .fetch_optional(self.db_conn.get_pool())
+        .await
+        .unwrap_or(None)
+    }
+
+    pub async fn update_bid_status(
+        &self,
+        bid_id: Uuid,
+        status: BidStatus,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query("UPDATE bid SET status = $1, updated_at = $2 WHERE id = $3")
+            .bind(status)
+            .bind(Utc::now())
+            .bind(bid_id)
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)
