@@ -1005,14 +1005,6 @@ impl BountyService {
             );
         }
 
-        // Verify the milestone status is InProgress
-        if bid_milestone.status != BidMilestoneStatus::InProgress {
-            return Err(DbError::Str(
-                "You can only submit work for milestones that are in progress".to_string(),
-            )
-            .into());
-        }
-
         // Create the milestone submission
         let submission = self
             .bounty_repo
@@ -1027,6 +1019,14 @@ impl BountyService {
             )
             .await
             .map_err(|e| DbError::Str(e.to_string()))?;
+
+        // Update the milestone status to Submitted
+        if bid_milestone.status != BidMilestoneStatus::Completed {
+            let _ = self
+                .bounty_repo
+                .update_bid_milestone_status(milestone_uuid, BidMilestoneStatus::Submitted)
+                .await;
+        }
 
         Ok(submission)
     }
@@ -1072,6 +1072,9 @@ impl BountyService {
             let new_milestone_status = match status {
                 types::models::BidMilestoneSubmissionStatus::Approved => {
                     BidMilestoneStatus::Completed
+                }
+                types::models::BidMilestoneSubmissionStatus::Rejected => {
+                    BidMilestoneStatus::Rejected
                 }
                 _ => BidMilestoneStatus::InProgress,
             };
