@@ -54,6 +54,7 @@ pub struct Project {
 pub struct ProjectInfo {
     pub id: Uuid,
     pub nerd_id: String,
+    pub proposal_id: i64,
     pub user: UserInfo,
     pub title: Option<String>,
     pub description: Option<String>,
@@ -272,6 +273,7 @@ impl Project {
         ProjectInfo {
             id: self.id,
             nerd_id: self.nerd_id.clone(),
+            proposal_id: self.proposal_id,
             user,
             title: self.title.clone(),
             description: self.description.clone(),
