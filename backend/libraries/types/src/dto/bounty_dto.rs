@@ -239,3 +239,16 @@ pub struct ReviewBidMilestoneSubmissionRequest {
     pub status: BidMilestoneSubmissionStatus,
     pub feedback: Option<String>,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BountyActionRequest {
+    pub action: BountyAction,
+    pub admin_notes: Option<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub enum BountyAction {
+    Complete,
+    Reject,
+}

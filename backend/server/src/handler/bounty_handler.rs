@@ -4,12 +4,12 @@ use axum::{Extension, Json};
 
 use third_party_api::arweave::upload_bounty_creation;
 use types::dto::{
-    BountyCreateRequest, BountyUpdateRequest, GetBidsOption, GetBountyChatNumbersResponse,
-    GetBountyChatsOption, GetBountysOption, GetMyBidsOption, GetMyBountyStatsResponse,
-    GetSimilarBountiesOption, OffsetAndLimitOption, ReviewBidMilestoneSubmissionRequest,
-    ReviewBountyRequest, ReviewBountyWorkSubmissionRequest, SendBountyChatRequest,
-    SubmitBidMilestoneWorkRequest, SubmitBidRequest, SubmitBountyCommentRequest,
-    SubmitBountyWorkRequest,
+    BountyActionRequest, BountyCreateRequest, BountyUpdateRequest, GetBidsOption,
+    GetBountyChatNumbersResponse, GetBountyChatsOption, GetBountysOption, GetMyBidsOption,
+    GetMyBountyStatsResponse, GetSimilarBountiesOption, OffsetAndLimitOption,
+    ReviewBidMilestoneSubmissionRequest, ReviewBountyRequest, ReviewBountyWorkSubmissionRequest,
+    SendBountyChatRequest, SubmitBidMilestoneWorkRequest, SubmitBidRequest,
+    SubmitBountyCommentRequest, SubmitBountyWorkRequest,
 };
 use types::error::{ApiError, DbError, ValidatedRequest};
 use types::models::{
@@ -490,6 +490,20 @@ pub async fn review_bid_milestone_submission(
         .service
         .bounty
         .review_bid_milestone_submission(&submission_id, status, payload.feedback)
+        .await?;
+    Ok(Json(success))
+}
+
+pub async fn handle_bounty_action(
+    Extension(user): Extension<User>,
+    Path(bounty_id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<BountyActionRequest>,
+) -> Result<Json<bool>, ApiError> {
+    let success = state
+        .service
+        .bounty
+        .handle_bounty_action(&bounty_id, user.id, payload.action, payload.admin_notes)
         .await?;
     Ok(Json(success))
 }

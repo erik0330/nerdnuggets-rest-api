@@ -3,8 +3,9 @@ use chrono::{Datelike, NaiveDate, Utc};
 use std::sync::Arc;
 use types::{
     dto::{
-        BountyChatBountyInfo, BountyChatUserInfo, BountyCreateRequest, BountyUpdateRequest,
-        ChatNumberInfo, SubmitBidMilestoneWorkRequest, SubmitBidRequest, SubmitBountyWorkRequest,
+        BountyAction, BountyChatBountyInfo, BountyChatUserInfo, BountyCreateRequest,
+        BountyUpdateRequest, ChatNumberInfo, SubmitBidMilestoneWorkRequest, SubmitBidRequest,
+        SubmitBountyWorkRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -912,7 +913,7 @@ impl BountyService {
                     bounty.admin_notes,
                     bounty.approved_at,
                     bounty.rejected_at,
-                    Some(Utc::now()),
+                    bounty.started_at,
                 )
                 .await;
         }
@@ -967,7 +968,7 @@ impl BountyService {
                         bounty.admin_notes,
                         bounty.approved_at,
                         bounty.rejected_at,
-                        Some(Utc::now()),
+                        bounty.started_at,
                     )
                     .await;
             }
@@ -1060,6 +1061,12 @@ impl BountyService {
             .await
             .ok_or_else(|| DbError::Str("Milestone submission not found".to_string()))?;
 
+        let bid_milestone = self
+            .bounty_repo
+            .get_bid_milestone_by_id(submission.bid_milestone_id)
+            .await
+            .ok_or_else(|| DbError::Str("Bid milestone not found".to_string()))?;
+
         // Update the submission status
         let success = self
             .bounty_repo
@@ -1067,24 +1074,138 @@ impl BountyService {
             .await
             .map_err(|e| DbError::Str(e.to_string()))?;
 
-        if success {
+        if success && bid_milestone.status != BidMilestoneStatus::Completed {
             // Update the milestone status based on submission status
             let new_milestone_status = match status {
                 types::models::BidMilestoneSubmissionStatus::Approved => {
                     BidMilestoneStatus::Completed
                 }
-                types::models::BidMilestoneSubmissionStatus::Rejected => {
-                    BidMilestoneStatus::Rejected
-                }
                 _ => BidMilestoneStatus::InProgress,
             };
 
-            let _ = self
+            match self
                 .bounty_repo
                 .update_bid_milestone_status(submission.bid_milestone_id, new_milestone_status)
-                .await;
+                .await
+            {
+                Ok(_) => {
+                    if new_milestone_status == BidMilestoneStatus::Completed {
+                        // Update next bid milestone status to InProgress
+                        if let Some(next_milestone) = self
+                            .bounty_repo
+                            .get_next_bid_milestone(bid_milestone.bid_id, bid_milestone.number) // TODO: Implement this
+                            .await
+                        {
+                            let _ = self
+                                .bounty_repo
+                                .update_bid_milestone_status(
+                                    next_milestone.id,
+                                    BidMilestoneStatus::InProgress,
+                                )
+                                .await;
+                        } else {
+                            // Update bid status to Completed
+                            let _ = self
+                                .bounty_repo
+                                .update_bid_status(bid_milestone.bid_id, BidStatus::Completed)
+                                .await;
+
+                            // Update bounty status to UnderReview
+                            let bounty = self
+                                .bounty_repo
+                                .get_bounty_by_id(bid_milestone.bounty_id)
+                                .await
+                                .ok_or_else(|| DbError::Str("Bounty not found".to_string()))?;
+
+                            if bounty.status != BountyStatus::UnderReview {
+                                let _ = self
+                                    .bounty_repo
+                                    .update_bounty_status(
+                                        bounty.id,
+                                        BountyStatus::UnderReview,
+                                        bounty.admin_notes,
+                                        bounty.approved_at,
+                                        bounty.rejected_at,
+                                        bounty.started_at,
+                                    )
+                                    .await;
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    return Err(DbError::Str(e.to_string()).into());
+                }
+            }
         }
 
         Ok(success)
+    }
+
+    pub async fn handle_bounty_action(
+        &self,
+        bounty_id: &str,
+        user_id: Uuid,
+        action: BountyAction,
+        admin_notes: Option<String>,
+    ) -> Result<bool, ApiError> {
+        let bounty_uuid = uuid_from_str(bounty_id)?;
+
+        let bounty = self
+            .bounty_repo
+            .get_bounty_by_id(bounty_uuid)
+            .await
+            .ok_or(DbError::Str("Bounty not found".to_string()))?;
+
+        // Verify the user is the bounty owner
+        if bounty.user_id != user_id {
+            return Err(DbError::Str("You are not the owner of this bounty".to_string()).into());
+        }
+
+        // Check if bounty can be acted upon (must be in progress or under review)
+        if bounty.status != BountyStatus::InProgress && bounty.status != BountyStatus::UnderReview {
+            return Err(DbError::Str(
+                "Bounty cannot be acted upon in its current status".to_string(),
+            )
+            .into());
+        }
+
+        let success = match action {
+            BountyAction::Complete => {
+                // Update bounty status to Completed
+                self.bounty_repo
+                    .update_bounty_status(
+                        bounty.id,
+                        BountyStatus::Completed,
+                        admin_notes,
+                        bounty.approved_at,
+                        bounty.rejected_at,
+                        Some(Utc::now()),
+                    )
+                    .await
+                    .unwrap_or_default()
+            }
+            BountyAction::Reject => {
+                // Update bounty status to Cancelled and set rejection reason
+                self.bounty_repo
+                    .update_bounty_status_with_reason(
+                        bounty.id,
+                        BountyStatus::Cancelled,
+                        admin_notes.clone(),
+                        bounty.approved_at,
+                        Some(Utc::now()),
+                        Some(Utc::now()),
+                        admin_notes,
+                    )
+                    .await
+                    .unwrap_or_default()
+            }
+        };
+
+        if !success {
+            return Err(DbError::Str("Failed to process bounty action".to_string()).into());
+        }
+
+        Ok(true)
     }
 }
