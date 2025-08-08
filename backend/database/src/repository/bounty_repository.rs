@@ -79,7 +79,7 @@ impl BountyRepository {
         .bind(cover_photo)
         .bind(category)
         .bind(difficulty)
-        .bind(tags)
+        .bind(tags.unwrap_or_default())
         .bind(reward_amount)
         .bind(reward_currency)
         .bind(deadline)
