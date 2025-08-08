@@ -252,7 +252,8 @@ impl ProjectService {
         for pro in projects {
             if let Some(user) = self.user_repo.get_user_by_id(pro.user_id).await {
                 let category = self.util_repo.get_category_by_ids(&pro.category).await;
-                project_infos.push(pro.to_info(user.to_info(), None, category));
+                let milestones = self.project_repo.get_milestones(pro.id).await;
+                project_infos.push(pro.to_info(user.to_info(), None, category, milestones));
             }
         }
         Ok(project_infos)
@@ -800,7 +801,8 @@ impl ProjectService {
         for pro in similar_projects {
             if let Some(user) = self.user_repo.get_user_by_id(pro.user_id).await {
                 let category = self.util_repo.get_category_by_ids(&pro.category).await;
-                project_infos.push(pro.to_info(user.to_info(), None, category));
+                let milestones = self.project_repo.get_milestones(pro.id).await;
+                project_infos.push(pro.to_info(user.to_info(), None, category, milestones));
             }
         }
 

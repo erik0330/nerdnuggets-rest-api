@@ -205,7 +205,7 @@ pub struct ProjectItemInfo {
     pub funding_amount: i32,
     pub count_contributors: i32,
     pub count_view: i32,
-
+    pub milestones: Vec<Milestone>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub dao_at: Option<DateTime<Utc>>,
@@ -319,6 +319,7 @@ impl ProjectItem {
         user: UserInfo,
         editor: Option<ProjectEditorInfo>,
         category: Vec<Category>,
+        milestones: Vec<Milestone>,
     ) -> ProjectItemInfo {
         ProjectItemInfo {
             id: self.id,
@@ -338,6 +339,7 @@ impl ProjectItem {
             funding_amount: self.funding_amount,
             count_contributors: self.count_contributors,
             count_view: self.count_view,
+            milestones,
             created_at: self.created_at,
             updated_at: self.updated_at,
             dao_at: self.dao_at,
