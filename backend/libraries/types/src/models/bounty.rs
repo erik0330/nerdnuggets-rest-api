@@ -310,7 +310,6 @@ pub struct BidMilestoneSubmission {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
-#[serde(rename_all = "camelCase")]
 pub enum BidMilestoneSubmissionStatus {
     Submitted,
     Approved,
