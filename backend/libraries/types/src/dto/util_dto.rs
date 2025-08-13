@@ -73,6 +73,17 @@ pub struct GetCategoryOption {
     pub limit: Option<i32>,
 }
 
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateCategoryRequest {
+    #[validate(length(
+        min = 2,
+        max = 255,
+        message = "Category name must be between 1 and 255 characters"
+    ))]
+    pub name: String,
+}
+
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDegreeOption {

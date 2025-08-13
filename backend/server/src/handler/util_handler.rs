@@ -6,9 +6,10 @@ use axum::{
 };
 use types::{
     dto::{
-        ExtractProjectInfoRequest, GetCategoryOption, GetCityOption, GetCityResponse,
-        GetCountryOption, GetCountryResponse, GetInstitutionDetailItem, GetInstitutionDetailOption,
-        GetInstitutionsItem, GetInstitutionsOption, RemoveFileFromS3Request,
+        CreateCategoryRequest, ExtractProjectInfoRequest, GetCategoryOption, GetCityOption,
+        GetCityResponse, GetCountryOption, GetCountryResponse, GetInstitutionDetailItem,
+        GetInstitutionDetailOption, GetInstitutionsItem, GetInstitutionsOption,
+        RemoveFileFromS3Request,
     },
     error::{ApiError, UploadError, ValidatedRequest},
     models::Category,
@@ -91,6 +92,14 @@ pub async fn get_category_by_id(
     State(state): State<AppState>,
 ) -> Result<Json<Category>, ApiError> {
     let result = state.service.util.get_category_by_id(&id).await?;
+    Ok(Json(result))
+}
+
+pub async fn create_category(
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<CreateCategoryRequest>,
+) -> Result<Json<Category>, ApiError> {
+    let result = state.service.util.create_category(&payload.name).await?;
     Ok(Json(result))
 }
 
