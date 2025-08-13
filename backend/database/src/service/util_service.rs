@@ -196,6 +196,19 @@ impl UtilService {
         ids
     }
 
+    pub async fn create_category(&self, name: &str) -> Result<Category, ApiError> {
+        // Check if category with the same name already exists
+        if let Some(_existing_category) = self.util_repo.get_category_by_name(name).await {
+            return Err(DbError::Str("Category with this name already exists".to_string()).into());
+        }
+        // Create the new category
+        if let Some(category) = self.util_repo.insert_category(name).await {
+            Ok(category)
+        } else {
+            Err(DbError::Str("Failed to create category".to_string()).into())
+        }
+    }
+
     pub async fn update_category(
         &self,
         id: Uuid,
