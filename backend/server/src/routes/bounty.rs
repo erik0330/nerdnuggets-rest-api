@@ -1,7 +1,7 @@
 use crate::{
     handler::bounty_handler::{
         create_bidder_chat, create_bounty, delete_bounty, finalize_bounty_work_submission,
-        get_bid_milestone_submissions, get_bids, get_bounty_chat_numbers, get_bounty_chats,
+        get_bid_milestone_submissions, get_bounty_chat_numbers, get_bounty_chats,
         get_bounty_comments, get_bounty_work_submission, get_my_bids, get_my_bounty_stats,
         get_winning_bid_milestones, handle_bounty_action, mark_chat_as_read, reject_bid,
         review_bid_milestone_submission, review_bounty, review_bounty_work_submission,
@@ -20,7 +20,6 @@ pub fn routes() -> Router<AppState> {
         .route("/bounty", post(create_bounty))
         .route("/bounty/:id", put(update_bounty))
         .route("/bounty/:id", delete(delete_bounty))
-        .route("/bounty/:id/bid", get(get_bids))
         .route("/bounty/:id/bid", post(submit_bid))
         .route(
             "/bounty/:id/bid-milestones",
