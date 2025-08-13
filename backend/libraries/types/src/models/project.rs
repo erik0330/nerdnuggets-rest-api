@@ -127,6 +127,7 @@ pub struct Milestone {
     pub next_steps: Option<String>,
     pub file_urls: Vec<String>,
     pub proof_status: i16, // 0:empty, 1:submitted, 2:approved, 3:rejected
+    pub feedback: Option<String>,
     pub funding_amount: i32,
     pub amount: i32,
     pub count_contributors: i32,

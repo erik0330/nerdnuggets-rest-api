@@ -4,9 +4,9 @@ use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
-        AdminProjectDashboardCounts, EditorDashboardCounts, ProjectCountsResponse,
-        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-        UpdateMilestoneRequest,
+        AdminProjectDashboardCounts, EditorDashboardCounts, MilestoneApprovalRequest,
+        MilestoneApprovalStatus, ProjectCountsResponse, ProjectUpdateStep1Request,
+        ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -477,6 +477,33 @@ impl ProjectService {
         {
             return Err(DbError::Str("Update milestone failed".to_string()).into());
         }
+        Ok(true)
+    }
+
+    pub async fn approve_reject_milestone(
+        &self,
+        milestone_id: &str,
+        payload: MilestoneApprovalRequest,
+    ) -> Result<bool, ApiError> {
+        let proof_status = match payload.status {
+            MilestoneApprovalStatus::Approved => 2,
+            MilestoneApprovalStatus::Rejected => 3,
+        };
+
+        let success = self
+            .project_repo
+            .update_milestone_proof_status(
+                uuid_from_str(milestone_id)?,
+                proof_status,
+                payload.feedback,
+            )
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        if !success {
+            return Err(DbError::Str("Failed to update milestone proof status".to_string()).into());
+        }
+
         Ok(true)
     }
 

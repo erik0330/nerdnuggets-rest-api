@@ -496,6 +496,24 @@ impl ProjectRepository {
         Ok(row.rows_affected() == 1)
     }
 
+    pub async fn update_milestone_proof_status(
+        &self,
+        id: Uuid,
+        proof_status: i16,
+        feedback: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE milestone SET proof_status = $1, feedback = $2, updated_at = $3 WHERE id = $4",
+        )
+        .bind(proof_status)
+        .bind(feedback)
+        .bind(Utc::now())
+        .bind(id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
     pub async fn get_project_comments(
         &self,
         id: Uuid,
