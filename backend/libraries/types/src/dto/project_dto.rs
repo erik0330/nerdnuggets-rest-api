@@ -86,7 +86,7 @@ pub struct MakeDecisionRequest {
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMilestoneRequest {
-    pub description: String,
+    pub progress_description: String,
     pub deliverables: Option<String>,
     pub challenges: Option<String>,
     pub next_steps: Option<String>,

@@ -476,15 +476,15 @@ impl ProjectRepository {
     pub async fn update_milestone(
         &self,
         id: Uuid,
-        description: String,
+        progress_description: String,
         deliverables: Option<String>,
         challenges: Option<String>,
         next_steps: Option<String>,
         file_urls: Vec<String>,
         proof_status: i16,
     ) -> Result<bool, SqlxError> {
-        let row = sqlx::query("UPDATE milestone SET description = $1, deliverables = $2, challenges = $3, next_steps = $4, file_urls = $5, proof_status = $6 WHERE id = $7")
-            .bind(description)
+        let row = sqlx::query("UPDATE milestone SET progress_description = $1, deliverables = $2, challenges = $3, next_steps = $4, file_urls = $5, proof_status = $6 WHERE id = $7")
+            .bind(progress_description)
             .bind(deliverables)
             .bind(challenges)
             .bind(next_steps)

@@ -125,6 +125,7 @@ pub struct Milestone {
     pub deliverables: Option<String>,
     pub challenges: Option<String>,
     pub next_steps: Option<String>,
+    pub progress_description: Option<String>,
     pub file_urls: Vec<String>,
     pub proof_status: i16, // 0:empty, 1:submitted, 2:approved, 3:rejected
     pub feedback: Option<String>,
