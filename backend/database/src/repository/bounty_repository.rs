@@ -2,7 +2,7 @@ use crate::pool::DatabasePool;
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::{models::{Bid, BidMilestone, BidMilestoneStatus, BidMilestoneSubmission, BidMilestoneSubmissionStatus, BidStatus, Bounty, BountyChat, BountyComment, BountyDifficulty, BountyMilestone, BountyMilestoneSubmission, BountyStatus, BountySubmissionStatus, BountyWorkSubmission}, UserRoleType};
+use types::{models::{Bid, BidMilestone, BidMilestoneStatus, BidMilestoneSubmission, BidMilestoneSubmissionStatus, BidStatus, Bounty, BountyChat, BountyComment, BountyDifficulty, BountyMilestone, BountyMilestoneSubmission, BountyStatus, BountySubmissionStatus, BountyWorkSubmission}};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -175,7 +175,7 @@ impl BountyRepository {
         status: Option<BountyStatus>,
         category_id: Option<Uuid>,
         difficulty: Option<BountyDifficulty>,
-        role: Option<String>,
+        _role: Option<String>,
         user_id: Option<Uuid>,
         is_mine: Option<bool>,
         offset: Option<i32>,
@@ -200,15 +200,15 @@ impl BountyRepository {
             filters.push(format!("b.difficulty = ${index}"));
             index += 1;
         }
-        if role.as_deref().unwrap_or_default() == UserRoleType::Funder.to_string() {
-            if is_mine.unwrap_or_default() {
-                if user_id.is_some() {
-                    filters.push(format!("b.user_id = ${index}"));
-                } else {
-                    return Ok(Vec::new());
-                }
+
+        if is_mine.unwrap_or_default() {
+            if user_id.is_some() {
+                filters.push(format!("b.user_id = ${index}"));
+            } else {
+                return Ok(Vec::new());
             }
         }
+    
         if !filters.is_empty() {
             query = format!("{} WHERE {}", &query, &filters.join(" AND "));
         }
@@ -228,13 +228,12 @@ impl BountyRepository {
         if let Some(d) = difficulty {
             query = query.bind(d)
         }
-        if role.as_deref().unwrap_or_default() == UserRoleType::Funder.to_string() {
-            if is_mine.unwrap_or_default() {
-                if let Some(user_id) = user_id {
-                    query = query.bind(user_id);
-                }
+        if is_mine.unwrap_or_default() {
+            if let Some(user_id) = user_id {
+                query = query.bind(user_id);
             }
         }
+        
         let bounties = query.fetch_all(self.db_conn.get_pool()).await?;
         Ok(bounties)
     }
