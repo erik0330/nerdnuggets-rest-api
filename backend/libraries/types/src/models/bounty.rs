@@ -15,7 +15,7 @@ pub struct Bounty {
     pub description: String,
     pub upload_file: Option<String>,
     pub cover_photo: Option<String>,
-    pub category: Uuid,
+    pub category: Vec<Uuid>,
     pub difficulty: BountyDifficulty,
     pub tags: Vec<String>,
     pub reward_amount: i32,
@@ -53,7 +53,7 @@ pub struct BountyInfo {
     pub description: String,
     pub upload_file: Option<String>,
     pub cover_photo: Option<String>,
-    pub category: Option<Category>,
+    pub categories: Vec<Category>,
     pub difficulty: BountyDifficulty,
     pub tags: Vec<String>,
     pub reward_amount: i32,
@@ -434,7 +434,7 @@ impl Bounty {
     pub fn to_info(
         &self,
         user: UserInfo,
-        category: Option<Category>,
+        categories: Vec<Category>,
         milestones: Vec<BountyMilestone>,
     ) -> BountyInfo {
         BountyInfo {
@@ -447,7 +447,7 @@ impl Bounty {
             description: self.description.clone(),
             upload_file: self.upload_file.clone(),
             cover_photo: self.cover_photo.clone(),
-            category,
+            categories,
             difficulty: self.difficulty,
             tags: self.tags.clone(),
             reward_amount: self.reward_amount,
