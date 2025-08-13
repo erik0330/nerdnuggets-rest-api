@@ -5,9 +5,9 @@ use third_party_api::arweave::upload_project_submission;
 use types::dto::{
     AdminProjectDashboardCounts, AssignEditorRequest, EditorDashboardCounts, GetDaosOption,
     GetProjectCommentsOption, GetProjectsOption, GetSimilarProjectsOption, MakeDecisionRequest,
-    ProjectCountsResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
-    ProjectUpdateStep3Request, SubmitDaoVoteRequest, SubmitProjectCommentRequest,
-    UpdateMilestoneRequest,
+    MilestoneApprovalRequest, ProjectCountsResponse, ProjectUpdateStep1Request,
+    ProjectUpdateStep2Request, ProjectUpdateStep3Request, SubmitDaoVoteRequest,
+    SubmitProjectCommentRequest, UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
@@ -216,6 +216,26 @@ pub async fn update_milestone(
     Ok(Json(
         state.service.project.update_milestone(&id, payload).await?,
     ))
+}
+
+pub async fn approve_reject_milestone(
+    Extension(role): Extension<String>,
+    Path(milestone_id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<MilestoneApprovalRequest>,
+) -> Result<Json<bool>, ApiError> {
+    // Only admins can approve/reject milestone results
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+
+    let success = state
+        .service
+        .project
+        .approve_reject_milestone(&milestone_id, payload)
+        .await?;
+
+    Ok(Json(success))
 }
 
 pub async fn get_milestones(

@@ -178,3 +178,16 @@ pub struct EditorDashboardCounts {
     pub completed_reviews: i64,
     pub total_assigned: i64,
 }
+
+#[derive(Clone, Deserialize, Serialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct MilestoneApprovalRequest {
+    pub status: MilestoneApprovalStatus,
+    pub feedback: Option<String>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+pub enum MilestoneApprovalStatus {
+    Approved,
+    Rejected,
+}
