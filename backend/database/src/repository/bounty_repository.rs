@@ -54,7 +54,7 @@ impl BountyRepository {
         description: String,
         upload_file: Option<String>,
         cover_photo: Option<String>,
-        category: Uuid,
+        category: Vec<Uuid>,
         difficulty: BountyDifficulty,
         tags: Option<Vec<String>>,
         reward_amount: i32,
@@ -193,7 +193,7 @@ impl BountyRepository {
             index += 1;
         }
         if category_id.is_some() {
-            filters.push(format!("b.category = ${index}"));
+            filters.push(format!("${index} = ANY(b.category)"));
             index += 1;
         }
         if difficulty.is_some() {
@@ -682,7 +682,7 @@ impl BountyRepository {
             WHERE b.id != $1 
             AND b.status = ANY($6)
             AND (
-                b.category = $2 
+                $2 = ANY(b.category) 
                 OR b.difficulty = $3
                 OR (
                     b.tags IS NOT NULL 
@@ -697,7 +697,7 @@ impl BountyRepository {
                 )
             )
             ORDER BY 
-                CASE WHEN b.category = $2 THEN 3 ELSE 0 END +
+                CASE WHEN $2 = ANY(b.category) THEN 3 ELSE 0 END +
                 CASE WHEN b.difficulty = $3 THEN 2 ELSE 0 END +
                 CASE WHEN b.tags IS NOT NULL AND $4 IS NOT NULL AND EXISTS (
                     SELECT 1 FROM unnest(b.tags) tag1

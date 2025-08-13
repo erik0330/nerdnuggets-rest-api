@@ -39,9 +39,19 @@ impl BountyService {
             .get_user_by_id(bounty.user_id)
             .await
             .ok_or_else(|| ApiError::UserError(UserError::UserNotFound))?;
-        let category = self.util_repo.get_category_by_id(bounty.category).await;
+        let categories = if !bounty.category.is_empty() {
+            let mut category_list = Vec::new();
+            for category_id in &bounty.category {
+                if let Some(category) = self.util_repo.get_category_by_id(*category_id).await {
+                    category_list.push(category);
+                }
+            }
+            category_list
+        } else {
+            Vec::new()
+        };
         let milestones = self.bounty_repo.get_milestones(bounty.id).await;
-        Ok(bounty.to_info(user.to_info(), category, milestones))
+        Ok(bounty.to_info(user.to_info(), categories, milestones))
     }
 
     pub async fn get_bounty_info_by_id(&self, id: &str) -> Result<BountyInfo, ApiError> {
