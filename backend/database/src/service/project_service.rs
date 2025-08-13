@@ -465,7 +465,7 @@ impl ProjectService {
             .project_repo
             .update_milestone(
                 uuid_from_str(id)?,
-                payload.description,
+                payload.progress_description,
                 payload.deliverables,
                 payload.challenges,
                 payload.next_steps,
