@@ -681,7 +681,13 @@ impl BountyRepository {
             WHERE b.id != $1 
             AND b.status = ANY($6)
             AND (
-                $2 = ANY(b.category) 
+                EXISTS (
+                    SELECT 1 FROM unnest($2) cat1
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest(b.category) cat2
+                        WHERE cat1 = cat2
+                    )
+                )
                 OR b.difficulty = $3
                 OR (
                     b.tags IS NOT NULL 
@@ -696,7 +702,13 @@ impl BountyRepository {
                 )
             )
             ORDER BY 
-                CASE WHEN $2 = ANY(b.category) THEN 3 ELSE 0 END +
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM unnest($2) cat1
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest(b.category) cat2
+                        WHERE cat1 = cat2
+                    )
+                ) THEN 3 ELSE 0 END +
                 CASE WHEN b.difficulty = $3 THEN 2 ELSE 0 END +
                 CASE WHEN b.tags IS NOT NULL AND $4 IS NOT NULL AND EXISTS (
                     SELECT 1 FROM unnest(b.tags) tag1
