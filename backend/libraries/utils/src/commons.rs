@@ -136,7 +136,10 @@ pub async fn send_auth_email(
         .await
     {
         Ok(_) => true,
-        Err(_) => false,
+        Err(e) => {
+            eprintln!("Error sending email: {:?}", e);
+            false
+        }
     }
 }
 

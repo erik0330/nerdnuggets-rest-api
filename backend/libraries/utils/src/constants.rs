@@ -1,4 +1,4 @@
-pub const FROM_EMAIL_ADDRESS: &str = "NerdNuggets <info@nobleblocks.com>";
+pub const FROM_EMAIL_ADDRESS: &str = "NerdNuggets <info@nerdnuggets.org>";
 pub const EMAIL_SEND_AGAIN_IN_SECONDS: i64 = 30;
 pub const MAX_COUNT_ARTICLE_TEMP: i64 = 5;
 pub const RATING_CONNECT_SOCIAL: i32 = 2;
