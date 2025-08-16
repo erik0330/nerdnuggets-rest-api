@@ -64,6 +64,7 @@ pub struct BountyInfo {
     pub evaluation_criteria: Vec<String>,
     pub by_milestone: bool,
     pub milestones: Vec<BountyMilestone>,
+    pub bids: Vec<BidSmallInfo>,
     pub admin_notes: Option<String>,
     pub cancellation_reason: Option<String>,
     pub arweave_tx_id: Option<String>,
@@ -124,6 +125,16 @@ pub struct BidInfo {
     pub rejected_at: Option<DateTime<Utc>>,
     pub canceled_at: Option<DateTime<Utc>>,
     pub completed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BidSmallInfo {
+    pub id: Uuid,
+    pub bid_amount: i32,
+    pub milestones: Vec<BidMilestone>,
+    pub status: BidStatus,
+    pub user: UserInfo,
 }
 
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Debug)]
@@ -436,6 +447,7 @@ impl Bounty {
         user: UserInfo,
         categories: Vec<Category>,
         milestones: Vec<BountyMilestone>,
+        bids: Vec<BidSmallInfo>,
     ) -> BountyInfo {
         BountyInfo {
             id: self.id,
@@ -458,6 +470,7 @@ impl Bounty {
             evaluation_criteria: self.evaluation_criteria.clone(),
             by_milestone: self.by_milestone,
             milestones,
+            bids,
             admin_notes: self.admin_notes.clone(),
             cancellation_reason: self.cancellation_reason.clone(),
             arweave_tx_id: self.arweave_tx_id.clone(),
