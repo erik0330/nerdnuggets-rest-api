@@ -30,7 +30,7 @@ pub async fn send_auth_email(
 ) -> bool {
     let (subject, content) = match message_type {
         EmailVerifyType::VerifyEmail | EmailVerifyType::AddEmail => (
-            format!("Request To Verify Your Email Address(nerdnuggets.com)"),
+            format!("Request To Verify Your Email Address(nerdnuggets.org)"),
             format!(
                 r#"<div style="width: 100%; padding: 10 auto;">
                     <div style="max-width: 1000px;">
@@ -46,7 +46,7 @@ pub async fn send_auth_email(
                             <br />
                             <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Best regards</p>
                             <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">NOBLEBLOCKS Team</p>
-                            <a href="https://www.nerdnuggets.com" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.com</a>
+                            <a href="https://www.nerdnuggets.org" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.org</a>
                             <p style="background: #888888; width: 100%; height: 2px;"></p>
                             <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;"><i>Please do not reply to this email as it is automatically generated.</i></p>
                             <p style="background: #888888; width: 100%; height: 2px;"></p>
@@ -74,7 +74,7 @@ pub async fn send_auth_email(
             };
 
             (
-                format!("Request To Reset Your NERDNUGGETS Password(nerdnuggets.com)"),
+                format!("Request To Reset Your NERDNUGGETS Password(nerdnuggets.org)"),
                 format!(
                     r#"<div style="width: 100%; padding: 10 auto;">
                         <div style="max-width: 1000px;">
@@ -89,7 +89,7 @@ pub async fn send_auth_email(
                                 <br />
                                 <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Best regards</p>
                                 <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">NOBLEBLOCKS Team</p>
-                                <a href="https://nerdnuggets.com" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.com</a>
+                                <a href="https://nerdnuggets.org" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.org</a>
                                 <p style="background: #888888; width: 100%; height: 2px;"></p>
                                 <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;"><i>Please do not reply to this email as it is automatically generated.</i></p>
                                 <p style="background: #888888; width: 100%; height: 2px;"></p>
