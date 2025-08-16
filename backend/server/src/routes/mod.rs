@@ -34,8 +34,8 @@ pub async fn routes(db_conn: Arc<DatabasePool>, env: Env) -> IntoMakeService<Rou
         let s3_client: aws_sdk_s3::Client = aws_sdk_s3::Client::new(&config);
 
         let region = env.email_region.clone();
-        let access_key_id = env.aws_access_key_id.clone();
-        let secret_access_key = env.aws_secret_access_key.clone();
+        let access_key_id = env.aws_ses_access_key_id.clone();
+        let secret_access_key = env.aws_ses_secret_access_key.clone();
 
         let region_provider = RegionProviderChain::first_try(Region::new(region))
             .or_default_provider()
