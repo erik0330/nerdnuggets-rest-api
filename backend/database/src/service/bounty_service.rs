@@ -9,9 +9,10 @@ use types::{
     },
     error::{ApiError, DbError, UserError},
     models::{
-        BidInfo, BidMilestoneStatus, BidMilestoneSubmission, BidStatus, Bounty, BountyChatInfo,
-        BountyCommentInfo, BountyDifficulty, BountyInfo, BountyMilestoneSubmissionInfo,
-        BountyReviewType, BountyStatus, BountyWorkSubmissionInfo, User,
+        BidInfo, BidMilestoneStatus, BidMilestoneSubmission, BidSmallInfo, BidStatus, Bounty,
+        BountyChatInfo, BountyCommentInfo, BountyDifficulty, BountyInfo,
+        BountyMilestoneSubmissionInfo, BountyReviewType, BountyStatus, BountyWorkSubmissionInfo,
+        User,
     },
 };
 use utils::commons::{generate_random_number, uuid_from_str};
@@ -51,7 +52,38 @@ impl BountyService {
             Vec::new()
         };
         let milestones = self.bounty_repo.get_milestones(bounty.id).await;
-        Ok(bounty.to_info(user.to_info(), categories, milestones))
+
+        let (status, limit) = match bounty.status {
+            BountyStatus::Open => (BidStatus::Submitted, 5),
+            BountyStatus::InProgress => (BidStatus::InProgress, 1),
+            BountyStatus::Completed => (BidStatus::Completed, 1),
+            _ => (BidStatus::Accepted, 0),
+        };
+        // Fetch bids and convert to BidSmallInfo
+        let bids = self
+            .bounty_repo
+            .get_bids(bounty.id, Some(status), Some(0), Some(limit))
+            .await
+            .unwrap_or_default();
+        let mut bidsmallinfos = Vec::new();
+        for bid in bids {
+            if let Some(bid_user) = self.user_repo.get_user_by_id(bid.user_id).await {
+                let bid_milestones = self
+                    .bounty_repo
+                    .get_bid_milestones(bid.id)
+                    .await
+                    .unwrap_or_default();
+                bidsmallinfos.push(BidSmallInfo {
+                    id: bid.id,
+                    bid_amount: bid.bid_amount,
+                    milestones: bid_milestones,
+                    status: bid.status,
+                    user: bid_user.to_info(),
+                });
+            }
+        }
+
+        Ok(bounty.to_info(user.to_info(), categories, milestones, bidsmallinfos))
     }
 
     pub async fn get_bounty_info_by_id(&self, id: &str) -> Result<BountyInfo, ApiError> {
