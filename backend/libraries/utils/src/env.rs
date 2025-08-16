@@ -12,6 +12,8 @@ pub struct Env {
     pub aws_access_key_id: String,
     pub aws_secret_access_key: String,
     pub aws_bucket_name: String,
+    pub aws_ses_access_key_id: String,
+    pub aws_ses_secret_access_key: String,
     pub email_verify_exp_second: i64,
     pub email_verify_limit: i16,
     pub email_region: String,
@@ -59,6 +61,11 @@ impl Env {
             std::env::var("AWS_SECRET_ACCESS_KEY").expect("AWS_SECRET_ACCESS_KEY must be set");
         let aws_bucket_name =
             std::env::var("AWS_BUCKET_NAME").expect("AWS_BUCKET_NAME must be set");
+
+        let aws_ses_access_key_id =
+            std::env::var("AWS_SES_ACCESS_KEY_ID").expect("AWS_SES_ACCESS_KEY_ID must be set");
+        let aws_ses_secret_access_key = std::env::var("AWS_SES_SECRET_ACCESS_KEY")
+            .expect("AWS_SES_SECRET_ACCESS_KEY must be set");
 
         let email_verify_exp_second = std::env::var("EMAIL_VERIFY_EXP_SECOND")
             .ok()
@@ -120,6 +127,8 @@ impl Env {
             aws_access_key_id,
             aws_secret_access_key,
             aws_bucket_name,
+            aws_ses_access_key_id,
+            aws_ses_secret_access_key,
             email_verify_exp_second,
             email_verify_limit,
             email_region,
