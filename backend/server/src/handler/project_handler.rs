@@ -85,9 +85,9 @@ pub async fn submit_project(
     State(state): State<AppState>,
 ) -> Result<Json<bool>, ApiError> {
     let user = state.service.user.get_user_by_id(user.id).await?;
-    if user.wallet_address.filter(|w| !w.is_empty()).is_none() {
-        return Err(UserError::Str("Wallet address is not set".to_string()).into());
-    }
+    // if user.wallet_address.filter(|w| !w.is_empty()).is_none() {
+    //     return Err(UserError::Str("Wallet address is not set".to_string()).into());
+    // }
     let res = state.service.project.submit_project(&id).await?;
 
     let project_info = state
