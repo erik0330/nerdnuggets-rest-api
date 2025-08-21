@@ -247,8 +247,15 @@ pub struct BountyActionRequest {
     pub admin_notes: Option<String>,
 }
 
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct CancelBountyRequest {
+    pub reason: Option<String>,
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum BountyAction {
     Complete,
     Reject,
+    Cancel,
 }

@@ -1,10 +1,10 @@
 use crate::{
     handler::bounty_handler::{
-        create_bidder_chat, create_bounty, delete_bounty, finalize_bounty_work_submission,
-        get_bid_milestone_submissions, get_bounty_chat_numbers, get_bounty_chats,
-        get_bounty_comments, get_bounty_work_submission, get_my_bids, get_my_bounty_stats,
-        get_winning_bid_milestones, handle_bounty_action, mark_chat_as_read, reject_bid,
-        review_bid_milestone_submission, review_bounty, review_bounty_work_submission,
+        cancel_bounty, create_bidder_chat, create_bounty, delete_bounty,
+        finalize_bounty_work_submission, get_bid_milestone_submissions, get_bounty_chat_numbers,
+        get_bounty_chats, get_bounty_comments, get_bounty_work_submission, get_my_bids,
+        get_my_bounty_stats, get_winning_bid_milestones, handle_bounty_action, mark_chat_as_read,
+        reject_bid, review_bid_milestone_submission, review_bounty, review_bounty_work_submission,
         save_bounty_work, select_as_winner, send_bounty_chat, submit_bid,
         submit_bid_milestone_work, submit_bounty_comment, update_bounty,
     },
@@ -29,6 +29,7 @@ pub fn routes() -> Router<AppState> {
         .route("/bounty/:id/comment", post(submit_bounty_comment))
         .route("/bounty/:id/review", post(review_bounty))
         .route("/bounty/:id/action", post(handle_bounty_action))
+        .route("/bounty/:id/cancel", post(cancel_bounty))
         .route("/bounty/stats", get(get_my_bounty_stats))
         .route("/bounty/chat", get(get_bounty_chats))
         // .route("/bounty/chat/list", get(get_bounty_chat_list))
