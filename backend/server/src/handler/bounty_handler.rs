@@ -3,10 +3,11 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 
 use third_party_api::arweave::upload_bounty_creation;
+use types::dto::BountyAction;
 use types::dto::{
-    BountyActionRequest, BountyCreateRequest, BountyUpdateRequest, GetBidsOption,
-    GetBountyChatNumbersResponse, GetBountyChatsOption, GetBountysOption, GetMyBidsOption,
-    GetMyBountyStatsResponse, GetSimilarBountiesOption, OffsetAndLimitOption,
+    BountyActionRequest, BountyCreateRequest, BountyUpdateRequest, CancelBountyRequest,
+    GetBidsOption, GetBountyChatNumbersResponse, GetBountyChatsOption, GetBountysOption,
+    GetMyBidsOption, GetMyBountyStatsResponse, GetSimilarBountiesOption, OffsetAndLimitOption,
     ReviewBidMilestoneSubmissionRequest, ReviewBountyRequest, ReviewBountyWorkSubmissionRequest,
     SendBountyChatRequest, SubmitBidMilestoneWorkRequest, SubmitBidRequest,
     SubmitBountyCommentRequest, SubmitBountyWorkRequest,
@@ -504,6 +505,20 @@ pub async fn handle_bounty_action(
         .service
         .bounty
         .handle_bounty_action(&bounty_id, user.id, payload.action, payload.admin_notes)
+        .await?;
+    Ok(Json(success))
+}
+
+pub async fn cancel_bounty(
+    Extension(user): Extension<User>,
+    Path(bounty_id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<CancelBountyRequest>,
+) -> Result<Json<bool>, ApiError> {
+    let success = state
+        .service
+        .bounty
+        .handle_bounty_action(&bounty_id, user.id, BountyAction::Cancel, payload.reason)
         .await?;
     Ok(Json(success))
 }

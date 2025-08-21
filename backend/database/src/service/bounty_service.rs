@@ -1204,12 +1204,26 @@ impl BountyService {
             return Err(DbError::Str("You are not the owner of this bounty".to_string()).into());
         }
 
-        // Check if bounty can be acted upon (must be in progress or under review)
-        if bounty.status != BountyStatus::InProgress && bounty.status != BountyStatus::UnderReview {
-            return Err(DbError::Str(
-                "Bounty cannot be acted upon in its current status".to_string(),
-            )
-            .into());
+        // Check if bounty can be acted upon
+        match action {
+            BountyAction::Complete | BountyAction::Reject => {
+                if bounty.status != BountyStatus::InProgress
+                    && bounty.status != BountyStatus::UnderReview
+                {
+                    return Err(DbError::Str(
+                        "Bounty cannot be completed or rejected in its current status".to_string(),
+                    )
+                    .into());
+                }
+            }
+            BountyAction::Cancel => {
+                if bounty.status != BountyStatus::Open {
+                    return Err(DbError::Str(
+                        "Bounty can only be cancelled when it is open".to_string(),
+                    )
+                    .into());
+                }
+            }
         }
 
         let success = match action {
@@ -1236,7 +1250,22 @@ impl BountyService {
                         admin_notes.clone(),
                         bounty.approved_at,
                         Some(Utc::now()),
+                        bounty.started_at,
+                        admin_notes,
+                    )
+                    .await
+                    .unwrap_or_default()
+            }
+            BountyAction::Cancel => {
+                // Update bounty status to Cancelled and set cancellation reason
+                self.bounty_repo
+                    .update_bounty_status_with_reason(
+                        bounty.id,
+                        BountyStatus::Cancelled,
+                        admin_notes.clone(),
+                        bounty.approved_at,
                         Some(Utc::now()),
+                        bounty.started_at,
                         admin_notes,
                     )
                     .await
