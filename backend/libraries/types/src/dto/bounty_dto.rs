@@ -259,3 +259,9 @@ pub enum BountyAction {
     Reject,
     Cancel,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct RejectBidMilestoneRequest {
+    pub feedback: Option<String>,
+}

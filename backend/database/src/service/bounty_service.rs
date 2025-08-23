@@ -1184,6 +1184,50 @@ impl BountyService {
         Ok(success)
     }
 
+    pub async fn reject_bid_milestone(
+        &self,
+        user_id: Uuid,
+        bid_milestone_id: &str,
+        feedback: Option<String>,
+    ) -> Result<bool, ApiError> {
+        let milestone_uuid = uuid_from_str(bid_milestone_id)?;
+
+        // Get the bid milestone by ID
+        let bid_milestone = self
+            .bounty_repo
+            .get_bid_milestone_by_id(milestone_uuid)
+            .await
+            .ok_or_else(|| DbError::Str("Bid milestone not found".to_string()))?;
+
+        // Get the bid to verify the bounty owner
+        let bid = self
+            .bounty_repo
+            .get_bid_by_id(bid_milestone.bid_id)
+            .await
+            .map_err(|_| DbError::Str("Bid not found".to_string()))?;
+
+        // Get the bounty to verify the user is the bounty owner
+        let bounty = self
+            .bounty_repo
+            .get_bounty_by_id(bid.bounty_id)
+            .await
+            .ok_or_else(|| DbError::Str("Bounty not found".to_string()))?;
+
+        // The bounty owner can reject milestones from any bidder
+        if bounty.user_id != user_id {
+            return Err(DbError::Str("You are not the owner of this bounty".to_string()).into());
+        }
+
+        // Reject the milestone
+        let success = self
+            .bounty_repo
+            .reject_bid_milestone(milestone_uuid, feedback)
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        Ok(success)
+    }
+
     pub async fn handle_bounty_action(
         &self,
         bounty_id: &str,
