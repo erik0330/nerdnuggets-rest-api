@@ -1099,6 +1099,23 @@ impl BountyRepository {
         Ok(row.rows_affected() == 1)
     }
 
+    pub async fn reject_bid_milestone(
+        &self,
+        bid_milestone_id: Uuid,
+        _feedback: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let now = Utc::now();
+        let row = sqlx::query(
+            "UPDATE bid_milestone SET status = $1, updated_at = $2 WHERE id = $3"
+        )
+        .bind(BidMilestoneStatus::Rejected)
+        .bind(now)
+        .bind(bid_milestone_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
+
     pub async fn get_next_bid_milestone(
         &self,
         bid_id: Uuid,
