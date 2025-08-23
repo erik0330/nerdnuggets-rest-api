@@ -4,9 +4,10 @@ use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
-        AdminProjectDashboardCounts, EditorDashboardCounts, MilestoneApprovalRequest,
-        MilestoneApprovalStatus, ProjectCountsResponse, ProjectUpdateStep1Request,
-        ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
+        AdminProjectDashboardCounts, DaoStatisticsResponse, EditorDashboardCounts,
+        MilestoneApprovalRequest, MilestoneApprovalStatus, ProjectCountsResponse,
+        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+        UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -957,6 +958,21 @@ impl ProjectService {
             pending_reviews,
             completed_reviews,
             total_assigned,
+        })
+    }
+
+    pub async fn get_dao_statistics(&self) -> Result<DaoStatisticsResponse, ApiError> {
+        let (total, active, success, failed) = self
+            .project_repo
+            .get_dao_statistics()
+            .await
+            .map_err(|_| DbError::Str("Get DAO statistics failed".to_string()))?;
+
+        Ok(DaoStatisticsResponse {
+            total,
+            active,
+            success,
+            failed,
         })
     }
 }

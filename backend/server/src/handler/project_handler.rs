@@ -3,11 +3,11 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
-    AdminProjectDashboardCounts, AssignEditorRequest, EditorDashboardCounts, GetDaosOption,
-    GetProjectCommentsOption, GetProjectsOption, GetSimilarProjectsOption, MakeDecisionRequest,
-    MilestoneApprovalRequest, ProjectCountsResponse, ProjectUpdateStep1Request,
-    ProjectUpdateStep2Request, ProjectUpdateStep3Request, SubmitDaoVoteRequest,
-    SubmitProjectCommentRequest, UpdateMilestoneRequest,
+    AdminProjectDashboardCounts, AssignEditorRequest, DaoStatisticsResponse, EditorDashboardCounts,
+    GetDaosOption, GetProjectCommentsOption, GetProjectsOption, GetSimilarProjectsOption,
+    MakeDecisionRequest, MilestoneApprovalRequest, ProjectCountsResponse,
+    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+    SubmitDaoVoteRequest, SubmitProjectCommentRequest, UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
@@ -386,4 +386,11 @@ pub async fn get_editor_dashboard_counts(
         .get_editor_dashboard_counts(user.id)
         .await?;
     Ok(Json(counts))
+}
+
+pub async fn get_dao_statistics(
+    State(state): State<AppState>,
+) -> Result<Json<DaoStatisticsResponse>, ApiError> {
+    let statistics = state.service.project.get_dao_statistics().await?;
+    Ok(Json(statistics))
 }
