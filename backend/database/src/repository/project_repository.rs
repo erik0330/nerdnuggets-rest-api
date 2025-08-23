@@ -945,4 +945,36 @@ impl ProjectRepository {
 
         Ok((pending_reviews, completed_reviews, total_assigned))
     }
+
+    pub async fn get_dao_statistics(&self) -> Result<(i64, i64, i64, i64), SqlxError> {
+        // Get total DAOs
+        let total = sqlx::query!("SELECT COUNT(*) as count FROM dao")
+            .fetch_one(self.db_conn.get_pool())
+            .await?
+            .count
+            .unwrap_or(0);
+
+        // Get active DAOs (status = 0)
+        let active = sqlx::query!("SELECT COUNT(*) as count FROM dao WHERE status = 0")
+            .fetch_one(self.db_conn.get_pool())
+            .await?
+            .count
+            .unwrap_or(0);
+
+        // Get successful DAOs (status = 1)
+        let success = sqlx::query!("SELECT COUNT(*) as count FROM dao WHERE status = 1")
+            .fetch_one(self.db_conn.get_pool())
+            .await?
+            .count
+            .unwrap_or(0);
+
+        // Get failed DAOs (status = 2)
+        let failed = sqlx::query!("SELECT COUNT(*) as count FROM dao WHERE status = 2")
+            .fetch_one(self.db_conn.get_pool())
+            .await?
+            .count
+            .unwrap_or(0);
+
+        Ok((total, active, success, failed))
+    }
 }

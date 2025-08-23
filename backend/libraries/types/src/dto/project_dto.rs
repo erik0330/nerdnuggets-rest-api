@@ -179,6 +179,15 @@ pub struct EditorDashboardCounts {
     pub total_assigned: i64,
 }
 
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct DaoStatisticsResponse {
+    pub total: i64,
+    pub active: i64,
+    pub success: i64,
+    pub failed: i64,
+}
+
 #[derive(Clone, Deserialize, Serialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct MilestoneApprovalRequest {
