@@ -464,6 +464,18 @@ impl UserService {
         user_id: Uuid,
         payload: UserWalletSettingsRequest,
     ) -> Result<UserWalletSettingsResponse, ApiError> {
+        if let Some(wallet_address) = payload.wallet_address.clone().filter(|w| !w.is_empty()) {
+            if self
+                .user_repo
+                .get_user_by_wallet(&wallet_address)
+                .await
+                .is_some()
+            {
+                return Err(DbError::Str(
+                    "This wallet is being used by another user.".to_string(),
+                ))?;
+            }
+        }
         let user = self
             .user_repo
             .update_wallet_settings(user_id, payload.wallet_address.filter(|w| !w.is_empty()))
