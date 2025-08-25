@@ -451,7 +451,7 @@ impl ProjectRepository {
     }
 
     pub async fn create_dao(&self, project: &Project) -> Result<bool, SqlxError> {
-        let row = sqlx::query("INSERT INTO dao (project_id, nerd_id, proposal_id, user_id, title, description, funding_goal) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+        let row = sqlx::query("INSERT INTO dao (project_id, nerd_id, proposal_id, user_id, title, description, funding_goal, cover_photo) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
             .bind(project.id)
             .bind(&project.nerd_id)
             .bind(project.proposal_id)
@@ -459,6 +459,7 @@ impl ProjectRepository {
             .bind(&project.title)
             .bind(&project.description)
             .bind(project.funding_goal)
+            .bind(&project.cover_photo)
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)

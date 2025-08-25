@@ -21,6 +21,7 @@ pub struct Dao {
     pub amount_for: i32,
     pub amount_against: i32,
     pub amount_total: i32,
+    pub cover_photo: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -44,6 +45,7 @@ pub struct DaoInfo {
     pub amount_for: i32,
     pub amount_against: i32,
     pub amount_total: i32,
+    pub cover_photo: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -100,6 +102,7 @@ impl Dao {
             amount_for: self.amount_for,
             amount_against: self.amount_against,
             amount_total: self.amount_total,
+            cover_photo: self.cover_photo.clone(),
             created_at: self.created_at,
             updated_at: self.updated_at,
         }
