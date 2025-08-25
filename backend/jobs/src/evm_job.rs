@@ -34,7 +34,7 @@ pub async fn run(
         .get_dao_contract_events(from_block_number, None)
         .await?;
 
-    println!("DAO contract events: {:?}", events);
+    // println!("DAO contract events: {:?}", events);
     for event in &events {
         match event {
             DAO_CONTRACTEvents::VotedFilter(ev) => {
@@ -65,7 +65,7 @@ pub async fn run(
         .get_funding_contract_events(from_block_number, to_block_number)
         .await?;
 
-    println!("Funding contract events: {:?}", events);
+    // println!("Funding contract events: {:?}", events);
     for event in &events {
         match event {
             FUNDING_CONTRACTEvents::DonatedFilter(ev) => {
