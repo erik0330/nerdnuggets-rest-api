@@ -5,7 +5,7 @@ use third_party_api::arweave::upload_project_submission;
 use types::dto::{
     AdminProjectDashboardCounts, AssignEditorRequest, DaoStatisticsResponse, EditorDashboardCounts,
     GetDaosOption, GetProjectCommentsOption, GetProjectsOption, GetSimilarProjectsOption,
-    MakeDecisionRequest, MilestoneApprovalRequest, ProjectCountsResponse,
+    MakeDecisionRequest, MilestoneApprovalRequest, ProjectCountsResponse, ProjectFundersResponse,
     ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
     SubmitDaoVoteRequest, SubmitProjectCommentRequest, UpdateMilestoneRequest,
 };
@@ -393,4 +393,17 @@ pub async fn get_dao_statistics(
 ) -> Result<Json<DaoStatisticsResponse>, ApiError> {
     let statistics = state.service.project.get_dao_statistics().await?;
     Ok(Json(statistics))
+}
+
+pub async fn get_project_funders(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<ProjectFundersResponse>, ApiError> {
+    let project_id = utils::commons::uuid_from_str(&id)?;
+    let funders = state
+        .service
+        .project
+        .get_project_funders_full(project_id)
+        .await?;
+    Ok(Json(funders))
 }

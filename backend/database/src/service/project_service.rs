@@ -6,8 +6,8 @@ use types::{
     dto::{
         AdminProjectDashboardCounts, DaoStatisticsResponse, EditorDashboardCounts,
         MilestoneApprovalRequest, MilestoneApprovalStatus, ProjectCountsResponse,
-        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-        UpdateMilestoneRequest,
+        ProjectFunderInfo, ProjectFundersResponse, ProjectUpdateStep1Request,
+        ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -989,7 +989,7 @@ impl ProjectService {
     async fn get_project_funders(&self, project_id: Uuid) -> Result<Vec<FunderInfo>, ApiError> {
         let fundings = self
             .project_repo
-            .get_project_funding(project_id)
+            .get_project_funding(project_id, Some(3))
             .await
             .map_err(|_| DbError::Str("Failed to get project funding".to_string()))?;
 
@@ -1013,8 +1013,81 @@ impl ProjectService {
                         amount: funding.amount,
                     });
                 }
+            } else {
+                funders.push(FunderInfo {
+                    user_id: None,
+                    name: None,
+                    wallet: funding.wallet.unwrap_or_default(),
+                    avatar_url: None,
+                    amount: funding.amount,
+                });
             }
         }
         Ok(funders)
+    }
+
+    pub async fn get_project_funders_full(
+        &self,
+        project_id: Uuid,
+    ) -> Result<ProjectFundersResponse, ApiError> {
+        let fundings = self
+            .project_repo
+            .get_project_funding(project_id, None)
+            .await
+            .map_err(|_| DbError::Str("Failed to get project funding".to_string()))?;
+
+        let mut funders = Vec::new();
+        let mut total_amount = 0;
+
+        for funding in &fundings {
+            total_amount += funding.amount;
+
+            let funder_info = if let Some(user_id) = funding.user_id {
+                if let Some(user) = self.user_repo.get_user_by_id(user_id).await {
+                    ProjectFunderInfo {
+                        id: funding.id,
+                        user_id: Some(user_id),
+                        name: Some(user.name.unwrap_or_default()),
+                        wallet: funding.wallet.clone().unwrap_or_default(),
+                        avatar_url: user.avatar_url.clone(),
+                        number: funding.number,
+                        amount: funding.amount,
+                        created_at: funding.created_at,
+                        updated_at: funding.updated_at,
+                    }
+                } else {
+                    ProjectFunderInfo {
+                        id: funding.id,
+                        user_id: None,
+                        name: None,
+                        wallet: funding.wallet.clone().unwrap_or_default(),
+                        avatar_url: None,
+                        number: funding.number,
+                        amount: funding.amount,
+                        created_at: funding.created_at,
+                        updated_at: funding.updated_at,
+                    }
+                }
+            } else {
+                ProjectFunderInfo {
+                    id: funding.id,
+                    user_id: None,
+                    name: None,
+                    wallet: funding.wallet.clone().unwrap_or_default(),
+                    avatar_url: None,
+                    number: funding.number,
+                    amount: funding.amount,
+                    created_at: funding.created_at,
+                    updated_at: funding.updated_at,
+                }
+            };
+            funders.push(funder_info);
+        }
+
+        Ok(ProjectFundersResponse {
+            funders,
+            total_amount,
+            total_count: fundings.len() as i64,
+        })
     }
 }

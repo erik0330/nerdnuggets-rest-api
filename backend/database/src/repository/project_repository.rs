@@ -981,11 +981,16 @@ impl ProjectRepository {
         Ok((total, active, success, failed))
     }
 
-    pub async fn get_project_funding(&self, project_id: Uuid) -> Result<Vec<Funding>, SqlxError> {
+    pub async fn get_project_funding(
+        &self,
+        project_id: Uuid,
+        limit: Option<i32>,
+    ) -> Result<Vec<Funding>, SqlxError> {
         let fundings = sqlx::query_as::<_, Funding>(
-            "SELECT * FROM funding WHERE project_id = $1 ORDER BY created_at DESC LIMIT 3",
+            "SELECT * FROM funding WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2",
         )
         .bind(project_id)
+        .bind(limit.unwrap_or(1000))
         .fetch_all(self.db_conn.get_pool())
         .await?;
         Ok(fundings)
