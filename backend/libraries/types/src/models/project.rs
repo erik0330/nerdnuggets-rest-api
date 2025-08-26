@@ -152,6 +152,16 @@ pub struct Funding {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct FunderInfo {
+    pub user_id: Option<Uuid>,
+    pub name: Option<String>,
+    pub wallet: String,
+    pub avatar_url: Option<String>,
+    pub amount: i32,
+}
+
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Category {
@@ -209,6 +219,7 @@ pub struct ProjectItemInfo {
     pub count_contributors: i32,
     pub count_view: i32,
     pub milestones: Vec<Milestone>,
+    pub funders: Vec<FunderInfo>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub dao_at: Option<DateTime<Utc>>,
@@ -323,6 +334,7 @@ impl ProjectItem {
         editor: Option<ProjectEditorInfo>,
         category: Vec<Category>,
         milestones: Vec<Milestone>,
+        funders: Vec<FunderInfo>,
     ) -> ProjectItemInfo {
         ProjectItemInfo {
             id: self.id,
@@ -343,6 +355,7 @@ impl ProjectItem {
             count_contributors: self.count_contributors,
             count_view: self.count_view,
             milestones,
+            funders,
             created_at: self.created_at,
             updated_at: self.updated_at,
             dao_at: self.dao_at,

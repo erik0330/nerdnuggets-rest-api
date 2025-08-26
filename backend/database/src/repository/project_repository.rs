@@ -5,7 +5,7 @@ use std::sync::Arc;
 use types::{
     dto::ProjectStatusCount,
     models::{
-        CompletedDao, Dao, DaoVote, Milestone, Prediction, PredictionStatus, Project,
+        CompletedDao, Dao, DaoVote, Funding, Milestone, Prediction, PredictionStatus, Project,
         ProjectComment, ProjectIds, ProjectItem, TeamMember,
     },
     FeedbackStatus, ProjectStatus, UserRoleType,
@@ -979,5 +979,15 @@ impl ProjectRepository {
             .unwrap_or(0);
 
         Ok((total, active, success, failed))
+    }
+
+    pub async fn get_project_funding(&self, project_id: Uuid) -> Result<Vec<Funding>, SqlxError> {
+        let fundings = sqlx::query_as::<_, Funding>(
+            "SELECT * FROM funding WHERE project_id = $1 ORDER BY created_at DESC LIMIT 3",
+        )
+        .bind(project_id)
+        .fetch_all(self.db_conn.get_pool())
+        .await?;
+        Ok(fundings)
     }
 }
