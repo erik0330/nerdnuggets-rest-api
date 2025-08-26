@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
@@ -199,4 +200,26 @@ pub struct MilestoneApprovalRequest {
 pub enum MilestoneApprovalStatus {
     Approved,
     Rejected,
+}
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectFundersResponse {
+    pub funders: Vec<ProjectFunderInfo>,
+    pub total_amount: i32,
+    pub total_count: i64,
+}
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectFunderInfo {
+    pub id: Uuid,
+    pub user_id: Option<Uuid>,
+    pub name: Option<String>,
+    pub wallet: String,
+    pub avatar_url: Option<String>,
+    pub number: i16,
+    pub amount: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
