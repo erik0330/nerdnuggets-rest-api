@@ -697,7 +697,8 @@ impl ProjectRepository {
 
     pub async fn donate_milestone(
         &self,
-        user_id: Uuid,
+        user_id: Option<Uuid>,
+        wallet: &str,
         project_id: Uuid,
         proposal_id: i64,
         number: i16,
@@ -713,11 +714,12 @@ impl ProjectRepository {
         if row.rows_affected() > 0 {
             return Ok(false);
         }
-        let row = sqlx::query("INSERT INTO funding (project_id, proposal_id, number, user_id, amount) VALUES ($1, $2, $3, $4, $5)")
+        let row = sqlx::query("INSERT INTO funding (project_id, proposal_id, number, user_id, wallet, amount) VALUES ($1, $2, $3, $4, $5, $6)")
             .bind(project_id)
             .bind(proposal_id)
             .bind(number)
             .bind(user_id)
+            .bind(wallet)
             .bind(amount)
             .execute(self.db_conn.get_pool())
             .await?;

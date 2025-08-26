@@ -766,11 +766,7 @@ impl ProjectService {
     ) -> Result<bool, ApiError> {
         let amount = (amount as f64) / 10f64.powi(18);
         let number = number + 1;
-        let user = self
-            .user_repo
-            .get_user_by_wallet(wallet)
-            .await
-            .ok_or(DbError::Str("User not found".to_string()))?;
+        let user = self.user_repo.get_user_by_wallet(wallet).await;
         let project = self
             .project_repo
             .get_project_by_proposal_id(proposal_id)
@@ -783,7 +779,8 @@ impl ProjectService {
         if self
             .project_repo
             .donate_milestone(
-                user.id,
+                user.map(|u| u.id),
+                wallet,
                 project.id,
                 project.proposal_id,
                 number,
