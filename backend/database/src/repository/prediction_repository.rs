@@ -160,4 +160,41 @@ impl PredictionRepository {
         let predictions = query.fetch_all(self.db_conn.get_pool()).await?;
         Ok(predictions)
     }
+
+    pub async fn update_prediction_pool_amounts(
+        &self,
+        proposal_id: i64,
+        milestone_index: i64,
+        nerd_amount: i64,
+        predicts_success: bool,
+    ) -> Result<bool, SqlxError> {
+        let row = if predicts_success {
+            sqlx::query(
+                "UPDATE prediction SET 
+                    pool_amount = pool_amount + $1, 
+                    yes_pool_amount = yes_pool_amount + $1, 
+                    count_predictors = count_predictors + 1, 
+                    updated_at = now() 
+                WHERE proposal_id = $2 AND number = $3",
+            )
+            .bind(nerd_amount)
+            .bind(proposal_id)
+            .bind(milestone_index as i16)
+        } else {
+            sqlx::query(
+                "UPDATE prediction SET 
+                    pool_amount = pool_amount + $1, 
+                    no_pool_amount = no_pool_amount + $1, 
+                    count_predictors = count_predictors + 1, 
+                    updated_at = now() 
+                WHERE proposal_id = $2 AND number = $3",
+            )
+            .bind(nerd_amount)
+            .bind(proposal_id)
+            .bind(milestone_index as i16)
+        }
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
 }

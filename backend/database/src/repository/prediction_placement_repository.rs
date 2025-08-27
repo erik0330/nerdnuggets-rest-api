@@ -2,7 +2,6 @@ use crate::pool::DatabasePool;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
 use types::models::PredictionPlacement;
-use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct PredictionPlacementRepository {
@@ -37,42 +36,6 @@ impl PredictionPlacementRepository {
         .fetch_one(self.db_conn.get_pool())
         .await?;
         Ok(prediction_placement)
-    }
-
-    pub async fn get_prediction_placements_by_project_milestone(
-        &self,
-        project_id: i64,
-        milestone_index: i64,
-    ) -> Result<Vec<PredictionPlacement>, SqlxError> {
-        let prediction_placements = sqlx::query_as::<_, PredictionPlacement>(
-            "SELECT * FROM prediction_placement WHERE project_id = $1 AND milestone_index = $2 ORDER BY created_at DESC"
-        )
-        .bind(project_id)
-        .bind(milestone_index)
-        .fetch_all(self.db_conn.get_pool())
-        .await?;
-        Ok(prediction_placements)
-    }
-
-    pub async fn get_prediction_placements_by_user(
-        &self,
-        user_address: &str,
-    ) -> Result<Vec<PredictionPlacement>, SqlxError> {
-        let prediction_placements = sqlx::query_as::<_, PredictionPlacement>(
-            "SELECT * FROM prediction_placement WHERE user_address = $1 ORDER BY created_at DESC",
-        )
-        .bind(user_address)
-        .fetch_all(self.db_conn.get_pool())
-        .await?;
-        Ok(prediction_placements)
-    }
-
-    pub async fn get_prediction_placement_by_id(&self, id: Uuid) -> Option<PredictionPlacement> {
-        sqlx::query_as::<_, PredictionPlacement>("SELECT * FROM prediction_placement WHERE id = $1")
-            .bind(id)
-            .fetch_optional(self.db_conn.get_pool())
-            .await
-            .unwrap_or(None)
     }
 
     pub async fn get_prediction_placement_by_user_proposal_milestone(
