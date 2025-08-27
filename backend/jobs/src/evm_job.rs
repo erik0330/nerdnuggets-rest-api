@@ -80,10 +80,70 @@ pub async fn run(
                     .await
                     .ok();
             }
-            FUNDING_CONTRACTEvents::PredictionPlacedFilter(_ev) => {}
+            FUNDING_CONTRACTEvents::PredictionPlacedFilter(ev) => {
+                if let Err(e) = service
+                    .prediction_placement
+                    .create_prediction_placement(
+                        &format!("{:?}", ev.user),
+                        ev.project_id.as_u64() as i64,
+                        ev.milestone_index.as_u64() as i64,
+                        ev.predicts_success,
+                        ev.nerd_amount.as_u64() as i64,
+                        to_block_number.unwrap_or_default() as i64,
+                    )
+                    .await
+                {
+                    println!("Failed to store prediction placement: {}", e);
+                } else {
+                    println!(
+                        "Stored prediction placement for user {:?}, project {}, milestone {}",
+                        ev.user, ev.project_id, ev.milestone_index
+                    );
+                }
+            }
             _ => {}
         }
     }
+
+    // // Prediction contract events
+    // let (events, prediction_last_block_number) = evm_client
+    //     .get_prediction_contract_events(from_block_number, to_block_number)
+    //     .await?;
+
+    // // println!("Prediction contract events: {:?}", events);
+    // for event in &events {
+    //     match event {
+    //         PREDICTION_CONTRACTEvents::PredictionPlacedFilter(ev) => {
+    //             // Store prediction placement in database
+    // if let Err(e) = service
+    //     .prediction_placement
+    //     .create_prediction_placement(
+    //         &format!("{:?}", ev.user),
+    //         ev.project_id.as_u64() as i64,
+    //         ev.milestone_index.as_u64() as i64,
+    //         ev.predicts_success,
+    //         ev.nerd_amount.as_u64() as i64,
+    //         to_block_number.unwrap_or_default() as i64, // Use the current block number
+    //         "unknown", // Transaction hash not available in event data
+    //     )
+    //     .await
+    // {
+    //     println!("Failed to store prediction placement: {}", e);
+    // } else {
+    //     println!(
+    //         "Stored prediction placement for user {:?}, project {}, milestone {}",
+    //         ev.user, ev.project_id, ev.milestone_index
+    //     );
+    // }
+    //         }
+    //         _ => {}
+    //     }
+    // }
+
+    // // Use the latest block number from all contract events
+    // let final_block_number = last_block_number
+    //     .or(last_block_number)
+    //     .or(to_block_number);
 
     if let Some(last_block_number) = last_block_number {
         service

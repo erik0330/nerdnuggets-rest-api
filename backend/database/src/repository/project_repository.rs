@@ -711,7 +711,7 @@ impl ProjectRepository {
             .bind(project_id)
             .execute(self.db_conn.get_pool())
             .await?;
-        if row.rows_affected() > 0 {
+        if row.rows_affected() == 0 {
             return Ok(false);
         }
         let row = sqlx::query("INSERT INTO funding (project_id, proposal_id, number, user_id, wallet, amount) VALUES ($1, $2, $3, $4, $5, $6)")

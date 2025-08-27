@@ -25,6 +25,7 @@ pub struct Env {
     pub evm_job_schedule: String,
     pub dao_contract_address: String,
     pub funding_contract_address: String,
+    pub prediction_contract_address: String,
     pub rpc_url: String,
     pub chain_id: u64,
     pub wallet_private_key: String,
@@ -98,6 +99,8 @@ impl Env {
             std::env::var("DAO_CONTRACT_ADDRESS").expect("DAO_CONTRACT_ADDRESS must be set");
         let funding_contract_address = std::env::var("FUNDING_CONTRACT_ADDRESS")
             .expect("FUNDING_CONTRACT_ADDRESS must be set");
+        let prediction_contract_address = std::env::var("PREDICTION_CONTRACT_ADDRESS")
+            .expect("PREDICTION_CONTRACT_ADDRESS must be set");
         let rpc_url = std::env::var("RPC_URL").expect("RPC_URL must be set");
         let chain_id = std::env::var("CHAIN_ID")
             .ok()
@@ -140,6 +143,7 @@ impl Env {
             evm_job_schedule,
             dao_contract_address,
             funding_contract_address,
+            prediction_contract_address,
             rpc_url,
             chain_id,
             wallet_private_key,
