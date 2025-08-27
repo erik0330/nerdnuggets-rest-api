@@ -64,12 +64,22 @@ pub struct PredictionInfo {
     pub cover_photo: Option<String>,
     pub category: Vec<Category>,
     pub tags: Vec<String>,
+    pub my_predict: Option<MyPrediction>,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub started_at: String,
     pub ended_at: String,
     pub released_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct MyPrediction {
+    pub user_address: String,
+    pub predicts_success: bool,
+    pub nerd_amount: i64,
+    pub block_number: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
@@ -97,7 +107,12 @@ pub struct TopPredictor {
 }
 
 impl Prediction {
-    pub fn to_info(&self, user: UserInfo, category: Vec<Category>) -> PredictionInfo {
+    pub fn to_info(
+        &self,
+        user: UserInfo,
+        category: Vec<Category>,
+        my_predict: Option<MyPrediction>,
+    ) -> PredictionInfo {
         PredictionInfo {
             id: self.id,
             nerd_id: self.nerd_id.clone(),
@@ -126,6 +141,7 @@ impl Prediction {
             started_at: self.started_at.format("%m/%d/%Y").to_string(),
             ended_at: self.ended_at.format("%m/%d/%Y").to_string(),
             released_at: self.released_at,
+            my_predict,
         }
     }
 }

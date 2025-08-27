@@ -74,4 +74,21 @@ impl PredictionPlacementRepository {
             .await
             .unwrap_or(None)
     }
+
+    pub async fn get_prediction_placement_by_user_proposal_milestone(
+        &self,
+        user_address: &str,
+        proposal_id: i64,
+        milestone_index: i64,
+    ) -> Option<PredictionPlacement> {
+        sqlx::query_as::<_, PredictionPlacement>(
+            "SELECT * FROM prediction_placement WHERE user_address = $1 AND proposal_id = $2 AND milestone_index = $3"
+        )
+        .bind(user_address)
+        .bind(proposal_id)
+        .bind(milestone_index)
+        .fetch_optional(self.db_conn.get_pool())
+        .await
+        .unwrap_or(None)
+    }
 }

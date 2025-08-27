@@ -1,8 +1,11 @@
-use crate::{pool::DatabasePool, PredictionRepository, UserRepository, UtilRepository};
+use crate::{
+    pool::DatabasePool, PredictionPlacementRepository, PredictionRepository, UserRepository,
+    UtilRepository,
+};
 use std::sync::Arc;
 use types::{
     error::{ApiError, DbError, UserError},
-    models::{Prediction, PredictionInfo, PredictionStatus},
+    models::{MyPrediction, Prediction, PredictionInfo, PredictionStatus, User},
 };
 use utils::commons::uuid_from_str;
 use uuid::Uuid;
@@ -12,6 +15,7 @@ pub struct PredictionService {
     prediction_repo: PredictionRepository,
     user_repo: UserRepository,
     util_repo: UtilRepository,
+    prediction_placement_repo: PredictionPlacementRepository,
 }
 
 impl PredictionService {
@@ -20,12 +24,14 @@ impl PredictionService {
             prediction_repo: PredictionRepository::new(db_conn),
             user_repo: UserRepository::new(db_conn),
             util_repo: UtilRepository::new(db_conn),
+            prediction_placement_repo: PredictionPlacementRepository::new(db_conn),
         }
     }
 
     pub async fn prediction_to_info(
         &self,
         prediction: &Prediction,
+        current_user: Option<&User>,
     ) -> Result<PredictionInfo, ApiError> {
         let user = self
             .user_repo
@@ -36,10 +42,41 @@ impl PredictionService {
             .util_repo
             .get_category_by_ids(&prediction.category)
             .await;
-        Ok(prediction.to_info(user.to_info(), category))
+        // Get myPredict if current user is provided and has wallet address
+        let my_predict = if let Some(current_user) = current_user {
+            if let Some(wallet_address) = &current_user.wallet_address {
+                if let Some(placement) = self
+                    .prediction_placement_repo
+                    .get_prediction_placement_by_user_proposal_milestone(
+                        wallet_address,
+                        prediction.proposal_id,
+                        prediction.number as i64,
+                    )
+                    .await
+                {
+                    Some(MyPrediction {
+                        predicts_success: placement.predicts_success,
+                        user_address: placement.user_address,
+                        nerd_amount: placement.nerd_amount,
+                        block_number: placement.block_number,
+                    })
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        Ok(prediction.to_info(user.to_info(), category, my_predict))
     }
 
-    pub async fn get_prediction_by_id(&self, id: &str) -> Result<PredictionInfo, ApiError> {
+    pub async fn get_prediction_by_id(
+        &self,
+        id: &str,
+        user: Option<User>,
+    ) -> Result<PredictionInfo, ApiError> {
         let prediction = if let Ok(id) = uuid_from_str(id) {
             self.prediction_repo
                 .get_prediction_by_id(id)
@@ -53,7 +90,7 @@ impl PredictionService {
         } else {
             return Err(DbError::Str("Invalid id format".to_string()).into());
         };
-        self.prediction_to_info(&prediction).await
+        self.prediction_to_info(&prediction, user.as_ref()).await
     }
 
     // pub async fn create_prediction(
@@ -120,22 +157,30 @@ impl PredictionService {
 
     pub async fn get_predictions(
         &self,
+        user: Option<User>,
         title: Option<String>,
         status: Option<PredictionStatus>,
         category_id: Option<Uuid>,
-        user_id: Option<Uuid>,
         is_mine: Option<bool>,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<PredictionInfo>, ApiError> {
         let predictions = self
             .prediction_repo
-            .get_predictions(title, status, category_id, user_id, is_mine, offset, limit)
+            .get_predictions(
+                title,
+                status,
+                category_id,
+                user.as_ref(),
+                is_mine,
+                offset,
+                limit,
+            )
             .await
             .map_err(|_| DbError::Str("Get predictions failed".to_string()))?;
         let mut prediction_infos = Vec::new();
         for prediction in predictions {
-            if let Ok(prediction_info) = self.prediction_to_info(&prediction).await {
+            if let Ok(prediction_info) = self.prediction_to_info(&prediction, user.as_ref()).await {
                 prediction_infos.push(prediction_info);
             }
         }
