@@ -20,16 +20,17 @@ impl PredictionPlacementService {
         proposal_id: i64,
         milestone_index: i64,
         predicts_success: bool,
-        nerd_amount: i64,
+        nerd_amount: u128,
         block_number: i64,
     ) -> Result<PredictionPlacement, sqlx::Error> {
+        let nerd_amount = (nerd_amount as f64) / 10f64.powi(18);
         self.prediction_placement_repo
             .create_prediction_placement(
                 user_address,
                 proposal_id,
                 milestone_index,
                 predicts_success,
-                nerd_amount,
+                nerd_amount as i64,
                 block_number,
             )
             .await

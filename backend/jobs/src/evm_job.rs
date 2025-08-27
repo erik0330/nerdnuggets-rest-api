@@ -88,7 +88,7 @@ pub async fn run(
                         ev.project_id.as_u64() as i64,
                         ev.milestone_index.as_u64() as i64,
                         ev.predicts_success,
-                        ev.nerd_amount.as_u64() as i64,
+                        ev.nerd_amount.as_u128(),
                         to_block_number.unwrap_or_default() as i64,
                     )
                     .await
