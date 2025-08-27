@@ -157,6 +157,7 @@ pub struct Funding {
 pub struct FunderInfo {
     pub user_id: Option<Uuid>,
     pub name: Option<String>,
+    pub username: Option<String>,
     pub wallet: String,
     pub avatar_url: Option<String>,
     pub amount: i32,

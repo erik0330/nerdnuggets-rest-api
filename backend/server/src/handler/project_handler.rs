@@ -4,16 +4,18 @@ use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
     AdminProjectDashboardCounts, AssignEditorRequest, DaoStatisticsResponse, EditorDashboardCounts,
-    GetDaosOption, GetProjectCommentsOption, GetProjectsOption, GetSimilarProjectsOption,
-    MakeDecisionRequest, MilestoneApprovalRequest, ProjectCountsResponse, ProjectFundersResponse,
-    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-    SubmitDaoVoteRequest, SubmitProjectCommentRequest, UpdateMilestoneRequest,
+    GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption, GetProjectsOption,
+    GetSimilarProjectsOption, MakeDecisionRequest, MilestoneApprovalRequest, ProjectCountsResponse,
+    ProjectFundersResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+    ProjectUpdateStep3Request, SubmitDaoVoteRequest, SubmitProjectCommentRequest,
+    UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
     DaoInfo, DaoVote, Milestone, ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo, User,
 };
 use types::{FeedbackStatus, UserRoleType};
+use utils::commons::uuid_from_str;
 
 pub async fn get_project_by_id(
     Path(id): Path<String>,
@@ -397,13 +399,14 @@ pub async fn get_dao_statistics(
 
 pub async fn get_project_funders(
     Path(id): Path<String>,
+    Query(opts): Query<GetProjectFundersOption>,
     State(state): State<AppState>,
 ) -> Result<Json<ProjectFundersResponse>, ApiError> {
-    let project_id = utils::commons::uuid_from_str(&id)?;
+    let project_id = uuid_from_str(&id)?;
     let funders = state
         .service
         .project
-        .get_project_funders_full(project_id)
+        .get_project_funders_full(project_id, opts.offset, opts.limit)
         .await?;
     Ok(Json(funders))
 }

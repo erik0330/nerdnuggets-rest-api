@@ -133,6 +133,13 @@ pub struct GetSimilarProjectsOption {
     pub limit: Option<i32>,
 }
 
+#[derive(Clone, Serialize, Deserialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetProjectFundersOption {
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
+
 #[derive(Clone, Deserialize, Serialize, sqlx::FromRow, Default, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectStatusCount {
@@ -216,6 +223,7 @@ pub struct ProjectFunderInfo {
     pub id: Uuid,
     pub user_id: Option<Uuid>,
     pub name: Option<String>,
+    pub username: Option<String>,
     pub wallet: String,
     pub avatar_url: Option<String>,
     pub number: i16,
