@@ -7,10 +7,15 @@ use types::error::ApiError;
 use types::models::{PredictionInfo, TopPredictor, User};
 
 pub async fn get_prediction_by_id(
+    Extension(user): Extension<Option<User>>,
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<PredictionInfo>, ApiError> {
-    let prediction = state.service.prediction.get_prediction_by_id(&id).await?;
+    let prediction = state
+        .service
+        .prediction
+        .get_prediction_by_id(&id, user)
+        .await?;
     Ok(Json(prediction))
 }
 
@@ -49,10 +54,10 @@ pub async fn get_predictions(
         .service
         .prediction
         .get_predictions(
+            user,
             opts.title,
             opts.status,
             opts.category_id,
-            user.map(|u| u.id),
             opts.is_mine,
             opts.offset,
             opts.limit,

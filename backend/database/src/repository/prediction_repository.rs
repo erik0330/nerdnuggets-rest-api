@@ -1,7 +1,7 @@
 use crate::pool::DatabasePool;
 use sqlx::{self, Error as SqlxError};
 use std::sync::Arc;
-use types::models::{Prediction, PredictionStatus};
+use types::models::{Prediction, PredictionStatus, User};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -107,8 +107,8 @@ impl PredictionRepository {
         title: Option<String>,
         status: Option<PredictionStatus>,
         category_id: Option<Uuid>,
-        _user_id: Option<Uuid>,
-        _is_mine: Option<bool>,
+        user: Option<&User>,
+        is_mine: Option<bool>,
         offset: Option<i32>,
         limit: Option<i32>,
     ) -> Result<Vec<Prediction>, SqlxError> {
@@ -125,6 +125,13 @@ impl PredictionRepository {
         }
         if category_id.is_some() {
             filters.push(format!("${index} = ANY(p.category)"));
+            index += 1;
+        }
+        if is_mine.unwrap_or_default() && user.is_some() {
+            query = format!(
+                "{} JOIN prediction_placement pp ON p.proposal_id = pp.proposal_id AND p.number = pp.milestone_index AND pp.user_address = ${index} ",
+                &query
+            );
         }
         if !filters.is_empty() {
             query = format!("{} WHERE {}", &query, &filters.join(" AND "));
@@ -144,6 +151,11 @@ impl PredictionRepository {
         }
         if let Some(c) = category_id {
             query = query.bind(c)
+        }
+        if is_mine.unwrap_or_default() {
+            if let Some(u) = user {
+                query = query.bind(u.wallet_address.as_deref().unwrap_or_default());
+            }
         }
         let predictions = query.fetch_all(self.db_conn.get_pool()).await?;
         Ok(predictions)
