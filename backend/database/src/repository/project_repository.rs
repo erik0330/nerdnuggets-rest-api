@@ -985,14 +985,28 @@ impl ProjectRepository {
         &self,
         project_id: Uuid,
         limit: Option<i32>,
+        offset: Option<i32>,
     ) -> Result<Vec<Funding>, SqlxError> {
         let fundings = sqlx::query_as::<_, Funding>(
-            "SELECT * FROM funding WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2",
+            "SELECT * FROM funding WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
         )
         .bind(project_id)
-        .bind(limit.unwrap_or(1000))
+        .bind(limit.unwrap_or(5))
+        .bind(offset.unwrap_or(0))
         .fetch_all(self.db_conn.get_pool())
         .await?;
         Ok(fundings)
+    }
+
+    pub async fn get_project_funding_count(&self, project_id: Uuid) -> Result<i64, SqlxError> {
+        let count = sqlx::query!(
+            "SELECT COUNT(*) as count FROM funding WHERE project_id = $1",
+            project_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+        Ok(count)
     }
 }

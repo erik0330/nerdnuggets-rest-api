@@ -989,7 +989,7 @@ impl ProjectService {
     async fn get_project_funders(&self, project_id: Uuid) -> Result<Vec<FunderInfo>, ApiError> {
         let fundings = self
             .project_repo
-            .get_project_funding(project_id, Some(3))
+            .get_project_funding(project_id, Some(3), Some(0))
             .await
             .map_err(|_| DbError::Str("Failed to get project funding".to_string()))?;
 
@@ -999,7 +999,8 @@ impl ProjectService {
                 if let Some(user) = self.user_repo.get_user_by_id(user_id).await {
                     funders.push(FunderInfo {
                         user_id: Some(user_id),
-                        name: Some(user.name.unwrap_or_default()),
+                        name: user.name,
+                        username: user.username,
                         wallet: funding.wallet.unwrap_or_default(),
                         avatar_url: user.avatar_url.clone(),
                         amount: funding.amount,
@@ -1008,6 +1009,7 @@ impl ProjectService {
                     funders.push(FunderInfo {
                         user_id: None,
                         name: None,
+                        username: None,
                         wallet: funding.wallet.unwrap_or_default(),
                         avatar_url: None,
                         amount: funding.amount,
@@ -1017,6 +1019,7 @@ impl ProjectService {
                 funders.push(FunderInfo {
                     user_id: None,
                     name: None,
+                    username: None,
                     wallet: funding.wallet.unwrap_or_default(),
                     avatar_url: None,
                     amount: funding.amount,
@@ -1029,12 +1032,20 @@ impl ProjectService {
     pub async fn get_project_funders_full(
         &self,
         project_id: Uuid,
+        offset: Option<i32>,
+        limit: Option<i32>,
     ) -> Result<ProjectFundersResponse, ApiError> {
         let fundings = self
             .project_repo
-            .get_project_funding(project_id, None)
+            .get_project_funding(project_id, limit, offset)
             .await
             .map_err(|_| DbError::Str("Failed to get project funding".to_string()))?;
+
+        let total_count = self
+            .project_repo
+            .get_project_funding_count(project_id)
+            .await
+            .map_err(|_| DbError::Str("Failed to get project funding count".to_string()))?;
 
         let mut funders = Vec::new();
         let mut total_amount = 0;
@@ -1047,7 +1058,8 @@ impl ProjectService {
                     ProjectFunderInfo {
                         id: funding.id,
                         user_id: Some(user_id),
-                        name: Some(user.name.unwrap_or_default()),
+                        name: user.name,
+                        username: user.username,
                         wallet: funding.wallet.clone().unwrap_or_default(),
                         avatar_url: user.avatar_url.clone(),
                         number: funding.number,
@@ -1060,6 +1072,7 @@ impl ProjectService {
                         id: funding.id,
                         user_id: None,
                         name: None,
+                        username: None,
                         wallet: funding.wallet.clone().unwrap_or_default(),
                         avatar_url: None,
                         number: funding.number,
@@ -1073,6 +1086,7 @@ impl ProjectService {
                     id: funding.id,
                     user_id: None,
                     name: None,
+                    username: None,
                     wallet: funding.wallet.clone().unwrap_or_default(),
                     avatar_url: None,
                     number: funding.number,
@@ -1087,7 +1101,7 @@ impl ProjectService {
         Ok(ProjectFundersResponse {
             funders,
             total_amount,
-            total_count: fundings.len() as i64,
+            total_count,
         })
     }
 }
