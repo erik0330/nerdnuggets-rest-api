@@ -45,7 +45,7 @@ impl PredictionPlacementRepository {
         milestone_index: i64,
     ) -> Option<PredictionPlacement> {
         sqlx::query_as::<_, PredictionPlacement>(
-            "SELECT * FROM prediction_placement WHERE user_address = $1 AND proposal_id = $2 AND milestone_index = $3"
+            "SELECT * FROM prediction_placement WHERE user_address ILIKE $1 AND proposal_id = $2 AND milestone_index = $3"
         )
         .bind(user_address)
         .bind(proposal_id)

@@ -129,7 +129,7 @@ impl PredictionRepository {
         }
         if is_mine.unwrap_or_default() && user.is_some() {
             query = format!(
-                "{} JOIN prediction_placement pp ON p.proposal_id = pp.proposal_id AND p.number = pp.milestone_index AND pp.user_address = ${index} ",
+                "{} JOIN prediction_placement pp ON p.proposal_id = pp.proposal_id AND p.number = pp.milestone_index AND pp.user_address ILIKE ${index} ",
                 &query
             );
         }
