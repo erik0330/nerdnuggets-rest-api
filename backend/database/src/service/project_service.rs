@@ -356,24 +356,16 @@ impl ProjectService {
         let id = uuid_from_str(id)?;
         let (status, dao_at, started_at) = match status {
             FeedbackStatus::Accepted if to_dao => {
-                (ProjectStatus::DaoVoting, Some(Utc::now()), None)
-            }
-            FeedbackStatus::Accepted => {
-                return Err(DbError::Str("Coming soon...".to_string()).into());
-                // (ProjectStatus::Funding, None, Some(Utc::now()))
-            }
-            FeedbackStatus::RevisionRequired => (ProjectStatus::RevisionAdmin, None, None),
-            FeedbackStatus::Rejected => (ProjectStatus::Rejected, None, None),
-            FeedbackStatus::Pending => {
-                return Err(DbError::Str("Status should not be Pending".to_string()).into());
-            }
-        };
-        if let Ok(project) = self
-            .project_repo
-            .decide_admin(id, &status, feedback, dao_at, started_at)
-            .await
-        {
-            if project.status == ProjectStatus::DaoVoting.to_i16() {
+                let project = self
+                    .project_repo
+                    .get_project_by_id(id)
+                    .await
+                    .ok_or(DbError::Str("Project not found".to_string()))?;
+                if project.status != ProjectStatus::ApprovedEditor.to_i16() {
+                    return Err(
+                        DbError::Str("Project's status is not ApprovedEditor".to_string()).into(),
+                    );
+                }
                 let researcher = self
                     .user_repo
                     .get_user_by_id(project.user_id)
@@ -400,6 +392,24 @@ impl ProjectService {
                     )
                     .await
                     .map_err(|e| DbError::Str(e.to_string()))?;
+                (ProjectStatus::DaoVoting, Some(Utc::now()), None)
+            }
+            FeedbackStatus::Accepted => {
+                return Err(DbError::Str("Coming soon...".to_string()).into());
+                // (ProjectStatus::Funding, None, Some(Utc::now()))
+            }
+            FeedbackStatus::RevisionRequired => (ProjectStatus::RevisionAdmin, None, None),
+            FeedbackStatus::Rejected => (ProjectStatus::Rejected, None, None),
+            FeedbackStatus::Pending => {
+                return Err(DbError::Str("Status should not be Pending".to_string()).into());
+            }
+        };
+        if let Ok(project) = self
+            .project_repo
+            .decide_admin(id, &status, feedback, dao_at, started_at)
+            .await
+        {
+            if project.status == ProjectStatus::DaoVoting.to_i16() {
                 if !self
                     .project_repo
                     .create_dao(&project)
