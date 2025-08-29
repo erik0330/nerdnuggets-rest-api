@@ -203,6 +203,14 @@ impl ProjectRepository {
         .unwrap_or(Vec::new())
     }
 
+    pub async fn get_milestone_by_id(&self, milestone_id: Uuid) -> Option<Milestone> {
+        sqlx::query_as::<_, Milestone>("SELECT * FROM milestone WHERE id = $1")
+            .bind(milestone_id)
+            .fetch_optional(self.db_conn.get_pool())
+            .await
+            .unwrap_or(None)
+    }
+
     pub async fn create_milestone(
         &self,
         project_id: Uuid,
