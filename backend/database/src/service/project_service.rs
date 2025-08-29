@@ -14,7 +14,7 @@ use types::{
         CompletedDao, DaoInfo, DaoVote, FunderInfo, Milestone, Project, ProjectCommentInfo,
         ProjectIds, ProjectInfo, ProjectItemInfo,
     },
-    FeedbackStatus, ProjectStatus, UserRoleType,
+    FeedbackStatus, MileStoneStatus, ProjectResultStatus, ProjectStatus, UserRoleType,
 };
 use utils::commons::{generate_random_number, uuid_from_str};
 use uuid::Uuid;
@@ -1103,5 +1103,80 @@ impl ProjectService {
             total_amount,
             total_count,
         })
+    }
+
+    pub async fn approve_milestone(
+        &self,
+        proposal_id: i64,
+        milestone_number: i16,
+    ) -> Result<bool, ApiError> {
+        // Get the project by proposal_id
+        let project = self
+            .project_repo
+            .get_project_by_proposal_id(proposal_id)
+            .await
+            .ok_or_else(|| DbError::Str("Project not found".to_string()))?;
+
+        // Get all milestones for the project
+        let milestones = self.project_repo.get_milestones(project.id).await;
+
+        // Find the current milestone by number (milestone_number is 0-indexed from contract, but we store 1-indexed)
+        let current_milestone_number = milestone_number + 1;
+        let current_milestone = milestones
+            .iter()
+            .find(|m| m.number == current_milestone_number)
+            .ok_or_else(|| DbError::Str("Current milestone not found".to_string()))?;
+
+        // Update current milestone: set status to success(2) and proof_status to approved(2)
+        let success = self
+            .project_repo
+            .update_milestone_status(current_milestone.id, MileStoneStatus::Success.to_i16())
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        if !success {
+            return Err(
+                DbError::Str("Failed to update current milestone status".to_string()).into(),
+            );
+        }
+
+        // Update proof_status to approved(2)
+        let proof_success = self
+            .project_repo
+            .update_milestone_proof_status(
+                current_milestone.id,
+                ProjectResultStatus::Approved.to_i16(),
+                None,
+            )
+            .await
+            .map_err(|e| DbError::Str(e.to_string()))?;
+
+        if !proof_success {
+            return Err(DbError::Str(
+                "Failed to update current milestone proof status".to_string(),
+            )
+            .into());
+        }
+
+        // Check if next milestone exists and update its status to inProcess(1)
+        let next_milestone_number = current_milestone_number + 1;
+        if let Some(next_milestone) = milestones
+            .iter()
+            .find(|m| m.number == next_milestone_number)
+        {
+            let next_success = self
+                .project_repo
+                .update_milestone_status(next_milestone.id, MileStoneStatus::InProgress.to_i16())
+                .await
+                .map_err(|e| DbError::Str(e.to_string()))?;
+
+            if !next_success {
+                return Err(
+                    DbError::Str("Failed to update next milestone status".to_string()).into(),
+                );
+            }
+        }
+
+        Ok(true)
     }
 }

@@ -101,6 +101,23 @@ pub async fn run(
                     );
                 }
             }
+            FUNDING_CONTRACTEvents::MilestoneApprovedByAdminFilter(ev) => {
+                if let Err(e) = service
+                    .project
+                    .approve_milestone(
+                        ev.project_id.as_u64() as i64,
+                        ev.milestone_index.as_u32() as i16,
+                    )
+                    .await
+                {
+                    println!("Failed to approve milestone: {}", e);
+                } else {
+                    println!(
+                        "Successfully approved milestone {} for project {}",
+                        ev.milestone_index, ev.project_id
+                    );
+                }
+            }
             _ => {}
         }
     }
