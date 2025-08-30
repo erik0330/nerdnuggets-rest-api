@@ -356,24 +356,16 @@ impl ProjectService {
         let id = uuid_from_str(id)?;
         let (status, dao_at, started_at) = match status {
             FeedbackStatus::Accepted if to_dao => {
-                (ProjectStatus::DaoVoting, Some(Utc::now()), None)
-            }
-            FeedbackStatus::Accepted => {
-                return Err(DbError::Str("Coming soon...".to_string()).into());
-                // (ProjectStatus::Funding, None, Some(Utc::now()))
-            }
-            FeedbackStatus::RevisionRequired => (ProjectStatus::RevisionAdmin, None, None),
-            FeedbackStatus::Rejected => (ProjectStatus::Rejected, None, None),
-            FeedbackStatus::Pending => {
-                return Err(DbError::Str("Status should not be Pending".to_string()).into());
-            }
-        };
-        if let Ok(project) = self
-            .project_repo
-            .decide_admin(id, &status, feedback, dao_at, started_at)
-            .await
-        {
-            if project.status == ProjectStatus::DaoVoting.to_i16() {
+                let project = self
+                    .project_repo
+                    .get_project_by_id(id)
+                    .await
+                    .ok_or(DbError::Str("Project not found".to_string()))?;
+                if project.status != ProjectStatus::ApprovedEditor.to_i16() {
+                    return Err(
+                        DbError::Str("Project's status is not ApprovedEditor".to_string()).into(),
+                    );
+                }
                 let researcher = self
                     .user_repo
                     .get_user_by_id(project.user_id)
@@ -400,6 +392,24 @@ impl ProjectService {
                     )
                     .await
                     .map_err(|e| DbError::Str(e.to_string()))?;
+                (ProjectStatus::DaoVoting, Some(Utc::now()), None)
+            }
+            FeedbackStatus::Accepted => {
+                return Err(DbError::Str("Coming soon...".to_string()).into());
+                // (ProjectStatus::Funding, None, Some(Utc::now()))
+            }
+            FeedbackStatus::RevisionRequired => (ProjectStatus::RevisionAdmin, None, None),
+            FeedbackStatus::Rejected => (ProjectStatus::Rejected, None, None),
+            FeedbackStatus::Pending => {
+                return Err(DbError::Str("Status should not be Pending".to_string()).into());
+            }
+        };
+        if let Ok(project) = self
+            .project_repo
+            .decide_admin(id, &status, feedback, dao_at, started_at)
+            .await
+        {
+            if project.status == ProjectStatus::DaoVoting.to_i16() {
                 if !self
                     .project_repo
                     .create_dao(&project)
@@ -492,11 +502,40 @@ impl ProjectService {
         &self,
         milestone_id: &str,
         payload: MilestoneApprovalRequest,
+        evm: &EVMClient,
     ) -> Result<bool, ApiError> {
         let proof_status = match payload.status {
             MilestoneApprovalStatus::Approved => 2,
             MilestoneApprovalStatus::Rejected => 3,
         };
+
+        // If milestone is approved, call the funding contract
+        match payload.status {
+            MilestoneApprovalStatus::Approved => {
+                // Get milestone information to find project ID and milestone index
+                let milestone_uuid = uuid_from_str(milestone_id)?;
+
+                let milestone = self
+                    .project_repo
+                    .get_milestone_by_id(milestone_uuid)
+                    .await
+                    .ok_or_else(|| DbError::Str("Milestone not found".to_string()))?;
+
+                // Get project information to find proposal ID
+                let project = self
+                    .project_repo
+                    .get_project_by_id(milestone.project_id)
+                    .await
+                    .ok_or_else(|| DbError::Str("Project not found".to_string()))?;
+
+                // Call the funding contract to approve the milestone
+                let _transaction_id = evm
+                    .approve_milestone_by_admin(project.proposal_id as u64, milestone.number as u64)
+                    .await
+                    .map_err(|e| DbError::Str(format!("Failed to call funding contract: {}", e)))?;
+            }
+            MilestoneApprovalStatus::Rejected => {}
+        }
 
         let success = self
             .project_repo
@@ -1104,4 +1143,29 @@ impl ProjectService {
             total_count,
         })
     }
+
+    // pub async fn get_project_by_proposal_id(
+    //     &self,
+    //     proposal_id: i64,
+    // ) -> Result<Option<Project>, ApiError> {
+    //     let project = self
+    //         .project_repo
+    //         .get_project_by_proposal_id(proposal_id)
+    //         .await;
+    //     Ok(project)
+    // }
+
+    // pub async fn update_milestone_status(
+    //     &self,
+    //     milestone_id: &str,
+    //     status: i16,
+    // ) -> Result<bool, ApiError> {
+    //     let milestone_uuid = uuid_from_str(milestone_id)?;
+    //     let res = self
+    //         .project_repo
+    //         .update_milestone_status(milestone_uuid, status)
+    //         .await
+    //         .map_err(|_| DbError::Str("Update milestone status failed".to_string()))?;
+    //     Ok(res)
+    // }
 }

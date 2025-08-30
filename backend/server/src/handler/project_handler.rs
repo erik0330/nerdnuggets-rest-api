@@ -234,7 +234,7 @@ pub async fn approve_reject_milestone(
     let success = state
         .service
         .project
-        .approve_reject_milestone(&milestone_id, payload)
+        .approve_reject_milestone(&milestone_id, payload, &state.evm)
         .await?;
 
     Ok(Json(success))

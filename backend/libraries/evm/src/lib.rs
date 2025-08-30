@@ -106,6 +106,27 @@ impl EVMClient {
         }
     }
 
+    pub async fn approve_milestone_by_admin(
+        &self,
+        project_id: u64,
+        milestone_index: u64,
+    ) -> Result<String, anyhow::Error> {
+        let project_id = U256::from(project_id);
+        let milestone_index = U256::from(milestone_index - 1);
+
+        if let Some(tx) = self
+            .funding_contract
+            .approve_milestone_by_admin(project_id, milestone_index)
+            .send()
+            .await?
+            .await?
+        {
+            return Ok(format!("{:?}", tx.transaction_hash));
+        } else {
+            return Err(anyhow!("Unexpected error"));
+        }
+    }
+
     pub async fn get_dao_contract_events(
         &self,
         from_block_number: Option<u64>,
