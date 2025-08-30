@@ -30,6 +30,7 @@ pub struct Prediction {
     pub cover_photo: Option<String>,
     pub category: Vec<Uuid>,
     pub tags: Vec<String>,
+    pub predict_result: Option<bool>,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -65,6 +66,8 @@ pub struct PredictionInfo {
     pub category: Vec<Category>,
     pub tags: Vec<String>,
     pub my_predict: Option<MyPrediction>,
+
+    pub predict_result: Option<bool>,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -142,6 +145,7 @@ impl Prediction {
             ended_at: self.ended_at.format("%m/%d/%Y").to_string(),
             released_at: self.released_at,
             my_predict,
+            predict_result: self.predict_result,
         }
     }
 }

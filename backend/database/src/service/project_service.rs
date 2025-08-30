@@ -1,4 +1,6 @@
-use crate::{pool::DatabasePool, ProjectRepository, UserRepository, UtilRepository};
+use crate::{
+    pool::DatabasePool, PredictionRepository, ProjectRepository, UserRepository, UtilRepository,
+};
 use chrono::{Datelike, Duration, Utc};
 use evm::EVMClient;
 use std::sync::Arc;
@@ -14,7 +16,7 @@ use types::{
         CompletedDao, DaoInfo, DaoVote, FunderInfo, Milestone, Project, ProjectCommentInfo,
         ProjectIds, ProjectInfo, ProjectItemInfo,
     },
-    FeedbackStatus, ProjectStatus, UserRoleType,
+    FeedbackStatus, MileStoneStatus, ProjectStatus, UserRoleType,
 };
 use utils::commons::{generate_random_number, uuid_from_str};
 use uuid::Uuid;
@@ -24,6 +26,7 @@ pub struct ProjectService {
     project_repo: ProjectRepository,
     user_repo: UserRepository,
     util_repo: UtilRepository,
+    prediction_repo: PredictionRepository,
 }
 
 impl ProjectService {
@@ -32,6 +35,7 @@ impl ProjectService {
             project_repo: ProjectRepository::new(db_conn),
             user_repo: UserRepository::new(db_conn),
             util_repo: UtilRepository::new(db_conn),
+            prediction_repo: PredictionRepository::new(db_conn),
         }
     }
 
@@ -1144,28 +1148,83 @@ impl ProjectService {
         })
     }
 
-    // pub async fn get_project_by_proposal_id(
-    //     &self,
-    //     proposal_id: i64,
-    // ) -> Result<Option<Project>, ApiError> {
-    //     let project = self
-    //         .project_repo
-    //         .get_project_by_proposal_id(proposal_id)
-    //         .await;
-    //     Ok(project)
-    // }
+    pub async fn milestone_finalized(
+        &self,
+        project_id: i64,
+        milestone_index: i16,
+        success: bool,
+    ) -> Result<bool, ApiError> {
+        // Get the project by proposal ID
+        if let Some(project) = self
+            .project_repo
+            .get_project_by_proposal_id(project_id)
+            .await
+        {
+            let milestones = self.project_repo.get_milestones(project.id).await;
+            // Find the current milestone by number (milestone_index is 0-based, but our system uses 1-based)
+            let current_milestone_number = milestone_index + 1;
+            if let Some(current_milestone) = milestones
+                .iter()
+                .find(|m| m.number == current_milestone_number)
+            {
+                // Update current milestone status based on success
+                let new_status = if success {
+                    MileStoneStatus::Success.to_i16()
+                } else {
+                    MileStoneStatus::GiveUp.to_i16()
+                };
+                if let Err(e) = self
+                    .project_repo
+                    .update_milestone_status(current_milestone.id, new_status)
+                    .await
+                {
+                    println!(
+                        "Failed to update milestone {} status: {}",
+                        current_milestone.id, e
+                    );
+                }
+                // Update prediction result based on milestone success
+                if let Err(e) = self
+                    .prediction_repo
+                    .update_prediction_result(project_id, current_milestone_number, success)
+                    .await
+                {
+                    println!(
+                        "Failed to update prediction result for project {} milestone {}: {}",
+                        project_id, milestone_index, e
+                    );
+                }
 
-    // pub async fn update_milestone_status(
-    //     &self,
-    //     milestone_id: &str,
-    //     status: i16,
-    // ) -> Result<bool, ApiError> {
-    //     let milestone_uuid = uuid_from_str(milestone_id)?;
-    //     let res = self
-    //         .project_repo
-    //         .update_milestone_status(milestone_uuid, status)
-    //         .await
-    //         .map_err(|_| DbError::Str("Update milestone status failed".to_string()))?;
-    //     Ok(res)
-    // }
+                // Find and start the next milestone if it exists
+                let next_milestone_number = current_milestone_number + 1;
+                if let Some(next_milestone) = milestones
+                    .iter()
+                    .find(|m| m.number == next_milestone_number)
+                {
+                    // Update next milestone status to "in process" (1)
+                    if let Err(e) = self
+                        .project_repo
+                        .update_milestone_status(
+                            next_milestone.id,
+                            MileStoneStatus::InProgress.to_i16(),
+                        )
+                        .await
+                    {
+                        println!(
+                            "Failed to update next milestone {} status: {}",
+                            next_milestone.id, e
+                        );
+                    }
+                }
+            } else {
+                println!(
+                    "Milestone with number {} not found for project {}",
+                    current_milestone_number, project.id
+                );
+            }
+        } else {
+            return Err(DbError::Str("Project not found".to_string()).into());
+        }
+        Ok(true)
+    }
 }
