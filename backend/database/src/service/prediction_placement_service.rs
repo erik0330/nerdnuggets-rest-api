@@ -25,6 +25,9 @@ impl PredictionPlacementService {
         nerd_amount: u128,
         block_number: i64,
     ) -> Result<PredictionPlacement, sqlx::Error> {
+        let nerd_amount = (nerd_amount as f64) / 10f64.powi(18);
+        let nerd_amount_i64 = nerd_amount as i64;
+        let milestone_index = milestone_index + 1;
         let placement = self
             .prediction_placement_repo
             .get_prediction_placement_by_user_proposal_milestone(
@@ -36,9 +39,6 @@ impl PredictionPlacementService {
         if placement.is_some() {
             return Err(sqlx::Error::RowNotFound);
         }
-        let nerd_amount = (nerd_amount as f64) / 10f64.powi(18);
-        let nerd_amount_i64 = nerd_amount as i64;
-        let milestone_index = milestone_index + 1;
 
         // Create the prediction placement
         let prediction_placement = self

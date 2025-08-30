@@ -1143,4 +1143,29 @@ impl ProjectService {
             total_count,
         })
     }
+
+    // pub async fn get_project_by_proposal_id(
+    //     &self,
+    //     proposal_id: i64,
+    // ) -> Result<Option<Project>, ApiError> {
+    //     let project = self
+    //         .project_repo
+    //         .get_project_by_proposal_id(proposal_id)
+    //         .await;
+    //     Ok(project)
+    // }
+
+    // pub async fn update_milestone_status(
+    //     &self,
+    //     milestone_id: &str,
+    //     status: i16,
+    // ) -> Result<bool, ApiError> {
+    //     let milestone_uuid = uuid_from_str(milestone_id)?;
+    //     let res = self
+    //         .project_repo
+    //         .update_milestone_status(milestone_uuid, status)
+    //         .await
+    //         .map_err(|_| DbError::Str("Update milestone status failed".to_string()))?;
+    //     Ok(res)
+    // }
 }
