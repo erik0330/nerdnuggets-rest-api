@@ -197,4 +197,26 @@ impl PredictionRepository {
         .await?;
         Ok(row.rows_affected() == 1)
     }
+
+    pub async fn update_prediction_result(
+        &self,
+        proposal_id: i64,
+        milestone_index: i16,
+        predict_result: bool,
+    ) -> Result<bool, SqlxError> {
+        let row = sqlx::query(
+            "UPDATE prediction SET 
+                status = $1,
+                predict_result = $2,
+                updated_at = now() 
+            WHERE proposal_id = $3 AND number = $4",
+        )
+        .bind(PredictionStatus::Completed)
+        .bind(predict_result)
+        .bind(proposal_id)
+        .bind(milestone_index)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(row.rows_affected() == 1)
+    }
 }
