@@ -4,7 +4,7 @@ use crate::{
         prediction_handler::{get_prediction_by_id, get_predictions, get_top_predictors},
         project_handler::{
             get_dao_statistics, get_daos, get_project_by_id, get_project_counts_by_status,
-            get_project_ids, get_projects, get_similar_projects,
+            get_project_funders, get_project_ids, get_projects, get_similar_projects,
         },
         user_handler::get_user_profile_by_username,
         util_handler::{get_categories, get_category_by_id, get_institutions},
@@ -23,6 +23,7 @@ pub fn routes() -> Router<AppState> {
         .route("/project/:id", get(get_project_by_id))
         .route("/project/counts", get(get_project_counts_by_status))
         .route("/project/ids", get(get_project_ids))
+        .route("/project/:id/funders", get(get_project_funders))
         .route("/project/:id/similar", get(get_similar_projects))
         .route("/dao", get(get_daos))
         .route("/dao/statistics", get(get_dao_statistics))
