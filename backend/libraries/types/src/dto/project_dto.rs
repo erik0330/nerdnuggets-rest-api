@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
+use crate::models::DaoInfo;
+
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectUpdateStep1Request {
@@ -230,4 +232,50 @@ pub struct ProjectFunderInfo {
     pub amount: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ResearchProjectDashboardResponse {
+    pub total_projects: i32,
+    pub total_funded: i32,
+    pub total_backers: i32,
+    pub completed: i32,
+}
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserDaoVotingStats {
+    pub total_votes: i64,
+    pub yes_votes: i64,
+    pub no_votes: i64,
+    pub passed: i64,
+    pub failed: i64,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, Default)]
+pub enum DaoVoteTab {
+    #[default]
+    All,
+    Yes,
+    No,
+    Passed,
+    Failed,
+}
+
+#[derive(Clone, Deserialize, Serialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetUserDaoVotesOption {
+    pub search: Option<String>,
+    pub tab: Option<DaoVoteTab>,
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct UserDaoVotesResponse {
+    pub daos: Vec<DaoInfo>,
+    pub total: i64,
+    pub stats: UserDaoVotingStats,
 }
