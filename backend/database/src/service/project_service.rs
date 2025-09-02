@@ -9,7 +9,8 @@ use types::{
         AdminProjectDashboardCounts, DaoStatisticsResponse, EditorDashboardCounts,
         MilestoneApprovalRequest, MilestoneApprovalStatus, ProjectCountsResponse,
         ProjectFunderInfo, ProjectFundersResponse, ProjectUpdateStep1Request,
-        ProjectUpdateStep2Request, ProjectUpdateStep3Request, UpdateMilestoneRequest,
+        ProjectUpdateStep2Request, ProjectUpdateStep3Request, ResearchProjectDashboardResponse,
+        UpdateMilestoneRequest,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -1226,5 +1227,29 @@ impl ProjectService {
             return Err(DbError::Str("Project not found".to_string()).into());
         }
         Ok(true)
+    }
+
+    pub async fn get_research_projects_dashboard(
+        &self,
+        user_id: Uuid,
+    ) -> Result<ResearchProjectDashboardResponse, ApiError> {
+        // Get user's projects
+        let projects = self.project_repo.get_projects_by_user_id(user_id).await;
+
+        // Calculate dashboard metrics
+        let total_projects = projects.len() as i32;
+        let total_funded = projects.iter().map(|p| p.funding_amount).sum();
+        let total_backers = projects.iter().map(|p| p.count_contributors).sum();
+        let completed = projects
+            .iter()
+            .filter(|p| p.status == ProjectStatus::Completed.to_i16())
+            .count() as i32;
+
+        Ok(ResearchProjectDashboardResponse {
+            total_projects,
+            total_funded,
+            total_backers,
+            completed,
+        })
     }
 }

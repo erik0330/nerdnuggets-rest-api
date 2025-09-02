@@ -4,9 +4,9 @@ use crate::{
         project_handler::{
             approve_reject_milestone, assign_editor, create_project, delete_project,
             get_admin_project_dashboard_counts, get_dao_by_id, get_editor_dashboard_counts,
-            get_milestones, get_my_dao_vote, get_project_comments, make_decision, submit_dao_vote,
-            submit_project, submit_project_comment, update_milestone, update_project_step_1,
-            update_project_step_2, update_project_step_3,
+            get_milestones, get_my_dao_vote, get_project_comments, get_research_projects_dashboard,
+            make_decision, submit_dao_vote, submit_project, submit_project_comment,
+            update_milestone, update_project_step_1, update_project_step_2, update_project_step_3,
         },
     },
     state::AppState,
@@ -40,4 +40,8 @@ pub fn routes() -> Router<AppState> {
             get(get_admin_project_dashboard_counts),
         )
         .route("/project/editor/counts", get(get_editor_dashboard_counts))
+        .route(
+            "/project/research/dashboard",
+            get(get_research_projects_dashboard),
+        )
 }

@@ -1017,4 +1017,14 @@ impl ProjectRepository {
         .unwrap_or(0);
         Ok(count)
     }
+
+    pub async fn get_projects_by_user_id(&self, user_id: Uuid) -> Vec<Project> {
+        sqlx::query_as::<_, Project>(
+            "SELECT * FROM project WHERE user_id = $1 ORDER BY created_at DESC",
+        )
+        .bind(user_id)
+        .fetch_all(self.db_conn.get_pool())
+        .await
+        .unwrap_or_default()
+    }
 }

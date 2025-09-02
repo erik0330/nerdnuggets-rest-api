@@ -231,3 +231,12 @@ pub struct ProjectFunderInfo {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ResearchProjectDashboardResponse {
+    pub total_projects: i32,
+    pub total_funded: i32,
+    pub total_backers: i32,
+    pub completed: i32,
+}

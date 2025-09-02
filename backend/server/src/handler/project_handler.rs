@@ -7,8 +7,8 @@ use types::dto::{
     GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption, GetProjectsOption,
     GetSimilarProjectsOption, MakeDecisionRequest, MilestoneApprovalRequest, ProjectCountsResponse,
     ProjectFundersResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
-    ProjectUpdateStep3Request, SubmitDaoVoteRequest, SubmitProjectCommentRequest,
-    UpdateMilestoneRequest,
+    ProjectUpdateStep3Request, ResearchProjectDashboardResponse, SubmitDaoVoteRequest,
+    SubmitProjectCommentRequest, UpdateMilestoneRequest,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
@@ -409,4 +409,16 @@ pub async fn get_project_funders(
         .get_project_funders_full(project_id, opts.offset, opts.limit)
         .await?;
     Ok(Json(funders))
+}
+
+pub async fn get_research_projects_dashboard(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+) -> Result<Json<ResearchProjectDashboardResponse>, ApiError> {
+    let dashboard = state
+        .service
+        .project
+        .get_research_projects_dashboard(user.id)
+        .await?;
+    Ok(Json(dashboard))
 }
