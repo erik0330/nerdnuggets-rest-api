@@ -1027,4 +1027,140 @@ impl ProjectRepository {
         .await
         .unwrap_or_default()
     }
+
+    pub async fn get_user_dao_voting_stats(
+        &self,
+        user_id: Uuid,
+    ) -> Result<(i64, i64, i64, i64, i64), SqlxError> {
+        // Get total votes by user
+        let total_votes = sqlx::query!(
+            "SELECT COUNT(*) as count FROM dao_vote WHERE user_id = $1",
+            user_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        // Get yes votes (status = 1)
+        let yes_votes = sqlx::query!(
+            "SELECT COUNT(*) as count FROM dao_vote WHERE user_id = $1 AND status = 1",
+            user_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        // Get no votes (status = 2)
+        let no_votes = sqlx::query!(
+            "SELECT COUNT(*) as count FROM dao_vote WHERE user_id = $1 AND status = 2",
+            user_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        // Get passed DAOs where user voted
+        let passed = sqlx::query!(
+            "SELECT COUNT(DISTINCT dv.dao_id) as count 
+             FROM dao_vote dv 
+             JOIN dao d ON dv.dao_id = d.id 
+             WHERE dv.user_id = $1 AND d.status = 1",
+            user_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        // Get failed DAOs where user voted
+        let failed = sqlx::query!(
+            "SELECT COUNT(DISTINCT dv.dao_id) as count 
+             FROM dao_vote dv 
+             JOIN dao d ON dv.dao_id = d.id 
+             WHERE dv.user_id = $1 AND d.status = 2",
+            user_id
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        Ok((total_votes, yes_votes, no_votes, passed, failed))
+    }
+
+    pub async fn get_user_dao_votes(
+        &self,
+        user_id: Uuid,
+        search: Option<&str>,
+        status: Option<i16>,
+        my_vote: Option<i16>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<Dao>, SqlxError> {
+        let mut filters = Vec::new();
+        let mut index = 2; // Start from 2 since user_id is $1
+        let mut query = format!("SELECT DISTINCT d.* FROM dao d JOIN dao_vote dv ON d.id = dv.dao_id AND dv.user_id = $1");
+
+        // Add search filter
+        if search.filter(|s| !s.is_empty()).is_some() {
+            filters.push(format!(
+                "(d.title ILIKE ${index} OR d.description ILIKE ${index})"
+            ));
+            index += 1;
+        }
+
+        // Add status filter
+        if status.is_some() {
+            filters.push(format!("d.status = ${index}"));
+            index += 1;
+        }
+
+        // Add my vote filter
+        if my_vote.is_some() {
+            filters.push(format!("dv.status = ${index}"));
+            index += 1;
+        }
+
+        // Add WHERE clause if filters exist
+        if !filters.is_empty() {
+            let where_clause = format!(" WHERE {}", filters.join(" AND "));
+            query = format!("{}{}", query, where_clause);
+        }
+
+        // Add ORDER BY and LIMIT/OFFSET to main query
+        query = format!(
+            "{} ORDER BY d.created_at DESC LIMIT ${index} OFFSET ${}",
+            query,
+            index + 1
+        );
+
+        // Build the main query with bindings
+        let mut main_query = sqlx::query_as::<_, Dao>(&query)
+            .bind(user_id)
+            .bind(limit.unwrap_or(10))
+            .bind(offset.unwrap_or(0));
+
+        // Add search parameter if exists
+        if let Some(search_term) = search.filter(|s| !s.is_empty()) {
+            main_query = main_query.bind(format!("%{}%", search_term));
+        }
+
+        // Add status parameter if exists
+        if let Some(dao_status) = status {
+            main_query = main_query.bind(dao_status);
+        }
+
+        // Add my vote parameter if exists
+        if let Some(vote_status) = my_vote {
+            main_query = main_query.bind(vote_status);
+        }
+
+        // Execute main query
+        let daos = main_query.fetch_all(self.db_conn.get_pool()).await?;
+
+        Ok(daos)
+    }
 }

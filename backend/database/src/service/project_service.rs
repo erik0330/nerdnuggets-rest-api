@@ -6,11 +6,11 @@ use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
-        AdminProjectDashboardCounts, DaoStatisticsResponse, EditorDashboardCounts,
+        AdminProjectDashboardCounts, DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts,
         MilestoneApprovalRequest, MilestoneApprovalStatus, ProjectCountsResponse,
         ProjectFunderInfo, ProjectFundersResponse, ProjectUpdateStep1Request,
         ProjectUpdateStep2Request, ProjectUpdateStep3Request, ResearchProjectDashboardResponse,
-        UpdateMilestoneRequest,
+        UpdateMilestoneRequest, UserDaoVotingStats,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -1251,5 +1251,62 @@ impl ProjectService {
             total_backers,
             completed,
         })
+    }
+
+    pub async fn get_user_dao_voting_stats(
+        &self,
+        user_id: Uuid,
+    ) -> Result<UserDaoVotingStats, ApiError> {
+        let (total_votes, yes_votes, no_votes, passed, failed) = self
+            .project_repo
+            .get_user_dao_voting_stats(user_id)
+            .await
+            .map_err(|_| DbError::Str("Failed to get user DAO voting stats".to_string()))?;
+
+        Ok(UserDaoVotingStats {
+            total_votes,
+            yes_votes,
+            no_votes,
+            passed,
+            failed,
+        })
+    }
+
+    pub async fn get_user_dao_votes(
+        &self,
+        user_id: Uuid,
+        search: Option<&str>,
+        tab: DaoVoteTab,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    ) -> Result<Vec<DaoInfo>, ApiError> {
+        let (status, my_vote) = match tab {
+            DaoVoteTab::All => (None, None),
+            DaoVoteTab::Yes => (None, Some(1)),
+            DaoVoteTab::No => (None, Some(2)),
+            DaoVoteTab::Passed => (Some(1), None),
+            DaoVoteTab::Failed => (Some(2), None),
+        };
+        let daos = self
+            .project_repo
+            .get_user_dao_votes(user_id, search, status, my_vote, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Failed to get user DAO votes".to_string()))?;
+
+        // Convert DAOs to DaoInfo with user info and my_vote
+        let mut dao_infos = Vec::new();
+        for dao in daos {
+            if let Some(user) = self.user_repo.get_user_by_id(dao.user_id).await {
+                let my_vote = self
+                    .project_repo
+                    .get_my_dao_vote(dao.id, user_id)
+                    .await
+                    .map(|dv| dv.my_vote());
+
+                dao_infos.push(dao.to_info(user.to_info(), my_vote));
+            }
+        }
+
+        Ok(dao_infos)
     }
 }

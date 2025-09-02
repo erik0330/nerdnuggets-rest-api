@@ -3,12 +3,13 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
-    AdminProjectDashboardCounts, AssignEditorRequest, DaoStatisticsResponse, EditorDashboardCounts,
-    GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption, GetProjectsOption,
-    GetSimilarProjectsOption, MakeDecisionRequest, MilestoneApprovalRequest, ProjectCountsResponse,
-    ProjectFundersResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
-    ProjectUpdateStep3Request, ResearchProjectDashboardResponse, SubmitDaoVoteRequest,
-    SubmitProjectCommentRequest, UpdateMilestoneRequest,
+    AdminProjectDashboardCounts, AssignEditorRequest, DaoStatisticsResponse, DaoVoteTab,
+    EditorDashboardCounts, GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption,
+    GetProjectsOption, GetSimilarProjectsOption, GetUserDaoVotesOption, MakeDecisionRequest,
+    MilestoneApprovalRequest, ProjectCountsResponse, ProjectFundersResponse,
+    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+    ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitProjectCommentRequest,
+    UpdateMilestoneRequest, UserDaoVotingStats,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
@@ -421,4 +422,35 @@ pub async fn get_research_projects_dashboard(
         .get_research_projects_dashboard(user.id)
         .await?;
     Ok(Json(dashboard))
+}
+
+pub async fn get_user_dao_voting_stats(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+) -> Result<Json<UserDaoVotingStats>, ApiError> {
+    let stats = state
+        .service
+        .project
+        .get_user_dao_voting_stats(user.id)
+        .await?;
+    Ok(Json(stats))
+}
+
+pub async fn get_user_dao_votes(
+    Extension(user): Extension<User>,
+    Query(opts): Query<GetUserDaoVotesOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<DaoInfo>>, ApiError> {
+    let response = state
+        .service
+        .project
+        .get_user_dao_votes(
+            user.id,
+            opts.search.as_deref(),
+            opts.tab.unwrap_or(DaoVoteTab::All),
+            opts.offset,
+            opts.limit,
+        )
+        .await?;
+    Ok(Json(response))
 }
