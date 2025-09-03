@@ -10,20 +10,15 @@
                 "internalType": "address",
                 "name": "_feeRecipient",
                 "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_bountyPredictionContract",
+                "type": "address"
             }
         ],
         "stateMutability": "nonpayable",
         "type": "constructor"
-    },
-    {
-        "inputs": [],
-        "name": "EnforcedPause",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "ExpectedPause",
-        "type": "error"
     },
     {
         "inputs": [
@@ -71,9 +66,52 @@
                 "internalType": "uint256",
                 "name": "bountyId",
                 "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "bidId",
+                "type": "uint256"
             }
         ],
-        "name": "BountyCancelled",
+        "name": "BidAccepted",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "bidId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "bountyId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "bidder",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "metadataURI",
+                "type": "string"
+            }
+        ],
+        "name": "BidPlaced",
         "type": "event"
     },
     {
@@ -112,12 +150,6 @@
             },
             {
                 "indexed": false,
-                "internalType": "enum BountyContract.BiddingType",
-                "name": "biddingType",
-                "type": "uint8"
-            },
-            {
-                "indexed": false,
                 "internalType": "uint256",
                 "name": "totalAmount",
                 "type": "uint256"
@@ -146,98 +178,71 @@
                 "internalType": "uint256",
                 "name": "bountyId",
                 "type": "uint256"
-            }
-        ],
-        "name": "BountyExpired",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            }
-        ],
-        "name": "BountyFailed",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
             },
             {
                 "indexed": true,
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
-            }
-        ],
-        "name": "BountyRejected",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
-            }
-        ],
-        "name": "DisputeRaised",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
+                "internalType": "address",
+                "name": "contributor",
+                "type": "address"
             },
             {
                 "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "BountyFunded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "bountyId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
                 "internalType": "address",
                 "name": "winner",
                 "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
             }
         ],
-        "name": "DisputeResolved",
+        "name": "BountyFundsDistributed",
         "type": "event"
     },
     {
         "anonymous": false,
         "inputs": [
             {
-                "indexed": false,
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "bountyId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
                 "internalType": "address",
-                "name": "newRecipient",
+                "name": "bountyCreator",
                 "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
             }
         ],
-        "name": "FeeRecipientUpdated",
+        "name": "BountyFundsReturned",
         "type": "event"
     },
     {
@@ -254,84 +259,9 @@
                 "internalType": "uint256",
                 "name": "amount",
                 "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "recipient",
-                "type": "address"
             }
         ],
-        "name": "FeeTaken",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
-            }
-        ],
-        "name": "MilestoneBidAccepted",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "bidder",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "string",
-                "name": "proposal",
-                "type": "string"
-            }
-        ],
-        "name": "MilestoneBidPlaced",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            }
-        ],
-        "name": "MilestoneCancelled",
+        "name": "CommunityFundsToPlatform",
         "type": "event"
     },
     {
@@ -365,143 +295,11 @@
             {
                 "indexed": true,
                 "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "string",
-                "name": "title",
-                "type": "string"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "duration",
-                "type": "uint256"
-            }
-        ],
-        "name": "MilestoneCreated",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "uint256",
                 "name": "bidId",
-                "type": "uint256"
-            }
-        ],
-        "name": "MilestoneDisputeRaised",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "winner",
-                "type": "address"
-            }
-        ],
-        "name": "MilestoneDisputeResolved",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            }
-        ],
-        "name": "MilestoneExpired",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "milestoneId",
                 "type": "uint256"
             }
         ],
         "name": "MilestoneFailed",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "recipient",
-                "type": "address"
-            }
-        ],
-        "name": "MilestoneFeeTaken",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
-            }
-        ],
-        "name": "MilestoneRejected",
         "type": "event"
     },
     {
@@ -527,94 +325,24 @@
         "anonymous": false,
         "inputs": [
             {
-                "indexed": false,
+                "indexed": true,
                 "internalType": "address",
-                "name": "account",
+                "name": "oldContract",
                 "type": "address"
-            }
-        ],
-        "name": "Paused",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "newFeeBps",
-                "type": "uint256"
-            }
-        ],
-        "name": "PlatformFeeUpdated",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
-            }
-        ],
-        "name": "ProjectBidAccepted",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
             },
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "bidder",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "string",
-                "name": "proposal",
-                "type": "string"
-            }
-        ],
-        "name": "ProjectBidPlaced",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "account",
+                "name": "newContract",
                 "type": "address"
             }
         ],
-        "name": "Unpaused",
+        "name": "RewardContractUpdated",
         "type": "event"
     },
     {
         "inputs": [],
-        "name": "MAX_BOUNTY_AMOUNT",
+        "name": "MAX_AMOUNT",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -627,7 +355,7 @@
     },
     {
         "inputs": [],
-        "name": "MAX_BOUNTY_DURATION",
+        "name": "MAX_DURATION",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -640,7 +368,7 @@
     },
     {
         "inputs": [],
-        "name": "MAX_METADATA_LENGTH",
+        "name": "MAX_FEE",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -653,7 +381,7 @@
     },
     {
         "inputs": [],
-        "name": "MAX_MILESTONES",
+        "name": "MIN_AMOUNT",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -666,7 +394,7 @@
     },
     {
         "inputs": [],
-        "name": "MAX_PLATFORM_FEE",
+        "name": "MIN_DURATION",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -675,50 +403,6 @@
             }
         ],
         "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "MIN_BOUNTY_AMOUNT",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "MIN_BOUNTY_DURATION",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
-            }
-        ],
-        "name": "acceptMilestoneBid",
-        "outputs": [],
-        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -734,33 +418,7 @@
                 "type": "uint256"
             }
         ],
-        "name": "acceptProjectBid",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            }
-        ],
-        "name": "approveMilestoneCompletion",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            }
-        ],
-        "name": "approveProjectCompletion",
+        "name": "acceptBid",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -786,24 +444,9 @@
                 "type": "uint256"
             },
             {
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            },
-            {
                 "internalType": "address",
                 "name": "bidder",
                 "type": "address"
-            },
-            {
-                "internalType": "enum BountyContract.BidStatus",
-                "name": "status",
-                "type": "uint8"
-            },
-            {
-                "internalType": "uint256",
-                "name": "timestamp",
-                "type": "uint256"
             },
             {
                 "internalType": "uint256",
@@ -811,9 +454,67 @@
                 "type": "uint256"
             },
             {
+                "internalType": "uint256",
+                "name": "timestamp",
+                "type": "uint256"
+            },
+            {
+                "internalType": "enum BountyContract.BidStatus",
+                "name": "status",
+                "type": "uint8"
+            },
+            {
                 "internalType": "string",
-                "name": "proposal",
+                "name": "metadataURI",
                 "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "bountyBids",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "bountyContributors",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -827,7 +528,7 @@
                 "type": "uint256"
             }
         ],
-        "name": "bountyFundedAmount",
+        "name": "bountyFunds",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -863,77 +564,16 @@
         "type": "function"
     },
     {
-        "inputs": [
+        "inputs": [],
+        "name": "bountyPredictionContract",
+        "outputs": [
             {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
-        "name": "cancelBounty",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            }
-        ],
-        "name": "cancelBountyByAdmin",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalAmount",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "duration",
-                "type": "uint256"
-            },
-            {
-                "internalType": "string",
-                "name": "metadataURI",
-                "type": "string"
-            },
-            {
-                "internalType": "string[]",
-                "name": "milestoneTitles",
-                "type": "string[]"
-            },
-            {
-                "internalType": "string[]",
-                "name": "milestoneDescriptions",
-                "type": "string[]"
-            },
-            {
-                "internalType": "uint256[]",
-                "name": "milestoneAmounts",
-                "type": "uint256[]"
-            },
-            {
-                "internalType": "uint256[]",
-                "name": "milestoneDurations",
-                "type": "uint256[]"
-            }
-        ],
-        "name": "createMilestoneBounty",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -959,7 +599,7 @@
                 "type": "string"
             }
         ],
-        "name": "createProjectBounty",
+        "name": "createBounty",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -975,6 +615,24 @@
             }
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "bountyId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "fundBounty",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -1000,24 +658,9 @@
                         "type": "uint256"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "milestoneId",
-                        "type": "uint256"
-                    },
-                    {
                         "internalType": "address",
                         "name": "bidder",
                         "type": "address"
-                    },
-                    {
-                        "internalType": "enum BountyContract.BidStatus",
-                        "name": "status",
-                        "type": "uint8"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "timestamp",
-                        "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
@@ -1025,184 +668,24 @@
                         "type": "uint256"
                     },
                     {
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "enum BountyContract.BidStatus",
+                        "name": "status",
+                        "type": "uint8"
+                    },
+                    {
                         "internalType": "string",
-                        "name": "proposal",
+                        "name": "metadataURI",
                         "type": "string"
                     }
                 ],
                 "internalType": "struct BountyContract.Bid",
-                "name": "bid",
+                "name": "",
                 "type": "tuple"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "bidder",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "offset",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "limit",
-                "type": "uint256"
-            }
-        ],
-        "name": "getBidsByBidder",
-        "outputs": [
-            {
-                "internalType": "uint256[]",
-                "name": "bidIds",
-                "type": "uint256[]"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalCount",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "enum BountyContract.BidStatus",
-                "name": "status",
-                "type": "uint8"
-            },
-            {
-                "internalType": "uint256",
-                "name": "offset",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "limit",
-                "type": "uint256"
-            }
-        ],
-        "name": "getBidsByStatus",
-        "outputs": [
-            {
-                "internalType": "uint256[]",
-                "name": "bidIds",
-                "type": "uint256[]"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalCount",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "creator",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "offset",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "limit",
-                "type": "uint256"
-            }
-        ],
-        "name": "getBountiesByCreator",
-        "outputs": [
-            {
-                "internalType": "uint256[]",
-                "name": "bountyIds",
-                "type": "uint256[]"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalCount",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "enum BountyContract.BountyStatus",
-                "name": "status",
-                "type": "uint8"
-            },
-            {
-                "internalType": "uint256",
-                "name": "offset",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "limit",
-                "type": "uint256"
-            }
-        ],
-        "name": "getBountiesByStatus",
-        "outputs": [
-            {
-                "internalType": "uint256[]",
-                "name": "bountyIds",
-                "type": "uint256[]"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalCount",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "enum BountyContract.BiddingType",
-                "name": "biddingType",
-                "type": "uint8"
-            },
-            {
-                "internalType": "uint256",
-                "name": "offset",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "limit",
-                "type": "uint256"
-            }
-        ],
-        "name": "getBountiesByType",
-        "outputs": [
-            {
-                "internalType": "uint256[]",
-                "name": "bountyIds",
-                "type": "uint256[]"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalCount",
-                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1219,68 +702,98 @@
         "name": "getBounty",
         "outputs": [
             {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "bountyId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "creator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "duration",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "startTime",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "expiryTime",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "enum BountyContract.BountyStatus",
+                        "name": "status",
+                        "type": "uint8"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "acceptedBidId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "metadataURI",
+                        "type": "string"
+                    }
+                ],
+                "internalType": "struct BountyContract.Bounty",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "uint256",
-                "name": "id",
+                "name": "bountyId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getBountyBids",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "bountyId",
                 "type": "uint256"
             },
             {
                 "internalType": "address",
-                "name": "creator",
+                "name": "contributor",
                 "type": "address"
-            },
-            {
-                "internalType": "enum BountyContract.BiddingType",
-                "name": "biddingType",
-                "type": "uint8"
-            },
+            }
+        ],
+        "name": "getBountyContribution",
+        "outputs": [
             {
                 "internalType": "uint256",
-                "name": "totalAmount",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "duration",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "startTime",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "expiryTime",
-                "type": "uint256"
-            },
-            {
-                "internalType": "enum BountyContract.BountyStatus",
-                "name": "status",
-                "type": "uint8"
-            },
-            {
-                "internalType": "uint256",
-                "name": "acceptedBidId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "string",
-                "name": "metadataURI",
-                "type": "string"
-            },
-            {
-                "internalType": "bool",
-                "name": "isFunded",
-                "type": "bool"
-            },
-            {
-                "internalType": "uint256",
-                "name": "milestoneCount",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "fundedAmount",
+                "name": "",
                 "type": "uint256"
             }
         ],
@@ -1295,7 +808,7 @@
                 "type": "uint256"
             }
         ],
-        "name": "getBountyExpiryTime",
+        "name": "getBountyFunds",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -1318,7 +831,7 @@
         "outputs": [
             {
                 "internalType": "uint256[]",
-                "name": "milestoneIds",
+                "name": "",
                 "type": "uint256[]"
             }
         ],
@@ -1326,42 +839,18 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "getBountyStatistics",
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "bountyId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getCommunityFunds",
         "outputs": [
             {
                 "internalType": "uint256",
-                "name": "totalBounties",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalMilestones",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalBids",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "openBounties",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "openMilestones",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "completedBounties",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "completedMilestones",
+                "name": "",
                 "type": "uint256"
             }
         ],
@@ -1379,79 +868,10 @@
         "name": "getMilestone",
         "outputs": [
             {
-                "internalType": "uint256",
-                "name": "id",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "string",
-                "name": "title",
-                "type": "string"
-            },
-            {
-                "internalType": "string",
-                "name": "description",
-                "type": "string"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "duration",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "startTime",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "expiryTime",
-                "type": "uint256"
-            },
-            {
-                "internalType": "enum BountyContract.MilestoneStatus",
-                "name": "status",
-                "type": "uint8"
-            },
-            {
-                "internalType": "uint256",
-                "name": "acceptedBidId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "isFunded",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            }
-        ],
-        "name": "getMilestoneBids",
-        "outputs": [
-            {
                 "components": [
                     {
                         "internalType": "uint256",
-                        "name": "bidId",
+                        "name": "milestoneId",
                         "type": "uint256"
                     },
                     {
@@ -1461,288 +881,43 @@
                     },
                     {
                         "internalType": "uint256",
-                        "name": "milestoneId",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "bidder",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "enum BountyContract.BidStatus",
-                        "name": "status",
-                        "type": "uint8"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "timestamp",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "proposal",
-                        "type": "string"
-                    }
-                ],
-                "internalType": "struct BountyContract.Bid[]",
-                "name": "milestoneBidsArray",
-                "type": "tuple[]"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            }
-        ],
-        "name": "getMilestoneExpiryTime",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "enum BountyContract.MilestoneStatus",
-                "name": "status",
-                "type": "uint8"
-            },
-            {
-                "internalType": "uint256",
-                "name": "offset",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "limit",
-                "type": "uint256"
-            }
-        ],
-        "name": "getMilestonesByStatus",
-        "outputs": [
-            {
-                "internalType": "uint256[]",
-                "name": "milestoneIds",
-                "type": "uint256[]"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalCount",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "offset",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "limit",
-                "type": "uint256"
-            }
-        ],
-        "name": "getOpenBounties",
-        "outputs": [
-            {
-                "internalType": "uint256[]",
-                "name": "bountyIds",
-                "type": "uint256[]"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalCount",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "offset",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "limit",
-                "type": "uint256"
-            }
-        ],
-        "name": "getOpenMilestones",
-        "outputs": [
-            {
-                "internalType": "uint256[]",
-                "name": "milestoneIds",
-                "type": "uint256[]"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalCount",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            }
-        ],
-        "name": "getProjectBids",
-        "outputs": [
-            {
-                "components": [
-                    {
-                        "internalType": "uint256",
                         "name": "bidId",
                         "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
-                        "name": "bountyId",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "milestoneId",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "bidder",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "enum BountyContract.BidStatus",
-                        "name": "status",
-                        "type": "uint8"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "timestamp",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
                         "name": "amount",
                         "type": "uint256"
                     },
                     {
+                        "internalType": "uint256",
+                        "name": "duration",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "startTime",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "expiryTime",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "enum BountyContract.MilestoneStatus",
+                        "name": "status",
+                        "type": "uint8"
+                    },
+                    {
                         "internalType": "string",
-                        "name": "proposal",
+                        "name": "metadataURI",
                         "type": "string"
                     }
                 ],
-                "internalType": "struct BountyContract.Bid[]",
-                "name": "projectBidsArray",
-                "type": "tuple[]"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getTotalBids",
-        "outputs": [
-            {
-                "internalType": "uint256",
+                "internalType": "struct BountyContract.Milestone",
                 "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getTotalBounties",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getTotalMilestones",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            }
-        ],
-        "name": "getUserStatistics",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "bountiesCreated",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "milestonesCreated",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "bidsPlaced",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "bountiesWon",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "milestonesWon",
-                "type": "uint256"
+                "type": "tuple"
             }
         ],
         "stateMutability": "view",
@@ -1756,12 +931,12 @@
                 "type": "uint256"
             }
         ],
-        "name": "isBountyExpired",
+        "name": "getMilestoneFunds",
         "outputs": [
             {
-                "internalType": "bool",
+                "internalType": "uint256",
                 "name": "",
-                "type": "bool"
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1771,101 +946,16 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            }
-        ],
-        "name": "isMilestoneExpired",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            }
-        ],
-        "name": "markMilestoneFailed",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            }
-        ],
-        "name": "markProjectFailed",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
             }
         ],
-        "name": "milestoneBids",
+        "name": "milestoneFunds",
         "outputs": [
             {
                 "internalType": "uint256",
-                "name": "bidId",
+                "name": "",
                 "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "bidder",
-                "type": "address"
-            },
-            {
-                "internalType": "enum BountyContract.BidStatus",
-                "name": "status",
-                "type": "uint8"
-            },
-            {
-                "internalType": "uint256",
-                "name": "timestamp",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "internalType": "string",
-                "name": "proposal",
-                "type": "string"
             }
         ],
         "stateMutability": "view",
@@ -1898,30 +988,15 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "pause",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "paused",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "milestoneId",
+                "name": "bountyId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "bidId",
                 "type": "uint256"
             },
             {
@@ -1930,30 +1005,39 @@
                 "type": "uint256"
             },
             {
-                "internalType": "string",
-                "name": "proposal",
-                "type": "string"
-            }
-        ],
-        "name": "placeMilestoneBid",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "milestoneId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "duration",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "metadataURI",
+                        "type": "string"
+                    }
+                ],
+                "internalType": "struct BountyContract.MilestoneInput[]",
+                "name": "milestoneData",
+                "type": "tuple[]"
             },
             {
                 "internalType": "string",
-                "name": "proposal",
+                "name": "metadataURI",
                 "type": "string"
             }
         ],
-        "name": "placeProjectBid",
+        "name": "placeBid",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1972,117 +1056,6 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "projectBids",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "bidId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "bidder",
-                "type": "address"
-            },
-            {
-                "internalType": "enum BountyContract.BidStatus",
-                "name": "status",
-                "type": "uint8"
-            },
-            {
-                "internalType": "uint256",
-                "name": "timestamp",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "internalType": "string",
-                "name": "proposal",
-                "type": "string"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            }
-        ],
-        "name": "raiseMilestoneDispute",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            }
-        ],
-        "name": "raiseProjectDispute",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "milestoneId",
-                "type": "uint256"
-            }
-        ],
-        "name": "rejectMilestoneCompletion",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "bountyId",
-                "type": "uint256"
-            }
-        ],
-        "name": "rejectProjectCompletion",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
         "inputs": [],
         "name": "renounceOwnership",
         "outputs": [],
@@ -2093,16 +1066,16 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "milestoneId",
+                "name": "bountyId",
                 "type": "uint256"
             },
             {
-                "internalType": "bool",
-                "name": "releaseToBidder",
-                "type": "bool"
+                "internalType": "string",
+                "name": "status",
+                "type": "string"
             }
         ],
-        "name": "resolveMilestoneDispute",
+        "name": "resolveBounty",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -2111,16 +1084,42 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "bountyId",
+                "name": "milestoneId",
                 "type": "uint256"
             },
             {
-                "internalType": "bool",
-                "name": "releaseToBidder",
-                "type": "bool"
+                "internalType": "string",
+                "name": "status",
+                "type": "string"
             }
         ],
-        "name": "resolveProjectDispute",
+        "name": "resolveMilestone",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "rewardContract",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newPredictionContract",
+                "type": "address"
+            }
+        ],
+        "name": "setBountyPredictionContract",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -2129,24 +1128,11 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "newRecipient",
+                "name": "newRewardContract",
                 "type": "address"
             }
         ],
-        "name": "setFeeRecipient",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "feeBps",
-                "type": "uint256"
-            }
-        ],
-        "name": "setPlatformFee",
+        "name": "setRewardContract",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -2165,10 +1151,22 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "unpause",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "usedBidIds",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {

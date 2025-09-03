@@ -73,7 +73,6 @@ pub async fn run(
                     .project
                     .donate_milestone(
                         ev.project_id.as_u64() as i64,
-                        ev.milestone_index.as_u32() as i16,
                         &format!("{:?}", ev.donor),
                         ev.amount.as_u128(),
                     )

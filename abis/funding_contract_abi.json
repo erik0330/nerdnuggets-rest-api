@@ -114,12 +114,6 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "milestoneIndex",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
                 "name": "amount",
                 "type": "uint256"
             }
@@ -302,17 +296,30 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "milestoneIndex",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
                 "name": "amount",
                 "type": "uint256"
             }
         ],
         "name": "Refunded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "oldAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "newAddress",
+                "type": "address"
+            }
+        ],
+        "name": "RewardContractUpdated",
         "type": "event"
     },
     {
@@ -386,24 +393,6 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "projectId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "index",
-                "type": "uint256"
-            }
-        ],
-        "name": "claimFunds",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
         "inputs": [],
         "name": "daoContract",
         "outputs": [
@@ -425,11 +414,6 @@
             },
             {
                 "internalType": "uint256",
-                "name": "index",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
                 "name": "amount",
                 "type": "uint256"
             }
@@ -444,11 +428,6 @@
             {
                 "internalType": "uint256",
                 "name": "projectId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "index",
                 "type": "uint256"
             },
             {
@@ -470,11 +449,6 @@
     },
     {
         "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            },
             {
                 "internalType": "uint256",
                 "name": "",
@@ -645,6 +619,25 @@
                 "type": "uint256"
             }
         ],
+        "name": "getProjectDonations",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            }
+        ],
         "name": "milestoneCount",
         "outputs": [
             {
@@ -731,6 +724,25 @@
                 "internalType": "contract IPredictionMarket",
                 "name": "",
                 "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "projectDonations",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -866,6 +878,19 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "rewardContract",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
@@ -887,6 +912,19 @@
             }
         ],
         "name": "setPredictionMarket",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newReward",
+                "type": "address"
+            }
+        ],
+        "name": "setRewardContract",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
