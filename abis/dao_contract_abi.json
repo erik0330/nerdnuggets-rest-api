@@ -184,6 +184,25 @@
             {
                 "indexed": false,
                 "internalType": "address",
+                "name": "oldAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "newAddress",
+                "type": "address"
+            }
+        ],
+        "name": "RewardContractUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
                 "name": "account",
                 "type": "address"
             }
@@ -668,6 +687,19 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "rewardContract",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "uint256",
@@ -689,6 +721,19 @@
             }
         ],
         "name": "setProjectFundingAddress",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newAddress",
+                "type": "address"
+            }
+        ],
+        "name": "setRewardContract",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

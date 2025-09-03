@@ -811,12 +811,10 @@ impl ProjectService {
     pub async fn donate_milestone(
         &self,
         proposal_id: i64,
-        number: i16,
         wallet: &str,
         amount: u128,
     ) -> Result<bool, ApiError> {
         let amount = (amount as f64) / 10f64.powi(18);
-        let number = number + 1;
         let user = self.user_repo.get_user_by_wallet(wallet).await;
         let project = self
             .project_repo
@@ -824,9 +822,17 @@ impl ProjectService {
             .await
             .ok_or(DbError::Str("Project not found".to_string()))?;
         let milestones = self.project_repo.get_milestones(project.id).await;
-        if milestones.len() < number as usize {
-            return Err(DbError::Str("Milestone not found".to_string()).into());
-        }
+        let number = milestones
+            .iter()
+            .filter_map(|m| {
+                if m.status == 1i16 {
+                    Some(m.number)
+                } else {
+                    None
+                }
+            })
+            .max()
+            .unwrap_or(1i16);
         if self
             .project_repo
             .donate_milestone(
