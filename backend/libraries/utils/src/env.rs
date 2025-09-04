@@ -111,7 +111,7 @@ impl Env {
         let dao_duration = if production {
             Duration::days(7)
         } else {
-            Duration::days(1)
+            Duration::hours(1)
         };
 
         let apple_client_id =
