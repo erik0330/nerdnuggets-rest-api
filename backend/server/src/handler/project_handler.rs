@@ -299,12 +299,16 @@ pub async fn get_daos(
 }
 
 pub async fn get_dao_by_id(
-    Extension(user): Extension<User>,
+    Extension(user): Extension<Option<User>>,
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<DaoInfo>, ApiError> {
     Ok(Json(
-        state.service.project.get_dao_by_id(&id, user.id).await?,
+        state
+            .service
+            .project
+            .get_dao_by_id(&id, user.map(|u| u.id))
+            .await?,
     ))
 }
 

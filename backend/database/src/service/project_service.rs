@@ -635,18 +635,25 @@ impl ProjectService {
         Ok(dao_infos)
     }
 
-    pub async fn get_dao_by_id(&self, id: &str, user_id: Uuid) -> Result<DaoInfo, ApiError> {
+    pub async fn get_dao_by_id(
+        &self,
+        id: &str,
+        user_id: Option<Uuid>,
+    ) -> Result<DaoInfo, ApiError> {
         let dao = self
             .project_repo
             .get_dao_by_id(uuid_from_str(id)?)
             .await
             .map_err(|_| DbError::Str("Get dao by id failed".to_string()))?;
         if let Some(user) = self.user_repo.get_user_by_id(dao.user_id).await {
-            let my_vote = self
-                .project_repo
-                .get_my_dao_vote(dao.id, user_id)
-                .await
-                .map(|v| v.my_vote());
+            let my_vote = if let Some(user_id) = user_id {
+                self.project_repo
+                    .get_my_dao_vote(dao.id, user_id)
+                    .await
+                    .map(|v| v.my_vote())
+            } else {
+                None
+            };
             Ok(dao.to_info(user.to_info(), my_vote))
         } else {
             Err(ApiError::UserError(UserError::UserNotFound))
