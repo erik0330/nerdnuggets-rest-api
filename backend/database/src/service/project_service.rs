@@ -14,8 +14,8 @@ use types::{
     },
     error::{ApiError, DbError, UserError},
     models::{
-        CompletedDao, DaoInfo, DaoVote, FunderInfo, Milestone, Project, ProjectCommentInfo,
-        ProjectIds, ProjectInfo, ProjectItemInfo,
+        CompletedDao, DaoDetailInfo, DaoInfo, DaoVote, FunderInfo, Milestone, Project,
+        ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo,
     },
     FeedbackStatus, MileStoneStatus, ProjectStatus, UserRoleType,
 };
@@ -635,17 +635,19 @@ impl ProjectService {
         Ok(dao_infos)
     }
 
-    pub async fn get_dao_by_id(
+    pub async fn get_dao_detail_by_id(
         &self,
         id: &str,
         user_id: Option<Uuid>,
-    ) -> Result<DaoInfo, ApiError> {
+    ) -> Result<DaoDetailInfo, ApiError> {
         let dao = self
             .project_repo
             .get_dao_by_id(uuid_from_str(id)?)
             .await
             .map_err(|_| DbError::Str("Get dao by id failed".to_string()))?;
         if let Some(user) = self.user_repo.get_user_by_id(dao.user_id).await {
+            let team_members = self.project_repo.get_team_members(dao.project_id).await;
+            let milestones = self.project_repo.get_milestones(dao.project_id).await;
             let my_vote = if let Some(user_id) = user_id {
                 self.project_repo
                     .get_my_dao_vote(dao.id, user_id)
@@ -654,7 +656,7 @@ impl ProjectService {
             } else {
                 None
             };
-            Ok(dao.to_info(user.to_info(), my_vote))
+            Ok(dao.to_detail_info(user.to_info(), my_vote, team_members, milestones))
         } else {
             Err(ApiError::UserError(UserError::UserNotFound))
         }

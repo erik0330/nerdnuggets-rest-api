@@ -13,7 +13,8 @@ use types::dto::{
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
-    DaoInfo, DaoVote, Milestone, ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo, User,
+    DaoDetailInfo, DaoInfo, DaoVote, Milestone, ProjectCommentInfo, ProjectIds, ProjectInfo,
+    ProjectItemInfo, User,
 };
 use types::{FeedbackStatus, UserRoleType};
 use utils::commons::uuid_from_str;
@@ -302,12 +303,12 @@ pub async fn get_dao_by_id(
     Extension(user): Extension<Option<User>>,
     Path(id): Path<String>,
     State(state): State<AppState>,
-) -> Result<Json<DaoInfo>, ApiError> {
+) -> Result<Json<DaoDetailInfo>, ApiError> {
     Ok(Json(
         state
             .service
             .project
-            .get_dao_by_id(&id, user.map(|u| u.id))
+            .get_dao_detail_by_id(&id, user.map(|u| u.id))
             .await?,
     ))
 }
