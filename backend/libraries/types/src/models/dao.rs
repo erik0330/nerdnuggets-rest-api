@@ -14,6 +14,7 @@ pub struct Dao {
     pub status: i16, // 0: active, 1:success, 2: failed
     pub title: String,
     pub description: String,
+    pub details: Option<String>,
     pub funding_goal: i32,
     pub count_for: i32,
     pub count_against: i32,
@@ -62,6 +63,7 @@ pub struct DaoDetailInfo {
     pub status: i16, // 0: active, 1:success, 2: failed
     pub title: String,
     pub description: String,
+    pub details: Option<String>,
     pub team_members: Vec<TeamMember>,
     pub milestones: Vec<Milestone>,
     pub funding_goal: i32,
@@ -151,6 +153,7 @@ impl Dao {
             status: self.status,
             title: self.title.clone(),
             description: self.description.clone(),
+            details: self.details.clone(),
             team_members,
             milestones,
             funding_goal: self.funding_goal,
