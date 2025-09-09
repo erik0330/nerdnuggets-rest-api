@@ -4,10 +4,10 @@ use crate::{
         project_handler::{
             approve_reject_milestone, assign_editor, create_project, delete_project,
             get_admin_project_dashboard_counts, get_editor_dashboard_counts, get_milestones,
-            get_my_dao_vote, get_project_comments, get_research_projects_dashboard,
-            get_user_dao_votes, get_user_dao_voting_stats, make_decision, submit_dao_vote,
-            submit_project, submit_project_comment, update_milestone, update_project_step_1,
-            update_project_step_2, update_project_step_3,
+            get_my_dao_vote, get_research_projects_dashboard, get_user_dao_votes,
+            get_user_dao_voting_stats, make_decision, submit_dao_vote, submit_project,
+            submit_project_comment, update_milestone, update_project_step_1, update_project_step_2,
+            update_project_step_3,
         },
     },
     state::AppState,
@@ -30,7 +30,6 @@ pub fn routes() -> Router<AppState> {
         .route("/milestone/:id", patch(update_milestone))
         .route("/milestone/:id/approve", patch(approve_reject_milestone))
         .route("/project/:id/milestone", get(get_milestones))
-        .route("/project/:id/comment", get(get_project_comments))
         .route("/project/:id/comment", post(submit_project_comment))
         .route("/dao/:id/vote", post(submit_dao_vote))
         .route("/dao/:id/vote", get(get_my_dao_vote))
