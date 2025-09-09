@@ -547,15 +547,15 @@ impl ProjectRepository {
         project_id: Uuid,
         nerd_id: &str,
         comment: &str,
-    ) -> Result<bool, SqlxError> {
-        let row = sqlx::query("INSERT INTO project_comment (user_id, project_id, nerd_id, comment) VALUES ($1, $2, $3, $4)")
+    ) -> Result<ProjectComment, SqlxError> {
+        let project_comment = sqlx::query_as::<_, ProjectComment>("INSERT INTO project_comment (user_id, project_id, nerd_id, comment) VALUES ($1, $2, $3, $4) RETURNING *")
             .bind(user_id)
             .bind(project_id)
             .bind(nerd_id)
             .bind(comment)
-            .execute(self.db_conn.get_pool())
+            .fetch_one(self.db_conn.get_pool())
             .await?;
-        Ok(row.rows_affected() == 1)
+        Ok(project_comment)
     }
 
     pub async fn get_daos(
