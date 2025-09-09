@@ -268,7 +268,7 @@ pub async fn submit_project_comment(
     Path(id): Path<String>,
     State(state): State<AppState>,
     ValidatedRequest(payload): ValidatedRequest<SubmitProjectCommentRequest>,
-) -> Result<Json<bool>, ApiError> {
+) -> Result<Json<ProjectCommentInfo>, ApiError> {
     Ok(Json(
         state
             .service

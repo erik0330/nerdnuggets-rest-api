@@ -588,20 +588,25 @@ impl ProjectService {
         id: &str,
         user_id: Uuid,
         comment: &str,
-    ) -> Result<bool, ApiError> {
-        let res = if let Some(project) = self
+    ) -> Result<ProjectCommentInfo, ApiError> {
+        if let Some(project) = self
             .project_repo
             .get_project_by_id(uuid_from_str(id)?)
             .await
         {
-            self.project_repo
+            let project_comment = self
+                .project_repo
                 .submit_project_comment(user_id, project.id, &project.nerd_id, comment)
                 .await
-                .unwrap_or_default()
+                .map_err(|_| DbError::Str("Submit project comment failed".to_string()))?;
+            if let Some(user) = self.user_repo.get_user_by_id(project_comment.user_id).await {
+                Ok(project_comment.to_info(user.to_info()))
+            } else {
+                Err(DbError::Str("User not found".to_string()).into())
+            }
         } else {
-            false
-        };
-        Ok(res)
+            Err(DbError::Str("Project not found".to_string()).into())
+        }
     }
 
     pub async fn get_daos(
