@@ -531,7 +531,7 @@ impl ProjectRepository {
         limit: Option<i32>,
     ) -> Result<Vec<ProjectComment>, SqlxError> {
         let project_comments = sqlx::query_as::<_, ProjectComment>(
-            "SELECT * FROM project_comment WHERE project_id = $1 ORDER BY updated_at LIMIT $2 OFFSET $3",
+            "SELECT * FROM project_comment WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
         )
         .bind(id)
         .bind(limit.unwrap_or(10))
