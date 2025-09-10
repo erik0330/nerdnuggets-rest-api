@@ -3,13 +3,13 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
-    AdminProjectDashboardCounts, AssignEditorRequest, DaoStatisticsResponse, DaoVoteTab,
-    EditorDashboardCounts, GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption,
-    GetProjectsOption, GetSimilarProjectsOption, GetUserDaoVotesOption, MakeDecisionRequest,
-    MilestoneApprovalRequest, ProjectCountsResponse, ProjectFundersResponse,
-    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-    ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitProjectCommentRequest,
-    UpdateMilestoneRequest, UserDaoVotingStats,
+    AdminMilestonesResponse, AdminProjectDashboardCounts, AssignEditorRequest,
+    DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts, GetAdminMilestonesOption,
+    GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption, GetProjectsOption,
+    GetSimilarProjectsOption, GetUserDaoVotesOption, MakeDecisionRequest, MilestoneApprovalRequest,
+    ProjectCountsResponse, ProjectFundersResponse, ProjectUpdateStep1Request,
+    ProjectUpdateStep2Request, ProjectUpdateStep3Request, ResearchProjectDashboardResponse,
+    SubmitDaoVoteRequest, SubmitProjectCommentRequest, UpdateMilestoneRequest, UserDaoVotingStats,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
@@ -456,6 +456,26 @@ pub async fn get_user_dao_votes(
             opts.offset,
             opts.limit,
         )
+        .await?;
+    Ok(Json(response))
+}
+
+pub async fn get_milestone_submissions(
+    Extension(role): Extension<String>,
+    Query(opts): Query<GetAdminMilestonesOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<AdminMilestonesResponse>>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+
+    let offset = opts.offset.unwrap_or(0);
+    let limit = opts.limit.unwrap_or(20);
+
+    let response = state
+        .service
+        .project
+        .get_admin_milestones(opts.text.as_deref(), opts.status, offset, limit)
         .await?;
     Ok(Json(response))
 }
