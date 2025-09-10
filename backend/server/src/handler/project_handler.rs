@@ -461,9 +461,14 @@ pub async fn get_user_dao_votes(
 }
 
 pub async fn get_milestone_submissions(
+    Extension(role): Extension<String>,
     Query(opts): Query<GetAdminMilestonesOption>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<AdminMilestonesResponse>>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+
     let offset = opts.offset.unwrap_or(0);
     let limit = opts.limit.unwrap_or(20);
 

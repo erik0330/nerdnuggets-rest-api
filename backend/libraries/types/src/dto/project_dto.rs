@@ -281,7 +281,6 @@ pub struct UserDaoVotesResponse {
 }
 
 #[derive(Clone, Deserialize, Serialize, Default, Debug)]
-#[serde(rename_all = "camelCase")]
 pub enum MilestoneProofStatus {
     #[default]
     AllStatuses,
