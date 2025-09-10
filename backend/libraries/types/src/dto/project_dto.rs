@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::models::DaoInfo;
+use crate::models::{DaoInfo, Milestone, UserInfo};
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -278,4 +278,33 @@ pub struct UserDaoVotesResponse {
     pub daos: Vec<DaoInfo>,
     pub total: i64,
     pub stats: UserDaoVotingStats,
+}
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub enum MilestoneProofStatus {
+    #[default]
+    AllStatuses,
+    Submitted,
+    Approved,
+    Rejected,
+}
+
+#[derive(Clone, Deserialize, Serialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetAdminMilestonesOption {
+    pub text: Option<String>,
+    pub status: Option<MilestoneProofStatus>,
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminMilestonesResponse {
+    pub milestone: Milestone,
+    pub user_info: UserInfo,
+    pub nerd_id: String,
+    pub project_title: Option<String>,
+    pub started_at: Option<DateTime<Utc>>,
 }

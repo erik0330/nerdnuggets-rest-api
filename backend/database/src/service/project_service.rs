@@ -6,11 +6,11 @@ use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
-        AdminProjectDashboardCounts, DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts,
-        MilestoneApprovalRequest, MilestoneApprovalStatus, ProjectCountsResponse,
-        ProjectFunderInfo, ProjectFundersResponse, ProjectUpdateStep1Request,
-        ProjectUpdateStep2Request, ProjectUpdateStep3Request, ResearchProjectDashboardResponse,
-        UpdateMilestoneRequest, UserDaoVotingStats,
+        AdminMilestonesResponse, AdminProjectDashboardCounts, DaoStatisticsResponse, DaoVoteTab,
+        EditorDashboardCounts, MilestoneApprovalRequest, MilestoneApprovalStatus,
+        MilestoneProofStatus, ProjectCountsResponse, ProjectFunderInfo, ProjectFundersResponse,
+        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+        ResearchProjectDashboardResponse, UpdateMilestoneRequest, UserDaoVotingStats,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -1328,5 +1328,35 @@ impl ProjectService {
         }
 
         Ok(dao_infos)
+    }
+
+    pub async fn get_admin_milestones(
+        &self,
+        text: Option<&str>,
+        status: Option<MilestoneProofStatus>,
+        offset: i32,
+        limit: i32,
+    ) -> Result<Vec<AdminMilestonesResponse>, ApiError> {
+        let milestones_with_info = self
+            .project_repo
+            .get_admin_milestones(text, status, offset, limit)
+            .await
+            .map_err(|_| DbError::Str("Failed to get admin milestones".to_string()))?;
+
+        let mut milestone_responses = Vec::new();
+        for (milestone, project_title, started_at, nerd_id, user_id) in milestones_with_info {
+            if let Some(user) = self.user_repo.get_user_by_id(user_id).await {
+                let milestone_response = AdminMilestonesResponse {
+                    milestone,
+                    project_title: Some(project_title),
+                    started_at,
+                    nerd_id,
+                    user_info: user.to_info(),
+                };
+                milestone_responses.push(milestone_response);
+            }
+        }
+
+        Ok(milestone_responses)
     }
 }

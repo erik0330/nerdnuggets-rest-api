@@ -1,9 +1,9 @@
 use crate::pool::DatabasePool;
 use chrono::{DateTime, Duration, NaiveDate, Utc};
-use sqlx::{self, Error as SqlxError};
+use sqlx::{self, Error as SqlxError, Row};
 use std::sync::Arc;
 use types::{
-    dto::ProjectStatusCount,
+    dto::{MilestoneProofStatus, ProjectStatusCount},
     models::{
         CompletedDao, Dao, DaoVote, Funding, Milestone, Prediction, PredictionStatus, Project,
         ProjectComment, ProjectIds, ProjectItem, TeamMember,
@@ -889,6 +889,88 @@ impl ProjectRepository {
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(row.rows_affected() == 1)
+    }
+
+    pub async fn get_admin_milestones(
+        &self,
+        text: Option<&str>,
+        status: Option<MilestoneProofStatus>,
+        offset: i32,
+        limit: i32,
+    ) -> Result<Vec<(Milestone, String, Option<DateTime<Utc>>, String, Uuid)>, SqlxError> {
+        // Handle status filter
+        let status_condition = match status.unwrap_or(MilestoneProofStatus::AllStatuses) {
+            MilestoneProofStatus::AllStatuses => " m.proof_status > 0",
+            MilestoneProofStatus::Submitted => " m.proof_status = 1",
+            MilestoneProofStatus::Approved => " m.proof_status = 2",
+            MilestoneProofStatus::Rejected => " m.proof_status = 3",
+        };
+
+        // Handle text filter
+        let (text_condition, text_param) = if !text.unwrap_or_default().is_empty() {
+            (
+                " AND (m.title ILIKE $3 OR m.description ILIKE $3 OR p.title ILIKE $3)",
+                Some(format!("%{}%", text.unwrap_or_default())),
+            )
+        } else {
+            ("", None)
+        };
+
+        // Build main query
+        let main_query = format!(
+            "SELECT m.*, p.title AS project_title, p.started_at, p.nerd_id, p.user_id FROM milestone m JOIN project p ON m.project_id = p.id WHERE{}{} ORDER BY m.created_at DESC LIMIT $1 OFFSET $2",
+            status_condition, text_condition
+        );
+
+        // Execute main query
+        let mut stmt = sqlx::query(&main_query).bind(limit).bind(offset);
+        if let Some(text_param) = &text_param {
+            stmt = stmt.bind(text_param);
+        }
+
+        let rows = stmt.fetch_all(self.db_conn.get_pool()).await?;
+
+        let mut milestones_with_info = Vec::new();
+        for row in rows {
+            let milestone = Milestone {
+                id: row.get("id"),
+                project_id: row.get("project_id"),
+                status: row.get("status"),
+                number: row.get("number"),
+                title: row.get("title"),
+                description: row.get("description"),
+                deliverables: row.get("deliverables"),
+                challenges: row.get("challenges"),
+                next_steps: row.get("next_steps"),
+                progress_description: row.get("progress_description"),
+                file_urls: row.get("file_urls"),
+                proof_status: row.get("proof_status"),
+                feedback: row.get("feedback"),
+                funding_amount: row.get("funding_amount"),
+                amount: row.get("amount"),
+                count_contributors: row.get("count_contributors"),
+                days_after_start: row.get("days_after_start"),
+                days_of_prediction: row.get("days_of_prediction"),
+                arweave_tx_id: row.get("arweave_tx_id"),
+                created_at: row.get("created_at"),
+                updated_at: row.get("updated_at"),
+            };
+
+            let project_title: Option<String> = row.get("project_title");
+            let started_at: Option<DateTime<Utc>> = row.get("started_at");
+            let nerd_id: String = row.get("nerd_id");
+            let user_id: Uuid = row.get("user_id");
+
+            milestones_with_info.push((
+                milestone,
+                project_title.unwrap_or_default(),
+                started_at,
+                nerd_id,
+                user_id,
+            ));
+        }
+
+        Ok(milestones_with_info)
     }
 
     pub async fn get_project_counts_by_status(&self) -> Result<Vec<ProjectStatusCount>, SqlxError> {
