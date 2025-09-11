@@ -253,7 +253,7 @@ pub async fn login_with_privy(
 
     // Check if user exists by email
     if let Ok(user) = state.service.user.get_user_by_email(&email).await {
-        state
+        let user = state
             .service
             .user
             .update_privy_id(user.id, &privy_claims.sub, wallet_address)
@@ -270,7 +270,7 @@ pub async fn login_with_privy(
 
     // Check if user exists by Gmail and update with Privy info
     if let Ok(user) = state.service.user.get_user_by_gmail(&email).await {
-        state
+        let user = state
             .service
             .user
             .update_privy_id(user.id, &privy_claims.sub, wallet_address)
