@@ -58,6 +58,7 @@ pub async fn change_role(
     return Ok(Json(LoginAndRegisterResponse {
         user: UserReadDto::from(user.to_owned()),
         token: state.service.token.generate_token(user, payload.role)?,
+        is_login: true,
     }));
 }
 
