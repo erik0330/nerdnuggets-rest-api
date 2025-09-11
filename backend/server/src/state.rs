@@ -1,4 +1,5 @@
 use chrono::{Duration, Utc};
+use database::service::PrivyService;
 use database::{AppService, DatabasePool};
 use evm::EVMClient;
 use std::{collections::HashMap, sync::Arc};
@@ -93,6 +94,7 @@ pub struct AppState {
     pub service: AppService,
     pub s3_client: aws_sdk_s3::Client,
     pub ses_client: aws_sdk_sesv2::Client,
+    pub privy: PrivyService,
 }
 
 impl AppState {
@@ -110,12 +112,14 @@ impl AppState {
             &env.rpc_url,
             env.chain_id,
         );
+        let privy_service = PrivyService::new(&env);
         Self {
             service: AppService::init(db, &env),
             env,
             evm,
             s3_client,
             ses_client,
+            privy: privy_service,
         }
     }
 }

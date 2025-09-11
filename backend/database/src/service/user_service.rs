@@ -49,6 +49,47 @@ impl UserService {
             .ok_or_else(|| UserError::UserNotFound.into())
     }
 
+    pub async fn get_user_by_privy_id(&self, privy_id: &str) -> Result<User, ApiError> {
+        self.user_repo
+            .get_user_by_privy_id(privy_id)
+            .await
+            .ok_or_else(|| UserError::UserNotFound.into())
+    }
+
+    pub async fn update_privy_id(
+        &self,
+        id: Uuid,
+        privy_id: &str,
+        wallet_address: Option<String>,
+    ) -> Result<bool, ApiError> {
+        self.user_repo
+            .update_privy_id(id, privy_id, wallet_address)
+            .await
+            .map_err(|_| DbError::Str("Failed to update Privy ID".to_string()).into())
+    }
+
+    pub async fn create_user_with_privy(
+        &self,
+        privy_id: &str,
+        email: &str,
+        name: &str,
+        wallet_address: Option<String>,
+    ) -> Result<User, ApiError> {
+        // Generate unique username
+        let existing_usernames = self.get_all_usernames().await.unwrap_or_default();
+        let existing_usernames_set: HashSet<String> = existing_usernames.into_iter().collect();
+        let username = commons::generate_username(Some(name), email, &existing_usernames_set);
+
+        self.user_repo
+            .create_user_with_privy(privy_id, email, name, &username, wallet_address)
+            .await
+            .map_err(|_| {
+                ApiError::DbError(DbError::Str(
+                    "Failed to create user with Privy ID".to_string(),
+                ))
+            })
+    }
+
     pub async fn get_user_by_apple_id(&self, apple_id: &str) -> Result<User, ApiError> {
         self.user_repo
             .get_user_by_apple_id(apple_id)

@@ -9,6 +9,7 @@ edition.workspace = true
 async-channel.workspace = true
 async-stripe.workspace = true
 aws-sdk-sesv2.workspace = true
+base64.workspace = true
 bcrypt.workspace = true
 chrono.workspace = true
 evm.path = "../libraries/evm"

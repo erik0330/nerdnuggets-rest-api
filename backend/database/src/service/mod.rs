@@ -1,7 +1,8 @@
 mod bounty_service;
 mod notification_service;
-mod prediction_service;
 mod prediction_placement_service;
+mod prediction_service;
+mod privy_service;
 mod project_service;
 mod token_service;
 mod user_service;
@@ -9,8 +10,9 @@ mod util_service;
 
 pub use bounty_service::*;
 pub use notification_service::*;
-pub use prediction_service::*;
 pub use prediction_placement_service::*;
+pub use prediction_service::*;
+pub use privy_service::*;
 pub use project_service::*;
 pub use token_service::*;
 pub use user_service::*;

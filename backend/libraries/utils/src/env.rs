@@ -34,6 +34,9 @@ pub struct Env {
     pub apple_team_id: String,
     pub apple_key_id: String,
     pub apple_private_key: String,
+    // Add Privy configuration
+    pub privy_app_id: String,
+    pub privy_app_secret: String,
 }
 
 impl Env {
@@ -121,6 +124,11 @@ impl Env {
         let apple_private_key =
             std::env::var("APPLE_PRIVATE_KEY").expect("APPLE_PRIVATE_KEY must be set");
 
+        // Add Privy environment variables
+        let privy_app_id = std::env::var("PRIVY_APP_ID").expect("PRIVY_APP_ID must be set");
+        let privy_app_secret =
+            std::env::var("PRIVY_APP_SECRET").expect("PRIVY_APP_SECRET must be set");
+
         Self {
             port,
             jwt_secret,
@@ -152,6 +160,8 @@ impl Env {
             apple_team_id,
             apple_key_id,
             apple_private_key,
+            privy_app_id,
+            privy_app_secret,
         }
     }
 

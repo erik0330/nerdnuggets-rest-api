@@ -7,10 +7,10 @@ use chrono::Duration;
 use third_party_api::{apple_oauth::get_apple_user_with_code, google_oauth::get_google_user};
 use types::{
     dto::{
-        EmailVerificationResponse, LoginAndRegisterResponse, ResendVerificationEmailRequest,
-        UserCheckEmailOption, UserCheckResponse, UserLoginWithAppleRequest,
-        UserLoginWithEmailRequest, UserLoginWithGoogleRequest, UserReadDto,
-        UserRegisterWithEmailRequest, VerifyEmailRequest,
+        EmailVerificationResponse, LoginAndRegisterResponse, PrivyLoginRequest, PrivyUserInfo,
+        ResendVerificationEmailRequest, UserCheckEmailOption, UserCheckResponse,
+        UserLoginWithAppleRequest, UserLoginWithEmailRequest, UserLoginWithGoogleRequest,
+        UserReadDto, UserRegisterWithEmailRequest, VerifyEmailRequest,
     },
     error::{ApiError, DbError, UserError, ValidatedRequest},
     EmailVerifyType, UserRoleType,
@@ -214,6 +214,109 @@ pub async fn login_or_register_with_apple(
         })),
         Err(_) => Err(ApiError::UserError(UserError::CantCreateUser)),
     }
+}
+
+pub async fn login_with_privy(
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<PrivyLoginRequest>,
+) -> Result<Json<LoginAndRegisterResponse>, ApiError> {
+    // Verify the Privy token
+    let privy_claims = state.privy.verify_privy_token(&payload.id_token).await?;
+
+    // Get additional user info from Privy
+    let privy_user_info = state.privy.get_user_info(&privy_claims.sub).await?;
+
+    // Extract email from user info linked accounts
+    let email = privy_user_info
+        .linked_accounts
+        .iter()
+        .find(|account| account.r#type == "email")
+        .and_then(|account| account.address.clone())
+        .ok_or_else(|| UserError::Str("No email found in Privy user info".to_string()))?;
+    let wallet_address = privy_user_info
+        .linked_accounts
+        .iter()
+        .find(|account| account.r#type == "wallet")
+        .and_then(|account| account.address.clone());
+    let email = email.to_lowercase();
+
+    // Clone privy_user_info to avoid move issues
+    let privy_user_info_clone = privy_user_info.clone();
+
+    // Check if user exists by email
+    if let Ok(user) = state.service.user.get_user_by_email(&email).await {
+        state
+            .service
+            .user
+            .update_privy_id(user.id, &privy_claims.sub, wallet_address)
+            .await?;
+        return Ok(Json(LoginAndRegisterResponse {
+            user: UserReadDto::from(user.to_owned()),
+            token: state
+                .service
+                .token
+                .generate_token(user, UserRoleType::Member.to_string())?,
+        }));
+    }
+
+    // Check if user exists by Gmail and update with Privy info
+    if let Ok(user) = state.service.user.get_user_by_gmail(&email).await {
+        state
+            .service
+            .user
+            .update_privy_id(user.id, &privy_claims.sub, wallet_address)
+            .await?;
+        return Ok(Json(LoginAndRegisterResponse {
+            user: UserReadDto::from(user.to_owned()),
+            token: state
+                .service
+                .token
+                .generate_token(user, UserRoleType::Member.to_string())?,
+        }));
+    }
+
+    // Create new user with Privy info
+    let name = extract_name_from_privy_user(&privy_user_info_clone);
+    let user = state
+        .service
+        .user
+        .create_user_with_privy(&privy_claims.sub, &email, &name, wallet_address)
+        .await?;
+
+    Ok(Json(LoginAndRegisterResponse {
+        user: UserReadDto::from(user.to_owned()),
+        token: state
+            .service
+            .token
+            .generate_token(user, UserRoleType::Member.to_string())?,
+    }))
+}
+
+fn extract_name_from_privy_user(privy_user: &PrivyUserInfo) -> String {
+    // Extract name from linked accounts
+    for account in &privy_user.linked_accounts {
+        // Try to get name from email account
+        if account.r#type == "email" {
+            if let Some(address) = &account.address {
+                return address.split('@').next().unwrap_or("User").to_string();
+            }
+        }
+        // Try to get name from Farcaster account
+        if account.r#type == "farcaster" {
+            if let Some(display_name) = &account.display_name {
+                return display_name.clone();
+            }
+            if let Some(username) = &account.username {
+                return username.clone();
+            }
+        }
+        // Try to get name from OAuth accounts
+        if let Some(email) = &account.email {
+            return email.split('@').next().unwrap_or("User").to_string();
+        }
+    }
+
+    "Privy User".to_string()
 }
 
 // pub async fn login_or_register_with_twitter(

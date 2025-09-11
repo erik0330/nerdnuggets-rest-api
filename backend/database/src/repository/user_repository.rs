@@ -44,6 +44,37 @@ impl UserRepository {
             .unwrap_or(None)
     }
 
+    pub async fn get_user_by_privy_id(&self, privy_id: &str) -> Option<User> {
+        sqlx::query_as::<_, User>("SELECT * FROM users WHERE privy_id = $1")
+            .bind(privy_id)
+            .fetch_optional(self.db_conn.get_pool())
+            .await
+            .unwrap_or(None)
+    }
+
+    pub async fn update_privy_id(
+        &self,
+        id: Uuid,
+        privy_id: &str,
+        wallet_address: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let query = if let Some(wallet_address) = wallet_address {
+            sqlx::query("UPDATE users SET privy_id = $1, wallet_address = $2 WHERE id = $3")
+                .bind(privy_id)
+                .bind(wallet_address)
+                .bind(id)
+                .execute(self.db_conn.get_pool())
+                .await?
+        } else {
+            sqlx::query("UPDATE users SET privy_id = $1 WHERE id = $2")
+                .bind(privy_id)
+                .bind(id)
+                .execute(self.db_conn.get_pool())
+                .await?
+        };
+        Ok(query.rows_affected() == 1)
+    }
+
     pub async fn get_user_by_wallet(&self, wallet: &str) -> Option<User> {
         sqlx::query_as::<_, User>("SELECT * FROM users WHERE wallet_address ILIKE $1")
             .bind(wallet)
@@ -198,6 +229,30 @@ impl UserRepository {
         .bind(apple_id)
         .bind(name)
         .bind(UserTierType::Bronze.to_string())
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        return Ok(user);
+    }
+
+    pub async fn create_user_with_privy(
+        &self,
+        privy_id: &str,
+        email: &str,
+        name: &str,
+        username: &str,
+        wallet_address: Option<String>,
+    ) -> Result<User, SqlxError> {
+        let user = sqlx::query_as::<_, User>(
+            "INSERT INTO users (email, verified_email, privy_id, name, username, tier, wallet_address)
+            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+        )
+        .bind(email.to_lowercase())
+        .bind(true) // Privy users are considered verified
+        .bind(privy_id)
+        .bind(name)
+        .bind(username)
+        .bind(UserTierType::Bronze.to_string())
+        .bind(wallet_address)
         .fetch_one(self.db_conn.get_pool())
         .await?;
         return Ok(user);
