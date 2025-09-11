@@ -42,6 +42,7 @@ pub async fn login_with_email(
                 .service
                 .token
                 .generate_token(user, UserRoleType::Member.to_string())?,
+            is_login: true,
         }))
     } else {
         Err(UserError::InvalidPassword)?
@@ -69,6 +70,7 @@ pub async fn login_or_register_with_google(
                 .service
                 .token
                 .generate_token(user, UserRoleType::Member.to_string())?,
+            is_login: true,
         }));
     }
     if let Ok(user) = state.service.user.get_user_by_email(&email).await {
@@ -84,6 +86,7 @@ pub async fn login_or_register_with_google(
                 .service
                 .token
                 .generate_token(user, UserRoleType::Member.to_string())?,
+            is_login: true,
         }));
     }
     match state
@@ -98,6 +101,7 @@ pub async fn login_or_register_with_google(
                 .service
                 .token
                 .generate_token(user, UserRoleType::Member.to_string())?,
+            is_login: false,
         })),
         Err(_) => Err(ApiError::UserError(UserError::CantCreateUser)),
     }
@@ -145,6 +149,7 @@ pub async fn login_or_register_with_apple(
                 .service
                 .token
                 .generate_token(user, UserRoleType::Member.to_string())?,
+            is_login: true,
         }));
     }
 
@@ -164,6 +169,7 @@ pub async fn login_or_register_with_apple(
                     .service
                     .token
                     .generate_token(user, UserRoleType::Member.to_string())?,
+                is_login: true,
             }));
         }
     }
@@ -184,6 +190,7 @@ pub async fn login_or_register_with_apple(
                     .service
                     .token
                     .generate_token(user, UserRoleType::Member.to_string())?,
+                is_login: true,
             }));
         }
     }
@@ -211,6 +218,7 @@ pub async fn login_or_register_with_apple(
                 .service
                 .token
                 .generate_token(user, UserRoleType::Member.to_string())?,
+            is_login: false,
         })),
         Err(_) => Err(ApiError::UserError(UserError::CantCreateUser)),
     }
@@ -256,6 +264,7 @@ pub async fn login_with_privy(
                 .service
                 .token
                 .generate_token(user, UserRoleType::Member.to_string())?,
+            is_login: true,
         }));
     }
 
@@ -272,6 +281,7 @@ pub async fn login_with_privy(
                 .service
                 .token
                 .generate_token(user, UserRoleType::Member.to_string())?,
+            is_login: true,
         }));
     }
 
@@ -289,6 +299,7 @@ pub async fn login_with_privy(
             .service
             .token
             .generate_token(user, UserRoleType::Member.to_string())?,
+        is_login: false,
     }))
 }
 
@@ -703,6 +714,7 @@ pub async fn verify_email(
                 .service
                 .token
                 .generate_token(user, UserRoleType::Member.to_string())?,
+            is_login: true,
         }));
     }
     Err(UserError::TempUserNotFound)?

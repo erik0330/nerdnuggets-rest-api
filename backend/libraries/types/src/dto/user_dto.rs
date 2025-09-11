@@ -64,9 +64,11 @@ impl UserReadDto {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LoginAndRegisterResponse {
     pub user: UserReadDto,
     pub token: String,
+    pub is_login: bool,
 }
 
 #[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
