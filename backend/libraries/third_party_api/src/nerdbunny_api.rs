@@ -53,8 +53,6 @@ pub async fn extract_project_info(
         ));
     }
 
-    println!("response: {:?}", response);
-
     let external_response: ExternalApiResponse = response.json().await?;
 
     // Convert external response to our internal format

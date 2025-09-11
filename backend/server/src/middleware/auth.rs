@@ -34,6 +34,36 @@ pub async fn auth<B>(
         Authorization::decode(&mut headers).map_err(|_| TokenError::MissingToken)?;
 
     let token = header.token();
+
+    // // Try to verify as Privy token first
+    // if let Ok(privy_claims) = state.privy.verify_privy_token(token).await {
+    //     // Handle Privy token
+    //     let user = state
+    //         .service
+    //         .user
+    //         .get_user_by_privy_id(&privy_claims.sub)
+    //         .await;
+    //     match user {
+    //         Ok(user) => {
+    //             req.extensions_mut().insert(user);
+    //             req.extensions_mut().insert("Member".to_string()); // Default role for Privy users
+    //             return Ok(next.run(req).await);
+    //         }
+    //         Err(_) => {
+    //             // If user doesn't exist, try to find by email
+    //             if let Some(email) = privy_claims.email {
+    //                 if let Ok(user) = state.service.user.get_user_by_email(&email).await {
+    //                     req.extensions_mut().insert(user);
+    //                     req.extensions_mut().insert("Member".to_string());
+    //                     return Ok(next.run(req).await);
+    //                 }
+    //             }
+    //             return Err(UserError::UserNotFound)?;
+    //         }
+    //     }
+    // }
+
+    // Fall back to regular JWT verification
     match state.service.token.retrieve_token_claims(token) {
         Ok(token_data) => {
             let user = state

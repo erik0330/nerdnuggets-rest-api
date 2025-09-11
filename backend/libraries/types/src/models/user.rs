@@ -12,6 +12,7 @@ pub struct User {
     pub verified_email: bool,
     pub gmail: Option<String>,
     pub apple_id: Option<String>,
+    pub privy_id: Option<String>,
     pub roles: Vec<String>,
     pub institution: Option<String>,
     pub interests: Vec<String>,
