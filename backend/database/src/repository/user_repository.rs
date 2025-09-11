@@ -57,22 +57,24 @@ impl UserRepository {
         id: Uuid,
         privy_id: &str,
         wallet_address: Option<String>,
-    ) -> Result<bool, SqlxError> {
-        let query = if let Some(wallet_address) = wallet_address {
-            sqlx::query("UPDATE users SET privy_id = $1, wallet_address = $2 WHERE id = $3")
-                .bind(privy_id)
-                .bind(wallet_address)
-                .bind(id)
-                .execute(self.db_conn.get_pool())
-                .await?
+    ) -> Result<User, SqlxError> {
+        let user = if let Some(wallet_address) = wallet_address {
+            sqlx::query_as::<_, User>(
+                "UPDATE users SET privy_id = $1, wallet_address = $2 WHERE id = $3 RETURNING *",
+            )
+            .bind(privy_id)
+            .bind(wallet_address)
+            .bind(id)
+            .fetch_one(self.db_conn.get_pool())
+            .await?
         } else {
-            sqlx::query("UPDATE users SET privy_id = $1 WHERE id = $2")
+            sqlx::query_as::<_, User>("UPDATE users SET privy_id = $1 WHERE id = $2 RETURNING *")
                 .bind(privy_id)
                 .bind(id)
-                .execute(self.db_conn.get_pool())
+                .fetch_one(self.db_conn.get_pool())
                 .await?
         };
-        Ok(query.rows_affected() == 1)
+        Ok(user)
     }
 
     pub async fn get_user_by_wallet(&self, wallet: &str) -> Option<User> {

@@ -61,7 +61,7 @@ impl UserService {
         id: Uuid,
         privy_id: &str,
         wallet_address: Option<String>,
-    ) -> Result<bool, ApiError> {
+    ) -> Result<User, ApiError> {
         self.user_repo
             .update_privy_id(id, privy_id, wallet_address)
             .await
