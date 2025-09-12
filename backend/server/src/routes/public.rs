@@ -5,7 +5,7 @@ use crate::{
         project_handler::{
             fetch_paper_from_doi, get_dao_by_id, get_dao_statistics, get_daos, get_project_by_id,
             get_project_comments, get_project_counts_by_status, get_project_funders,
-            get_project_ids, get_projects, get_similar_projects,
+            get_project_ids, get_projects, get_similar_projects, submit_nomination,
         },
         user_handler::get_user_profile_by_username,
         util_handler::{get_categories, get_category_by_id, get_institutions},
@@ -41,4 +41,5 @@ pub fn routes() -> Router<AppState> {
         .route("/prediction/:id", get(get_prediction_by_id))
         .route("/prediction/top", get(get_top_predictors))
         .route("/nomination/fetch", post(fetch_paper_from_doi))
+        .route("/nomination/:id/submit", post(submit_nomination))
 }

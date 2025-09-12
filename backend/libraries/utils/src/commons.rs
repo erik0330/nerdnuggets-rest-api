@@ -310,3 +310,122 @@ pub fn generate_username(
     let timestamp = chrono::Utc::now().timestamp();
     format!("{}{}", base, timestamp)
 }
+
+pub async fn send_nomination_author_email(
+    author_email: String,
+    author_name: String,
+    paper_title: String,
+    nominator_name: String,
+    nomination_id: Uuid,
+    ses_client: &aws_sdk_sesv2::Client,
+) -> bool {
+    let subject = format!(
+        "[{}] nominated your manuscript '{}'",
+        nominator_name, paper_title
+    );
+
+    let content = format!(
+        r#"<div style="width: 100%; padding: 10 auto;">
+            <div style="max-width: 1000px;">
+                <div style="font-size: 40px; font-weight: bold;display: flex; justify-content: center; max-width: 1600px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;padding-top: 30px;">
+                    <span style="font-size: 40;">Your Research Has Been Nominated!</span>
+                </div>
+                <div style="width: 100%; margin: 30px;">
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Dear Dr. {},</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Great news! Your research "{}" has been nominated for funding consideration on NerdNuggets, the blockchain platform connecting breakthrough research with global backers.</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">{} believes your work has significant potential and deserves wider recognition and support.</p>
+                    
+                    <p style="font-size: 18px;font-weight: bold;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">What happens next:</p>
+                    <ul style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">
+                        <li>Our AI system will analyze your research impact and potential</li>
+                        <li>You can claim your researcher profile to showcase your work</li>
+                        <li>If approved, your project will be featured to our community of research backers</li>
+                        <li>Potential funding opportunities await</li>
+                    </ul>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://nerdnuggets.org/claim-author?nomination_id={}" 
+                           style="background-color: #1155cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;">
+                            Claim Your Profile
+                        </a>
+                    </div>
+                    
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">This nomination puts you one step closer to securing the funding your research deserves.</p>
+                    
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Best regards,<br>The NerdNuggets Team</p>
+                    
+                    <a href="https://www.nerdnuggets.org" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.org</a>
+                    <p style="background: #888888; width: 100%; height: 2px;"></p>
+                    <p style="font-size: 14px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: #666;">
+                        <a href="https://nerdnuggets.org/unsubscribe?email={}" style="color: #1155cc;">If you're not interested in research funding opportunities, you can unsubscribe here.</a>
+                    </p>
+                    <p style="background: #888888; width: 100%; height: 2px;"></p>
+                </div>
+            </div>
+        </div>"#,
+        author_name, paper_title, nominator_name, nomination_id, author_email
+    );
+
+    send_email(author_email, subject, content, ses_client).await
+}
+
+pub async fn send_nomination_confirmation_email(
+    nominator_email: String,
+    nominator_name: String,
+    paper_title: String,
+    author_name: String,
+    nomination_id: Uuid,
+    ses_client: &aws_sdk_sesv2::Client,
+) -> bool {
+    let subject = format!("Nomination confirmed: '{}' is being processed", paper_title);
+
+    let content = format!(
+        r#"<div style="width: 100%; padding: 10 auto;">
+            <div style="max-width: 1000px;">
+                <div style="font-size: 40px; font-weight: bold;display: flex; justify-content: center; max-width: 1600px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;padding-top: 30px;">
+                    <span style="font-size: 40;">Nomination Confirmed!</span>
+                </div>
+                <div style="width: 100%; margin: 30px;">
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Hi {},</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Thank you for nominating "{}" by {}. Your contribution helps identify breakthrough research that deserves funding and recognition.</p>
+                    
+                    <div style="background-color: #f0f8ff; padding: 15px; border-radius: 4px; margin: 20px 0;">
+                        <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black; margin: 0;">
+                            <strong>Nomination Status:</strong> Confirmed ✓<br>
+                            <strong>Tracking ID:</strong> {}
+                        </p>
+                    </div>
+                    
+                    <p style="font-size: 18px;font-weight: bold;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">What happens next:</p>
+                    <ul style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">
+                        <li>Our AI system analyzes the research impact and potential</li>
+                        <li>We'll notify the author about this nomination</li>
+                        <li>If approved, the project will be featured to our backer community</li>
+                        <li>You'll receive updates on the nomination progress</li>
+                    </ul>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://nerdnuggets.org/nominate" 
+                           style="background-color: #1155cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;">
+                            Nominate More Research
+                        </a>
+                    </div>
+                    
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Every nomination helps accelerate scientific discovery. Thank you for being part of the solution.</p>
+                    
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Best regards,<br>The NerdNuggets Team</p>
+                    
+                    <a href="https://www.nerdnuggets.org" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.org</a>
+                    <p style="background: #888888; width: 100%; height: 2px;"></p>
+                    <p style="font-size: 14px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: #666;">
+                        <a href="https://nerdnuggets.org/dashboard" style="color: #1155cc;">Track your nominations anytime in your dashboard.</a>
+                    </p>
+                    <p style="background: #888888; width: 100%; height: 2px;"></p>
+                </div>
+            </div>
+        </div>"#,
+        nominator_name, paper_title, author_name, nomination_id
+    );
+
+    send_email(nominator_email, subject, content, ses_client).await
+}

@@ -9,8 +9,8 @@ use types::dto::{
     GetProjectsOption, GetSimilarProjectsOption, GetUserDaoVotesOption, MakeDecisionRequest,
     MilestoneApprovalRequest, ProjectCountsResponse, ProjectFundersResponse,
     ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-    ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitProjectCommentRequest,
-    UpdateMilestoneRequest, UserDaoVotingStats,
+    ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitNominationRequest,
+    SubmitProjectCommentRequest, UpdateMilestoneRequest, UserDaoVotingStats,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
@@ -18,7 +18,7 @@ use types::models::{
     ProjectInfo, ProjectItemInfo, User,
 };
 use types::{FeedbackStatus, UserRoleType};
-use utils::commons::uuid_from_str;
+use utils::commons::{is_valid_email, uuid_from_str};
 
 pub async fn get_project_by_id(
     Path(id): Path<String>,
@@ -486,5 +486,29 @@ pub async fn fetch_paper_from_doi(
     ValidatedRequest(payload): ValidatedRequest<FetchPaperFromDoiRequest>,
 ) -> Result<Json<Nomination>, ApiError> {
     let response = state.service.project.fetch_paper_from_doi(payload).await?;
+    Ok(Json(response))
+}
+
+pub async fn submit_nomination(
+    Extension(user): Extension<Option<User>>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SubmitNominationRequest>,
+) -> Result<Json<bool>, ApiError> {
+    if !is_valid_email(&payload.email) {
+        return Err(ApiError::UserError(UserError::Str(
+            "Nominator email is invalid".to_string(),
+        )));
+    }
+    let response = state
+        .service
+        .project
+        .submit_nomination(
+            uuid_from_str(&id)?,
+            user.map(|u| u.id),
+            payload,
+            &state.ses_client,
+        )
+        .await?;
     Ok(Json(response))
 }

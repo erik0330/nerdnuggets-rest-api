@@ -15,7 +15,7 @@ pub struct Nomination {
     pub publisher: String,
     pub journal: String,
     pub keywords: Vec<String>,
-    pub status: i16, // 0: fetched, 1: submitted, 2: under_review, 3: approved, 4: rejected
+    pub status: i16, // 0: fetched, 1: submitted, 2: under_review, 3: approved, 4: rejected NominationStatus
 
     // nominator info
     pub nominator_id: Option<Uuid>,
@@ -33,4 +33,29 @@ pub struct Nomination {
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
+pub enum NominationStatus {
+    #[default]
+    Fetched,
+    Submitted,
+    UnderReview,
+    Approved,
+    Rejected,
+}
+
+impl NominationStatus {
+    pub fn from(status: i16) -> Self {
+        match status {
+            0 => Self::Fetched,
+            1 => Self::Submitted,
+            2 => Self::UnderReview,
+            3 => Self::Approved,
+            4 | _ => Self::Rejected,
+        }
+    }
+    pub fn to_i16(&self) -> i16 {
+        self.to_owned() as i16
+    }
 }

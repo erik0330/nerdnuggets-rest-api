@@ -335,3 +335,12 @@ pub struct Author {
     pub orcid: String,
     pub profile: String,
 }
+
+#[derive(Clone, Deserialize, Serialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitNominationRequest {
+    pub name: String,
+    pub email: String,
+    pub institution: Option<String>,
+    pub text: Option<String>,
+}

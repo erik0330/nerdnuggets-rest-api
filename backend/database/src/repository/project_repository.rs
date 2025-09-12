@@ -1274,4 +1274,33 @@ impl ProjectRepository {
             .await?;
         Ok(nomination)
     }
+
+    pub async fn get_nomination_by_id(&self, id: Uuid) -> Result<Option<Nomination>, SqlxError> {
+        let nomination = sqlx::query_as::<_, Nomination>("SELECT * FROM nomination WHERE id = $1")
+            .bind(id)
+            .fetch_optional(self.db_conn.get_pool())
+            .await?;
+        Ok(nomination)
+    }
+
+    pub async fn submit_nomination(
+        &self,
+        nomination_id: Uuid,
+        nominator_id: Option<Uuid>,
+        nominator_name: String,
+        nominator_email: String,
+        nominator_institution: Option<String>,
+        nominator_text: Option<String>,
+    ) -> Result<bool, SqlxError> {
+        let result = sqlx::query("UPDATE nomination SET status = 1, nominator_id = $1, nominator_name = $2, nominator_email = $3, nominator_institution = $4, nominator_text = $5 WHERE id = $6")
+            .bind(nominator_id)
+            .bind(nominator_name)
+            .bind(nominator_email)
+            .bind(nominator_institution)
+            .bind(nominator_text)
+            .bind(nomination_id)
+            .execute(self.db_conn.get_pool())
+            .await?;
+        Ok(result.rows_affected() == 1)
+    }
 }
