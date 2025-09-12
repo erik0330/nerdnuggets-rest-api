@@ -7,14 +7,15 @@ use std::sync::Arc;
 use types::{
     dto::{
         AdminMilestonesResponse, AdminProjectDashboardCounts, DaoStatisticsResponse, DaoVoteTab,
-        EditorDashboardCounts, MilestoneApprovalRequest, MilestoneApprovalStatus,
-        MilestoneProofStatus, ProjectCountsResponse, ProjectFunderInfo, ProjectFundersResponse,
-        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-        ResearchProjectDashboardResponse, UpdateMilestoneRequest, UserDaoVotingStats,
+        EditorDashboardCounts, FetchPaperFromDoiRequest, MilestoneApprovalRequest,
+        MilestoneApprovalStatus, MilestoneProofStatus, ProjectCountsResponse, ProjectFunderInfo,
+        ProjectFundersResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+        ProjectUpdateStep3Request, ResearchProjectDashboardResponse, UpdateMilestoneRequest,
+        UserDaoVotingStats,
     },
     error::{ApiError, DbError, UserError},
     models::{
-        CompletedDao, DaoDetailInfo, DaoInfo, DaoVote, FunderInfo, Milestone, Project,
+        CompletedDao, DaoDetailInfo, DaoInfo, DaoVote, FunderInfo, Milestone, Nomination, Project,
         ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo,
     },
     FeedbackStatus, MileStoneStatus, ProjectStatus, UserRoleType,
@@ -1358,5 +1359,29 @@ impl ProjectService {
         }
 
         Ok(milestone_responses)
+    }
+
+    pub async fn fetch_paper_from_doi(
+        &self,
+        request: FetchPaperFromDoiRequest,
+    ) -> Result<Nomination, ApiError> {
+        // check if this doi is already in the nomination table
+        let nomination = self
+            .project_repo
+            .get_nomination_by_doi(&request.doi)
+            .await
+            .unwrap_or_default();
+        if let Some(nomination) = nomination {
+            return Ok(nomination);
+        }
+        let paper_data = third_party_api::nerdbunny_api::fetch_paper_from_doi(&request)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+        let nomination = self
+            .project_repo
+            .create_nomination(&request.doi, paper_data)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+        Ok(nomination)
     }
 }

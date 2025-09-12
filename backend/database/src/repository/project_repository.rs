@@ -3,10 +3,10 @@ use chrono::{DateTime, Duration, NaiveDate, Utc};
 use sqlx::{self, Error as SqlxError, Row};
 use std::sync::Arc;
 use types::{
-    dto::{MilestoneProofStatus, ProjectStatusCount},
+    dto::{MilestoneProofStatus, PaperData, ProjectStatusCount},
     models::{
-        CompletedDao, Dao, DaoVote, Funding, Milestone, Prediction, PredictionStatus, Project,
-        ProjectComment, ProjectIds, ProjectItem, TeamMember,
+        CompletedDao, Dao, DaoVote, Funding, Milestone, Nomination, Prediction, PredictionStatus,
+        Project, ProjectComment, ProjectIds, ProjectItem, TeamMember,
     },
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
@@ -1245,5 +1245,33 @@ impl ProjectRepository {
         let daos = main_query.fetch_all(self.db_conn.get_pool()).await?;
 
         Ok(daos)
+    }
+
+    pub async fn create_nomination(
+        &self,
+        doi: &str,
+        data: PaperData,
+    ) -> Result<Nomination, SqlxError> {
+        let nomination = sqlx::query_as::<_, Nomination>(
+            "INSERT INTO nomination (doi, title, abstract, authors, publisher, journal, keywords) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+        )
+            .bind(doi)
+            .bind(data.title)
+            .bind(data._abstract)
+            .bind(data.authors.iter().map(|a| format!("({} <{}>", a.name, a.email)).collect::<Vec<String>>())
+            .bind(data.publisher)
+            .bind(data.journal)
+            .bind(data.keywords)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(nomination)
+    }
+
+    pub async fn get_nomination_by_doi(&self, doi: &str) -> Result<Option<Nomination>, SqlxError> {
+        let nomination = sqlx::query_as::<_, Nomination>("SELECT * FROM nomination WHERE doi = $1")
+            .bind(doi)
+            .fetch_optional(self.db_conn.get_pool())
+            .await?;
+        Ok(nomination)
     }
 }

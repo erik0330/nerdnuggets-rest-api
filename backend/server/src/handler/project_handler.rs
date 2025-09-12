@@ -4,17 +4,18 @@ use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
     AdminMilestonesResponse, AdminProjectDashboardCounts, AssignEditorRequest,
-    DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts, GetAdminMilestonesOption,
-    GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption, GetProjectsOption,
-    GetSimilarProjectsOption, GetUserDaoVotesOption, MakeDecisionRequest, MilestoneApprovalRequest,
-    ProjectCountsResponse, ProjectFundersResponse, ProjectUpdateStep1Request,
-    ProjectUpdateStep2Request, ProjectUpdateStep3Request, ResearchProjectDashboardResponse,
-    SubmitDaoVoteRequest, SubmitProjectCommentRequest, UpdateMilestoneRequest, UserDaoVotingStats,
+    DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts, FetchPaperFromDoiRequest,
+    GetAdminMilestonesOption, GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption,
+    GetProjectsOption, GetSimilarProjectsOption, GetUserDaoVotesOption, MakeDecisionRequest,
+    MilestoneApprovalRequest, ProjectCountsResponse, ProjectFundersResponse,
+    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+    ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitProjectCommentRequest,
+    UpdateMilestoneRequest, UserDaoVotingStats,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
-    DaoDetailInfo, DaoInfo, DaoVote, Milestone, ProjectCommentInfo, ProjectIds, ProjectInfo,
-    ProjectItemInfo, User,
+    DaoDetailInfo, DaoInfo, DaoVote, Milestone, Nomination, ProjectCommentInfo, ProjectIds,
+    ProjectInfo, ProjectItemInfo, User,
 };
 use types::{FeedbackStatus, UserRoleType};
 use utils::commons::uuid_from_str;
@@ -477,5 +478,13 @@ pub async fn get_milestone_submissions(
         .project
         .get_admin_milestones(opts.text.as_deref(), opts.status, offset, limit)
         .await?;
+    Ok(Json(response))
+}
+
+pub async fn fetch_paper_from_doi(
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<FetchPaperFromDoiRequest>,
+) -> Result<Json<Nomination>, ApiError> {
+    let response = state.service.project.fetch_paper_from_doi(payload).await?;
     Ok(Json(response))
 }
