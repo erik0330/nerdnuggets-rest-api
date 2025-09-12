@@ -10,6 +10,7 @@ pub struct Nomination {
     pub doi: String,
     pub title: String,
     #[serde(rename = "abstract")]
+    #[sqlx(rename = "abstract")]
     pub _abstract: String,
     pub authors: Vec<String>,
     pub publisher: String,
