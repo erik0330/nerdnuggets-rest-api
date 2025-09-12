@@ -1,7 +1,8 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use types::dto::{
-    ExtractProjectInfoRequest, ExtractProjectInfoResponse, NerdNuggetsInfo, StrengthsLimitations,
+    ExtractProjectInfoRequest, ExtractProjectInfoResponse, FetchPaperFromDoiRequest,
+    NerdNuggetsInfo, PaperData, StrengthsLimitations,
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -82,4 +83,34 @@ pub async fn extract_project_info(
         status: external_response.status,
         data: nerdnuggets_info,
     })
+}
+
+pub async fn fetch_paper_from_doi(
+    request: &FetchPaperFromDoiRequest,
+) -> Result<PaperData, anyhow::Error> {
+    let client = Client::new();
+
+    let url = format!("https://www.nerdbunny.com/api/v1/papers/integrations/parse-doi");
+    let response = client
+        .post(url)
+        .header("User-Agent", "NerdNuggets-Backend/2.0")
+        .json(request)
+        .send()
+        .await?;
+
+    if !response.status().is_success() {
+        return Err(anyhow::anyhow!(
+            "External API request failed with status: {}",
+            response.status()
+        ));
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct ExternalPaperData {
+        status: String,
+        data: PaperData,
+    }
+    let data: ExternalPaperData = response.json().await?;
+
+    Ok(data.data)
 }

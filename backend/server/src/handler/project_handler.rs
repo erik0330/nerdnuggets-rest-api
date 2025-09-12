@@ -4,20 +4,21 @@ use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
     AdminMilestonesResponse, AdminProjectDashboardCounts, AssignEditorRequest,
-    DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts, GetAdminMilestonesOption,
-    GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption, GetProjectsOption,
-    GetSimilarProjectsOption, GetUserDaoVotesOption, MakeDecisionRequest, MilestoneApprovalRequest,
-    ProjectCountsResponse, ProjectFundersResponse, ProjectUpdateStep1Request,
-    ProjectUpdateStep2Request, ProjectUpdateStep3Request, ResearchProjectDashboardResponse,
-    SubmitDaoVoteRequest, SubmitProjectCommentRequest, UpdateMilestoneRequest, UserDaoVotingStats,
+    DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts, FetchPaperFromDoiRequest,
+    GetAdminMilestonesOption, GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption,
+    GetProjectsOption, GetSimilarProjectsOption, GetUserDaoVotesOption, MakeDecisionRequest,
+    MilestoneApprovalRequest, ProjectCountsResponse, ProjectFundersResponse,
+    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+    ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitNominationRequest,
+    SubmitProjectCommentRequest, UpdateMilestoneRequest, UserDaoVotingStats,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
-    DaoDetailInfo, DaoInfo, DaoVote, Milestone, ProjectCommentInfo, ProjectIds, ProjectInfo,
-    ProjectItemInfo, User,
+    DaoDetailInfo, DaoInfo, DaoVote, Milestone, Nomination, ProjectCommentInfo, ProjectIds,
+    ProjectInfo, ProjectItemInfo, User,
 };
 use types::{FeedbackStatus, UserRoleType};
-use utils::commons::uuid_from_str;
+use utils::commons::{is_valid_email, uuid_from_str};
 
 pub async fn get_project_by_id(
     Path(id): Path<String>,
@@ -476,6 +477,38 @@ pub async fn get_milestone_submissions(
         .service
         .project
         .get_admin_milestones(opts.text.as_deref(), opts.status, offset, limit)
+        .await?;
+    Ok(Json(response))
+}
+
+pub async fn fetch_paper_from_doi(
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<FetchPaperFromDoiRequest>,
+) -> Result<Json<Nomination>, ApiError> {
+    let response = state.service.project.fetch_paper_from_doi(payload).await?;
+    Ok(Json(response))
+}
+
+pub async fn submit_nomination(
+    Extension(user): Extension<Option<User>>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+    ValidatedRequest(payload): ValidatedRequest<SubmitNominationRequest>,
+) -> Result<Json<bool>, ApiError> {
+    if !is_valid_email(&payload.email) {
+        return Err(ApiError::UserError(UserError::Str(
+            "Nominator email is invalid".to_string(),
+        )));
+    }
+    let response = state
+        .service
+        .project
+        .submit_nomination(
+            uuid_from_str(&id)?,
+            user.map(|u| u.id),
+            payload,
+            &state.ses_client,
+        )
         .await?;
     Ok(Json(response))
 }

@@ -7,15 +7,16 @@ use std::sync::Arc;
 use types::{
     dto::{
         AdminMilestonesResponse, AdminProjectDashboardCounts, DaoStatisticsResponse, DaoVoteTab,
-        EditorDashboardCounts, MilestoneApprovalRequest, MilestoneApprovalStatus,
-        MilestoneProofStatus, ProjectCountsResponse, ProjectFunderInfo, ProjectFundersResponse,
-        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-        ResearchProjectDashboardResponse, UpdateMilestoneRequest, UserDaoVotingStats,
+        EditorDashboardCounts, FetchPaperFromDoiRequest, MilestoneApprovalRequest,
+        MilestoneApprovalStatus, MilestoneProofStatus, ProjectCountsResponse, ProjectFunderInfo,
+        ProjectFundersResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+        ProjectUpdateStep3Request, ResearchProjectDashboardResponse, SubmitNominationRequest,
+        UpdateMilestoneRequest, UserDaoVotingStats,
     },
     error::{ApiError, DbError, UserError},
     models::{
-        CompletedDao, DaoDetailInfo, DaoInfo, DaoVote, FunderInfo, Milestone, Project,
-        ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo,
+        CompletedDao, DaoDetailInfo, DaoInfo, DaoVote, FunderInfo, Milestone, Nomination,
+        NominationStatus, Project, ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo,
     },
     FeedbackStatus, MileStoneStatus, ProjectStatus, UserRoleType,
 };
@@ -1358,5 +1359,109 @@ impl ProjectService {
         }
 
         Ok(milestone_responses)
+    }
+
+    pub async fn fetch_paper_from_doi(
+        &self,
+        request: FetchPaperFromDoiRequest,
+    ) -> Result<Nomination, ApiError> {
+        // check if this doi is already in the nomination table
+        let nomination = self
+            .project_repo
+            .get_nomination_by_doi(&request.doi)
+            .await
+            .unwrap_or_default();
+        if let Some(nomination) = nomination {
+            return Ok(nomination);
+        }
+        let paper_data = third_party_api::nerdbunny_api::fetch_paper_from_doi(&request)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+        let nomination = self
+            .project_repo
+            .create_nomination(&request.doi, paper_data)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+        Ok(nomination)
+    }
+
+    pub async fn submit_nomination(
+        &self,
+        nomination_id: Uuid,
+        nominator_id: Option<Uuid>,
+        payload: SubmitNominationRequest,
+        ses_client: &aws_sdk_sesv2::Client,
+    ) -> Result<bool, ApiError> {
+        let nomination = self
+            .project_repo
+            .get_nomination_by_id(nomination_id)
+            .await
+            .unwrap_or_default();
+        if let Some(nomination) = nomination {
+            if nomination.status != NominationStatus::Fetched.to_i16() {
+                return Err(DbError::Str("Nomination already submitted".to_string()))?;
+            }
+            if !self
+                .project_repo
+                .submit_nomination(
+                    nomination_id,
+                    nominator_id,
+                    payload.name.clone(),
+                    payload.email.clone(),
+                    payload.institution,
+                    payload.text,
+                )
+                .await
+                .unwrap_or_default()
+            {
+                return Err(DbError::Str("Update nomination failed".to_string()))?;
+            }
+
+            // Send confirmation email to nominator
+            let _ = utils::commons::send_nomination_confirmation_email(
+                payload.email.clone(),
+                payload.name.clone(),
+                nomination.title.clone(),
+                nomination.authors.first().cloned().unwrap_or_default(),
+                nomination_id,
+                ses_client,
+            )
+            .await;
+
+            // Send notification emails to all authors
+            for author in &nomination.authors {
+                // Extract email from author string if it contains email
+                // This assumes authors are stored as "Name <email@domain.com>" or just "Name"
+                let (author_name, author_email) = if author.contains('<') && author.contains('>') {
+                    (
+                        author.split('<').nth(0).unwrap_or("").to_string(),
+                        author
+                            .split('<')
+                            .nth(1)
+                            .and_then(|s| s.split('>').next())
+                            .unwrap_or("")
+                            .to_string(),
+                    )
+                } else {
+                    (author.clone(), "".to_string())
+                };
+
+                if !author_email.is_empty() && author_email.contains('@') {
+                    let _ = utils::commons::send_nomination_author_email(
+                        author_email,
+                        author_name,
+                        nomination.title.clone(),
+                        payload.name.clone(),
+                        nomination_id,
+                        ses_client,
+                    )
+                    .await;
+                }
+            }
+
+            return Ok(true);
+        } else {
+            return Err(DbError::Str("Nomination not found".to_string()))?;
+        }
     }
 }

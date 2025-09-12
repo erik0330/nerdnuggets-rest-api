@@ -307,3 +307,40 @@ pub struct AdminMilestonesResponse {
     pub project_title: Option<String>,
     pub started_at: Option<DateTime<Utc>>,
 }
+
+#[derive(Clone, Deserialize, Serialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct FetchPaperFromDoiRequest {
+    pub doi: String,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct PaperData {
+    pub title: String,
+    #[serde(rename = "abstract")]
+    pub _abstract: String,
+    pub authors: Vec<Author>,
+    pub publisher: String,
+    pub journal: String,
+    pub keywords: Vec<String>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Author {
+    pub name: String,
+    pub affiliation: String,
+    pub email: String,
+    pub orcid: String,
+    pub profile: String,
+}
+
+#[derive(Clone, Deserialize, Serialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitNominationRequest {
+    pub name: String,
+    pub email: String,
+    pub institution: Option<String>,
+    pub text: Option<String>,
+}
