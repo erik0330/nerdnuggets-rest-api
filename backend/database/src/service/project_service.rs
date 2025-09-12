@@ -1370,7 +1370,7 @@ impl ProjectService {
             .project_repo
             .get_nomination_by_doi(&request.doi)
             .await
-            .unwrap_or_default();
+            .map_err(|err| DbError::Str(format!("Failed to get nomination by doi: {:?}", err)))?;
         if let Some(nomination) = nomination {
             return Ok(nomination);
         }

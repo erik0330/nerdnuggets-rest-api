@@ -316,7 +316,7 @@ pub async fn send_nomination_author_email(
     author_name: String,
     paper_title: String,
     nominator_name: String,
-    nomination_id: Uuid,
+    _nomination_id: Uuid,
     ses_client: &aws_sdk_sesv2::Client,
 ) -> bool {
     let subject = format!(
@@ -344,7 +344,7 @@ pub async fn send_nomination_author_email(
                     </ul>
                     
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="https://nerdnuggets.org/claim-author?nomination_id={}" 
+                        <a href="https://nerdnuggets.org" 
                            style="background-color: #1155cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;">
                             Claim Your Profile
                         </a>
@@ -355,15 +355,10 @@ pub async fn send_nomination_author_email(
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Best regards,<br>The NerdNuggets Team</p>
                     
                     <a href="https://www.nerdnuggets.org" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.org</a>
-                    <p style="background: #888888; width: 100%; height: 2px;"></p>
-                    <p style="font-size: 14px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: #666;">
-                        <a href="https://nerdnuggets.org/unsubscribe?email={}" style="color: #1155cc;">If you're not interested in research funding opportunities, you can unsubscribe here.</a>
-                    </p>
-                    <p style="background: #888888; width: 100%; height: 2px;"></p>
                 </div>
             </div>
         </div>"#,
-        author_name, paper_title, nominator_name, nomination_id, author_email
+        author_name, paper_title, nominator_name
     );
 
     send_email(author_email, subject, content, ses_client).await
@@ -405,7 +400,7 @@ pub async fn send_nomination_confirmation_email(
                     </ul>
                     
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="https://nerdnuggets.org/nominate" 
+                        <a href="https://nerdnuggets.org" 
                            style="background-color: #1155cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;">
                             Nominate More Research
                         </a>
@@ -416,11 +411,6 @@ pub async fn send_nomination_confirmation_email(
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Best regards,<br>The NerdNuggets Team</p>
                     
                     <a href="https://www.nerdnuggets.org" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.org</a>
-                    <p style="background: #888888; width: 100%; height: 2px;"></p>
-                    <p style="font-size: 14px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: #666;">
-                        <a href="https://nerdnuggets.org/dashboard" style="color: #1155cc;">Track your nominations anytime in your dashboard.</a>
-                    </p>
-                    <p style="background: #888888; width: 100%; height: 2px;"></p>
                 </div>
             </div>
         </div>"#,

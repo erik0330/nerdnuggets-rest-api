@@ -1258,7 +1258,7 @@ impl ProjectRepository {
             .bind(doi)
             .bind(data.title)
             .bind(data._abstract)
-            .bind(data.authors.iter().map(|a| format!("({} <{}>", a.name, a.email)).collect::<Vec<String>>())
+            .bind(data.authors.iter().map(|a| format!("{} <{}>", a.name, a.email)).collect::<Vec<String>>())
             .bind(data.publisher)
             .bind(data.journal)
             .bind(data.keywords)

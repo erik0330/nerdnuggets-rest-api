@@ -90,9 +90,10 @@ pub async fn fetch_paper_from_doi(
 ) -> Result<PaperData, anyhow::Error> {
     let client = Client::new();
 
-    let url = format!("https://www.nerdbunny.com/api/v1/papers/integrations/parse-doi");
+    let url = format!("https://www.nerdbunny.com/api/v1/papers/integrations/parse-doi/");
     let response = client
         .post(url)
+        .header("Content-Type", "application/json")
         .header("User-Agent", "NerdNuggets-Backend/2.0")
         .json(request)
         .send()
@@ -110,7 +111,8 @@ pub async fn fetch_paper_from_doi(
         status: String,
         data: PaperData,
     }
-    let data: ExternalPaperData = response.json().await?;
+    let response_text = response.text().await?;
+    let data: ExternalPaperData = serde_json::from_str(&response_text)?;
 
     Ok(data.data)
 }
