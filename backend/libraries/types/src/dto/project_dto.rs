@@ -330,10 +330,10 @@ pub struct PaperData {
 #[serde(rename_all = "camelCase")]
 pub struct Author {
     pub name: String,
-    pub affiliation: String,
+    pub affiliation: Option<String>,
     pub email: String,
-    pub orcid: String,
-    pub profile: String,
+    pub orcid: Option<String>,
+    pub profile: Option<String>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Validate, Debug)]
