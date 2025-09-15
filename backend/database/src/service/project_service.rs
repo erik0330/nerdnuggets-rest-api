@@ -8,10 +8,11 @@ use types::{
     dto::{
         AdminMilestonesResponse, AdminProjectDashboardCounts, DaoStatisticsResponse, DaoVoteTab,
         EditorDashboardCounts, FetchPaperFromDoiRequest, MilestoneApprovalRequest,
-        MilestoneApprovalStatus, MilestoneProofStatus, ProjectCountsResponse, ProjectFunderInfo,
-        ProjectFundersResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
-        ProjectUpdateStep3Request, ResearchProjectDashboardResponse, SubmitNominationRequest,
-        UpdateMilestoneRequest, UserDaoVotingStats,
+        MilestoneApprovalStatus, MilestoneProofStatus, NominationFilterStatus,
+        ProjectCountsResponse, ProjectFunderInfo, ProjectFundersResponse,
+        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+        ResearchProjectDashboardResponse, SubmitNominationRequest, UpdateMilestoneRequest,
+        UserDaoVotingStats,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -1463,5 +1464,32 @@ impl ProjectService {
         } else {
             return Err(DbError::Str("Nomination not found".to_string()))?;
         }
+    }
+
+    pub async fn get_nominations(
+        &self,
+        text: Option<String>,
+        status: Option<NominationFilterStatus>,
+        offset: i32,
+        limit: i32,
+    ) -> Result<Vec<Nomination>, ApiError> {
+        // Convert status filter to i16
+        let status_value = match status {
+            Some(NominationFilterStatus::AllStatus) => None,
+            Some(NominationFilterStatus::Pending) => Some(1), // Submitted status
+            Some(NominationFilterStatus::UnderReview) => Some(2),
+            Some(NominationFilterStatus::Approved) => Some(3),
+            Some(NominationFilterStatus::Rejected) => Some(4),
+            Some(NominationFilterStatus::ProjectCreated) => Some(5),
+            None => None,
+        };
+
+        let nominations = self
+            .project_repo
+            .get_nominations(text.as_deref(), status_value, offset, limit)
+            .await
+            .map_err(|err| DbError::Str(format!("Failed to get nominations: {:?}", err)))?;
+
+        Ok(nominations)
     }
 }

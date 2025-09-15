@@ -5,9 +5,9 @@ use third_party_api::arweave::upload_project_submission;
 use types::dto::{
     AdminMilestonesResponse, AdminProjectDashboardCounts, AssignEditorRequest,
     DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts, FetchPaperFromDoiRequest,
-    GetAdminMilestonesOption, GetDaosOption, GetProjectCommentsOption, GetProjectFundersOption,
-    GetProjectsOption, GetSimilarProjectsOption, GetUserDaoVotesOption, MakeDecisionRequest,
-    MilestoneApprovalRequest, ProjectCountsResponse, ProjectFundersResponse,
+    GetAdminMilestonesOption, GetDaosOption, GetNominationsOption, GetProjectCommentsOption,
+    GetProjectFundersOption, GetProjectsOption, GetSimilarProjectsOption, GetUserDaoVotesOption,
+    MakeDecisionRequest, MilestoneApprovalRequest, ProjectCountsResponse, ProjectFundersResponse,
     ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
     ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitNominationRequest,
     SubmitProjectCommentRequest, UpdateMilestoneRequest, UserDaoVotingStats,
@@ -511,4 +511,19 @@ pub async fn submit_nomination(
         )
         .await?;
     Ok(Json(response))
+}
+
+pub async fn get_nominations(
+    Query(opts): Query<GetNominationsOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<Nomination>>, ApiError> {
+    let offset = opts.offset.unwrap_or(0);
+    let limit = opts.limit.unwrap_or(10);
+
+    let nominations = state
+        .service
+        .project
+        .get_nominations(opts.text, opts.status, offset, limit)
+        .await?;
+    Ok(Json(nominations))
 }

@@ -1303,4 +1303,59 @@ impl ProjectRepository {
             .await?;
         Ok(result.rows_affected() == 1)
     }
+
+    pub async fn get_nominations(
+        &self,
+        text: Option<&str>,
+        status: Option<i16>,
+        offset: i32,
+        limit: i32,
+    ) -> Result<Vec<Nomination>, SqlxError> {
+        let mut query = "SELECT * FROM nomination".to_string();
+        let mut filters = Vec::new();
+        let mut index = 3;
+
+        // Add text search filter
+        if let Some(_search_term) = text.filter(|s| !s.is_empty()) {
+            filters.push(format!(
+                "(title ILIKE ${index} OR journal ILIKE ${index} OR EXISTS (SELECT 1 FROM unnest(authors) AS author WHERE author ILIKE ${index}))", 
+                index = index
+            ));
+            index += 1;
+        }
+
+        // Add status filter
+        if let Some(_status_value) = status {
+            filters.push(format!("status > 0 AND status = ${index}", index = index));
+        } else {
+            filters.push(format!("status > 0"));
+        }
+
+        // Add WHERE clause if filters exist
+        if !filters.is_empty() {
+            let where_clause = format!(" WHERE {}", filters.join(" AND "));
+            query = format!("{}{}", query, where_clause);
+        }
+
+        // Add ORDER BY and LIMIT/OFFSET
+        query = format!("{} ORDER BY created_at DESC LIMIT $1 OFFSET $2", query);
+
+        // Build the query with bindings
+        let mut db_query = sqlx::query_as::<_, Nomination>(&query)
+            .bind(limit)
+            .bind(offset);
+
+        // Add search parameter if exists
+        if let Some(search_term) = text.filter(|s| !s.is_empty()) {
+            db_query = db_query.bind(format!("%{}%", search_term));
+        }
+
+        // Add status parameter if exists
+        if let Some(status_value) = status {
+            db_query = db_query.bind(status_value);
+        }
+
+        let nominations = db_query.fetch_all(self.db_conn.get_pool()).await?;
+        Ok(nominations)
+    }
 }
