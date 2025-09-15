@@ -3,6 +3,7 @@ mod bounty;
 mod notification;
 mod project;
 mod public;
+mod reward;
 mod user;
 mod util;
 
@@ -55,6 +56,7 @@ pub async fn routes(db_conn: Arc<DatabasePool>, env: Env) -> IntoMakeService<Rou
             .merge(bounty::routes())
             .merge(notification::routes())
             .merge(project::routes())
+            .merge(reward::routes())
             .merge(user::routes())
             .merge(util::routes())
             .layer(ServiceBuilder::new().layer(middleware::from_fn_with_state(
