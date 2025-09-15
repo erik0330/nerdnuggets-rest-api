@@ -344,3 +344,23 @@ pub struct SubmitNominationRequest {
     pub institution: Option<String>,
     pub text: Option<String>,
 }
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+pub enum NominationFilterStatus {
+    #[default]
+    AllStatus,
+    Pending,
+    UnderReview,
+    Approved,
+    Rejected,
+    ProjectCreated,
+}
+
+#[derive(Clone, Deserialize, Serialize, Validate, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetNominationsOption {
+    pub text: Option<String>,
+    pub status: Option<NominationFilterStatus>,
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
+}
