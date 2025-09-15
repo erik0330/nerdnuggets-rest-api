@@ -4,6 +4,7 @@ mod prediction_placement_service;
 mod prediction_service;
 mod privy_service;
 mod project_service;
+mod reward_service;
 mod token_service;
 mod user_service;
 mod util_service;
@@ -14,6 +15,7 @@ pub use prediction_placement_service::*;
 pub use prediction_service::*;
 pub use privy_service::*;
 pub use project_service::*;
+pub use reward_service::*;
 pub use token_service::*;
 pub use user_service::*;
 pub use util_service::*;
@@ -29,6 +31,7 @@ pub struct AppService {
     pub prediction: PredictionService,
     pub prediction_placement: PredictionPlacementService,
     pub project: ProjectService,
+    pub reward: RewardService,
     pub token: TokenService,
     pub user: UserService,
     pub util: UtilService,
@@ -42,6 +45,7 @@ impl AppService {
             prediction: PredictionService::new(db),
             prediction_placement: PredictionPlacementService::new(db),
             project: ProjectService::new(db),
+            reward: RewardService::new(db),
             token: TokenService::new(env),
             user: UserService::new(db),
             util: UtilService::new(db),
