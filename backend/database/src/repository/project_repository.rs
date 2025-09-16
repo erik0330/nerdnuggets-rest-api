@@ -1364,4 +1364,61 @@ impl ProjectRepository {
         let nominations = db_query.fetch_all(self.db_conn.get_pool()).await?;
         Ok(nominations)
     }
+
+    pub async fn get_nomination_statistics(
+        &self,
+        nominator_email: &str,
+    ) -> Result<(i64, i64, i64, i64, i64), SqlxError> {
+        // Get total count (all nominations with status > 0, i.e., submitted and beyond)
+        let total = sqlx::query!(
+            "SELECT COUNT(*) as count FROM nomination WHERE status > 0 AND nominator_email = $1",
+            nominator_email
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        // Get pending count (status = 1, submitted)
+        let pending = sqlx::query!(
+            "SELECT COUNT(*) as count FROM nomination WHERE status = 1 AND nominator_email = $1",
+            nominator_email
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        // Get reviewing count (status = 2, under_review)
+        let reviewing = sqlx::query!(
+            "SELECT COUNT(*) as count FROM nomination WHERE status = 2 AND nominator_email = $1",
+            nominator_email
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        // Get approved count (status = 3, approved)
+        let approved = sqlx::query!(
+            "SELECT COUNT(*) as count FROM nomination WHERE status = 3 AND nominator_email = $1",
+            nominator_email
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        // Get rejected count (status = 4, rejected)
+        let rejected = sqlx::query!(
+            "SELECT COUNT(*) as count FROM nomination WHERE status = 4 AND nominator_email = $1",
+            nominator_email
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await?
+        .count
+        .unwrap_or(0);
+
+        Ok((total, pending, reviewing, approved, rejected))
+    }
 }
