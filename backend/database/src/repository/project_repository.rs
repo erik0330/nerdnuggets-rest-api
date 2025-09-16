@@ -1306,6 +1306,7 @@ impl ProjectRepository {
 
     pub async fn get_nominations(
         &self,
+        nominator_email: &str,
         text: Option<&str>,
         status: Option<i16>,
         offset: i32,
@@ -1314,6 +1315,10 @@ impl ProjectRepository {
         let mut query = "SELECT * FROM nomination".to_string();
         let mut filters = Vec::new();
         let mut index = 3;
+
+        // Add user_id filter
+        filters.push(format!("nominator_email = ${index}"));
+        index += 1;
 
         // Add text search filter
         if let Some(_search_term) = text.filter(|s| !s.is_empty()) {
@@ -1343,7 +1348,8 @@ impl ProjectRepository {
         // Build the query with bindings
         let mut db_query = sqlx::query_as::<_, Nomination>(&query)
             .bind(limit)
-            .bind(offset);
+            .bind(offset)
+            .bind(nominator_email);
 
         // Add search parameter if exists
         if let Some(search_term) = text.filter(|s| !s.is_empty()) {

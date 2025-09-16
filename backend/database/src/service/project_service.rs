@@ -1468,6 +1468,7 @@ impl ProjectService {
 
     pub async fn get_nominations(
         &self,
+        nominator_email: &str,
         text: Option<String>,
         status: Option<NominationFilterStatus>,
         offset: i32,
@@ -1486,7 +1487,13 @@ impl ProjectService {
 
         let nominations = self
             .project_repo
-            .get_nominations(text.as_deref(), status_value, offset, limit)
+            .get_nominations(
+                nominator_email,
+                text.as_deref(),
+                status_value,
+                offset,
+                limit,
+            )
             .await
             .map_err(|err| DbError::Str(format!("Failed to get nominations: {:?}", err)))?;
 

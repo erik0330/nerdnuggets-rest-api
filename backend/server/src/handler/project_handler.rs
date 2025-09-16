@@ -514,16 +514,21 @@ pub async fn submit_nomination(
 }
 
 pub async fn get_nominations(
+    Extension(user): Extension<Option<User>>,
     Query(opts): Query<GetNominationsOption>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Nomination>>, ApiError> {
     let offset = opts.offset.unwrap_or(0);
     let limit = opts.limit.unwrap_or(10);
 
-    let nominations = state
-        .service
-        .project
-        .get_nominations(opts.text, opts.status, offset, limit)
-        .await?;
-    Ok(Json(nominations))
+    if let Some(nominator_email) = user.map(|u| u.email).filter(|e| !e.is_empty()) {
+        let nominations = state
+            .service
+            .project
+            .get_nominations(&nominator_email, opts.text, opts.status, offset, limit)
+            .await?;
+        return Ok(Json(nominations));
+    } else {
+        return Ok(Json(Vec::new()));
+    }
 }
