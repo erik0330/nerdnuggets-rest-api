@@ -320,41 +320,35 @@ pub async fn send_nomination_author_email(
     ses_client: &aws_sdk_sesv2::Client,
 ) -> bool {
     let subject = format!(
-        "[{}] nominated your manuscript '{}'",
-        nominator_name, paper_title
+        "Paper \"{}\" nominated",
+        if paper_title.len() > 30 {
+            &paper_title[..27]
+        } else {
+            &paper_title
+        }
     );
 
     let content = format!(
         r#"<div style="width: 100%; padding: 10 auto;">
             <div style="max-width: 1000px;">
-                <div style="font-size: 40px; font-weight: bold;display: flex; justify-content: center; max-width: 1600px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;padding-top: 30px;">
-                    <span style="font-size: 40;">Your Research Has Been Nominated!</span>
-                </div>
                 <div style="width: 100%; margin: 30px;">
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Dear {},</p>
-                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Great news! Your research "{}" has been nominated for funding consideration on NerdNuggets, the blockchain platform connecting breakthrough research with global backers.</p>
-                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">{} believes your work has significant potential and deserves wider recognition and support.</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">We're pleased to inform you that your research "{}" has been nominated for funding consideration on NerdNuggets, our platform connecting research with backers.</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">{} selected your work for its potential impact.</p>
                     
-                    <p style="font-size: 18px;font-weight: bold;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">What happens next:</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Next steps include:</p>
                     <ul style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">
-                        <li>Our AI system will analyze your research impact and potential</li>
-                        <li>You can claim your researcher profile to showcase your work</li>
-                        <li>If approved, your project will be featured to our community of research backers</li>
-                        <li>Potential funding opportunities await</li>
+                        <li>Analysis of your research</li>
+                        <li>An option to claim your researcher profile</li>
+                        <li>If approved, featuring the project to our community</li>
+                        <li>Possible funding opportunities</li>
                     </ul>
                     
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="https://nerdnuggets.org" 
-                           style="background-color: #1155cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;">
-                            Claim Your Profile
-                        </a>
-                    </div>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">To claim your profile: <a href="https://nerdnuggets.org" style="color: #1155cc;">https://nerdnuggets.org</a></p>
                     
-                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">This nomination puts you one step closer to securing the funding your research deserves.</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">This nomination highlights the value of your work.</p>
                     
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Best regards,<br>The NerdNuggets Team</p>
-                    
-                    <a href="https://www.nerdnuggets.org" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.org</a>
                 </div>
             </div>
         </div>"#,
@@ -372,45 +366,41 @@ pub async fn send_nomination_confirmation_email(
     nomination_id: Uuid,
     ses_client: &aws_sdk_sesv2::Client,
 ) -> bool {
-    let subject = format!("Nomination confirmed: '{}' is being processed", paper_title);
+    let subject = format!(
+        "{} nomination confirmed (ID: {})",
+        if paper_title.len() > 30 {
+            &paper_title[..27]
+        } else {
+            &paper_title
+        },
+        nomination_id
+    );
 
     let content = format!(
         r#"<div style="width: 100%; padding: 10 auto;">
             <div style="max-width: 1000px;">
-                <div style="font-size: 40px; font-weight: bold;display: flex; justify-content: center; max-width: 1600px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;padding-top: 30px;">
-                    <span style="font-size: 40;">Nomination Confirmed!</span>
-                </div>
                 <div style="width: 100%; margin: 30px;">
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Hi {},</p>
-                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Thank you for nominating "{}" by {}. Your contribution helps identify breakthrough research that deserves funding and recognition.</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Thank you for nominating "{}" by {}. This helps surface research worthy of support.</p>
                     
-                    <div style="background-color: #f0f8ff; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                        <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black; margin: 0;">
-                            <strong>Nomination Status:</strong> Confirmed ✓<br>
-                            <strong>Tracking ID:</strong> {}
-                        </p>
-                    </div>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">
+                        <strong>Nomination Status:</strong> Confirmed<br>
+                        <strong>Tracking ID:</strong> {}
+                    </p>
                     
-                    <p style="font-size: 18px;font-weight: bold;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">What happens next:</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Next steps:</p>
                     <ul style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">
-                        <li>Our AI system analyzes the research impact and potential</li>
-                        <li>We'll notify the author about this nomination</li>
-                        <li>If approved, the project will be featured to our backer community</li>
-                        <li>You'll receive updates on the nomination progress</li>
+                        <li>Analysis of the research impact</li>
+                        <li>Notification to the author</li>
+                        <li>If approved, featuring to our backer community</li>
+                        <li>Updates on progress sent to you</li>
                     </ul>
                     
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="https://nerdnuggets.org" 
-                           style="background-color: #1155cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;">
-                            Nominate More Research
-                        </a>
-                    </div>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">You can track this in your dashboard.</p>
                     
-                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Every nomination helps accelerate scientific discovery. Thank you for being part of the solution.</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Every nomination contributes to scientific progress. Thank you for your input.</p>
                     
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Best regards,<br>The NerdNuggets Team</p>
-                    
-                    <a href="https://www.nerdnuggets.org" style="margin-top: 20px; color: #1155cc">www.nerdnuggets.org</a>
                 </div>
             </div>
         </div>"#,
