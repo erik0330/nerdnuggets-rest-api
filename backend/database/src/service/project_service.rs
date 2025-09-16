@@ -9,10 +9,10 @@ use types::{
         AdminMilestonesResponse, AdminProjectDashboardCounts, DaoStatisticsResponse, DaoVoteTab,
         EditorDashboardCounts, FetchPaperFromDoiRequest, MilestoneApprovalRequest,
         MilestoneApprovalStatus, MilestoneProofStatus, NominationFilterStatus,
-        ProjectCountsResponse, ProjectFunderInfo, ProjectFundersResponse,
-        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-        ResearchProjectDashboardResponse, SubmitNominationRequest, UpdateMilestoneRequest,
-        UserDaoVotingStats,
+        NominationStatisticsResponse, ProjectCountsResponse, ProjectFunderInfo,
+        ProjectFundersResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+        ProjectUpdateStep3Request, ResearchProjectDashboardResponse, SubmitNominationRequest,
+        UpdateMilestoneRequest, UserDaoVotingStats,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -1498,5 +1498,26 @@ impl ProjectService {
             .map_err(|err| DbError::Str(format!("Failed to get nominations: {:?}", err)))?;
 
         Ok(nominations)
+    }
+
+    pub async fn get_nomination_statistics(
+        &self,
+        nominator_email: &str,
+    ) -> Result<NominationStatisticsResponse, ApiError> {
+        let (total, pending, reviewing, approved, rejected) = self
+            .project_repo
+            .get_nomination_statistics(nominator_email)
+            .await
+            .map_err(|err| {
+                DbError::Str(format!("Failed to get nomination statistics: {:?}", err))
+            })?;
+
+        Ok(NominationStatisticsResponse {
+            total,
+            pending,
+            reviewing,
+            approved,
+            rejected,
+        })
     }
 }

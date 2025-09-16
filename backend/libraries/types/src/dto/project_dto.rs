@@ -364,3 +364,13 @@ pub struct GetNominationsOption {
     pub offset: Option<i32>,
     pub limit: Option<i32>,
 }
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct NominationStatisticsResponse {
+    pub total: i64,
+    pub pending: i64,
+    pub reviewing: i64,
+    pub approved: i64,
+    pub rejected: i64,
+}

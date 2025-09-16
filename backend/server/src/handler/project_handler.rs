@@ -7,10 +7,11 @@ use types::dto::{
     DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts, FetchPaperFromDoiRequest,
     GetAdminMilestonesOption, GetDaosOption, GetNominationsOption, GetProjectCommentsOption,
     GetProjectFundersOption, GetProjectsOption, GetSimilarProjectsOption, GetUserDaoVotesOption,
-    MakeDecisionRequest, MilestoneApprovalRequest, ProjectCountsResponse, ProjectFundersResponse,
-    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-    ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitNominationRequest,
-    SubmitProjectCommentRequest, UpdateMilestoneRequest, UserDaoVotingStats,
+    MakeDecisionRequest, MilestoneApprovalRequest, NominationStatisticsResponse,
+    ProjectCountsResponse, ProjectFundersResponse, ProjectUpdateStep1Request,
+    ProjectUpdateStep2Request, ProjectUpdateStep3Request, ResearchProjectDashboardResponse,
+    SubmitDaoVoteRequest, SubmitNominationRequest, SubmitProjectCommentRequest,
+    UpdateMilestoneRequest, UserDaoVotingStats,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
@@ -514,21 +515,37 @@ pub async fn submit_nomination(
 }
 
 pub async fn get_nominations(
-    Extension(user): Extension<Option<User>>,
+    Extension(user): Extension<User>,
     Query(opts): Query<GetNominationsOption>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Nomination>>, ApiError> {
     let offset = opts.offset.unwrap_or(0);
     let limit = opts.limit.unwrap_or(10);
 
-    if let Some(nominator_email) = user.map(|u| u.email).filter(|e| !e.is_empty()) {
+    if !user.email.is_empty() {
         let nominations = state
             .service
             .project
-            .get_nominations(&nominator_email, opts.text, opts.status, offset, limit)
+            .get_nominations(&user.email, opts.text, opts.status, offset, limit)
             .await?;
         return Ok(Json(nominations));
     } else {
         return Ok(Json(Vec::new()));
+    }
+}
+
+pub async fn get_nomination_statistics(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+) -> Result<Json<NominationStatisticsResponse>, ApiError> {
+    if !user.email.is_empty() {
+        let response = state
+            .service
+            .project
+            .get_nomination_statistics(&user.email)
+            .await?;
+        return Ok(Json(response));
+    } else {
+        return Ok(Json(NominationStatisticsResponse::default()));
     }
 }
