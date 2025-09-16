@@ -331,7 +331,7 @@ pub async fn send_nomination_author_email(
                     <span style="font-size: 40;">Your Research Has Been Nominated!</span>
                 </div>
                 <div style="width: 100%; margin: 30px;">
-                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Dear Dr. {},</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Dear {},</p>
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Great news! Your research "{}" has been nominated for funding consideration on NerdNuggets, the blockchain platform connecting breakthrough research with global backers.</p>
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">{} believes your work has significant potential and deserves wider recognition and support.</p>
                     
