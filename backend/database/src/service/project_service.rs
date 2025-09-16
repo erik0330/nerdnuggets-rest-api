@@ -1433,7 +1433,7 @@ impl ProjectService {
             for author in &nomination.authors {
                 // Extract email from author string if it contains email
                 // This assumes authors are stored as "Name <email@domain.com>" or just "Name"
-                let (author_name, author_email) = if author.contains('<') && author.contains('>') {
+                let (author_name, _author_email) = if author.contains('<') && author.contains('>') {
                     (
                         author.split('<').nth(0).unwrap_or("").to_string(),
                         author
@@ -1447,17 +1447,27 @@ impl ProjectService {
                     (author.clone(), "".to_string())
                 };
 
-                if !author_email.is_empty() && author_email.contains('@') {
-                    let _ = utils::commons::send_nomination_author_email(
-                        author_email,
-                        author_name,
-                        nomination.title.clone(),
-                        payload.name.clone(),
-                        nomination_id,
-                        ses_client,
-                    )
-                    .await;
-                }
+                // if !author_email.is_empty() && author_email.contains('@') {
+                //     let _ = utils::commons::send_nomination_author_email(
+                //         author_email,
+                //         author_name,
+                //         nomination.title.clone(),
+                //         payload.name.clone(),
+                //         nomination_id,
+                //         ses_client,
+                //     )
+                //     .await;
+                // }
+
+                let _ = utils::commons::send_nomination_author_email(
+                    "erikkaryan0330@gmail.com".to_string(),
+                    author_name,
+                    nomination.title.clone(),
+                    payload.name.clone(),
+                    nomination_id,
+                    ses_client,
+                )
+                .await;
             }
 
             return Ok(true);
