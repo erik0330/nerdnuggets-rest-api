@@ -549,3 +549,15 @@ pub async fn get_nomination_statistics(
         return Ok(Json(NominationStatisticsResponse::default()));
     }
 }
+
+pub async fn get_nomination_by_identifier(
+    Path(identifier): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Option<Nomination>>, ApiError> {
+    let nomination = state
+        .service
+        .project
+        .get_nomination_by_identifier(&identifier)
+        .await?;
+    Ok(Json(nomination))
+}

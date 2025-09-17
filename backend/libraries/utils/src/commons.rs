@@ -356,7 +356,7 @@ pub async fn send_nomination_confirmation_email(
     nominator_name: String,
     paper_title: String,
     author_name: String,
-    nomination_id: Uuid,
+    identifier: &str,
     ses_client: &aws_sdk_sesv2::Client,
 ) -> bool {
     let subject = format!("\"{}\" nomination confirmed", paper_title);
@@ -389,7 +389,7 @@ pub async fn send_nomination_confirmation_email(
                 </div>
             </div>
         </div>"#,
-        nominator_name, paper_title, author_name, nomination_id
+        nominator_name, paper_title, author_name, identifier
     );
 
     send_email(nominator_email, subject, content, ses_client).await

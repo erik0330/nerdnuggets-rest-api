@@ -1402,6 +1402,18 @@ impl ProjectService {
             if nomination.status != NominationStatus::Fetched.to_i16() {
                 return Err(DbError::Str("Nomination already submitted".to_string()))?;
             }
+            let identifier = loop {
+                let year = Utc::now().year();
+                let rand = generate_random_number(1000, 9999);
+                let identifier = format!("NO{}{}", year, rand);
+                if self
+                    .project_repo
+                    .check_nomination_identifier(&identifier)
+                    .await
+                {
+                    break identifier;
+                }
+            };
             if !self
                 .project_repo
                 .submit_nomination(
@@ -1411,6 +1423,7 @@ impl ProjectService {
                     payload.email.clone(),
                     payload.institution,
                     payload.text,
+                    &identifier,
                 )
                 .await
                 .unwrap_or_default()
@@ -1424,7 +1437,7 @@ impl ProjectService {
                 payload.name.clone(),
                 nomination.title.clone(),
                 nomination.authors.first().cloned().unwrap_or_default(),
-                nomination_id,
+                &identifier,
                 ses_client,
             )
             .await;
@@ -1529,5 +1542,19 @@ impl ProjectService {
             approved,
             rejected,
         })
+    }
+
+    pub async fn get_nomination_by_identifier(
+        &self,
+        identifier: &str,
+    ) -> Result<Option<Nomination>, ApiError> {
+        let nomination = self
+            .project_repo
+            .get_nomination_by_identifier(identifier)
+            .await
+            .map_err(|err| {
+                DbError::Str(format!("Failed to get nomination by identifier: {:?}", err))
+            })?;
+        Ok(nomination)
     }
 }

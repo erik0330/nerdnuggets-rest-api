@@ -31,6 +31,7 @@ pub struct Nomination {
 
     // project info
     pub project_id: Option<Uuid>,
+    pub identifier: Option<String>,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
