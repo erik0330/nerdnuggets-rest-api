@@ -322,9 +322,9 @@ pub async fn send_nomination_author_email(
     let subject = format!(
         "Paper \"{}\" nominated",
         if paper_title.len() > 30 {
-            &paper_title[..27]
+            format!("{}...", &paper_title[..27])
         } else {
-            &paper_title
+            paper_title.clone()
         }
     );
 
@@ -369,9 +369,9 @@ pub async fn send_nomination_confirmation_email(
     let subject = format!(
         "{} nomination confirmed",
         if paper_title.len() > 30 {
-            &paper_title[..27]
+            format!("{}...", &paper_title[..27])
         } else {
-            &paper_title
+            paper_title.clone()
         }
     );
 
