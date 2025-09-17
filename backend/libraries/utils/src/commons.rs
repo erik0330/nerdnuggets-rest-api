@@ -319,14 +319,7 @@ pub async fn send_nomination_author_email(
     nomination_id: Uuid,
     ses_client: &aws_sdk_sesv2::Client,
 ) -> bool {
-    let subject = format!(
-        "Paper \"{}\" nominated",
-        if paper_title.len() > 30 {
-            format!("{}...", &paper_title[..27])
-        } else {
-            paper_title.clone()
-        }
-    );
+    let subject = format!("Paper \"{}\" nominated", paper_title);
 
     let content = format!(
         r#"<div style="width: 100%; padding: 10 auto;">
@@ -366,14 +359,7 @@ pub async fn send_nomination_confirmation_email(
     nomination_id: Uuid,
     ses_client: &aws_sdk_sesv2::Client,
 ) -> bool {
-    let subject = format!(
-        "{} nomination confirmed",
-        if paper_title.len() > 30 {
-            format!("{}...", &paper_title[..27])
-        } else {
-            paper_title.clone()
-        }
-    );
+    let subject = format!("\"{}\" nomination confirmed", paper_title);
 
     let content = format!(
         r#"<div style="width: 100%; padding: 10 auto;">
