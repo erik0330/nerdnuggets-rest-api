@@ -316,7 +316,7 @@ pub async fn send_nomination_author_email(
     author_name: String,
     paper_title: String,
     nominator_name: String,
-    _nomination_id: Uuid,
+    nomination_id: Uuid,
     ses_client: &aws_sdk_sesv2::Client,
 ) -> bool {
     let subject = format!(
@@ -339,12 +339,12 @@ pub async fn send_nomination_author_email(
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Next steps include:</p>
                     <ul style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">
                         <li>Analysis of your research</li>
-                        <li>An option to claim your researcher profile</li>
+                        <li>An option to claim authorship of your research</li>
                         <li>If approved, featuring the project to our community</li>
                         <li>Possible funding opportunities</li>
                     </ul>
                     
-                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">To claim your profile: <a href="https://nerdnuggets.org" style="color: #1155cc;">https://nerdnuggets.org</a></p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">To claim authorship: <a href="https://nerdnuggets.org/nomination/claim-authorship/{}" style="color: #1155cc;">nerdnuggets.org</a></p>
                     
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">This nomination highlights the value of your work.</p>
                     
@@ -352,7 +352,7 @@ pub async fn send_nomination_author_email(
                 </div>
             </div>
         </div>"#,
-        author_name, paper_title, nominator_name
+        author_name, paper_title, nominator_name, nomination_id
     );
 
     send_email(author_email, subject, content, ses_client).await
@@ -367,13 +367,12 @@ pub async fn send_nomination_confirmation_email(
     ses_client: &aws_sdk_sesv2::Client,
 ) -> bool {
     let subject = format!(
-        "{} nomination confirmed (ID: {})",
+        "{} nomination confirmed",
         if paper_title.len() > 30 {
             &paper_title[..27]
         } else {
             &paper_title
-        },
-        nomination_id
+        }
     );
 
     let content = format!(
