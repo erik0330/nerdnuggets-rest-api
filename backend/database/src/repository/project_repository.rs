@@ -1247,6 +1247,18 @@ impl ProjectRepository {
         Ok(daos)
     }
 
+    pub async fn check_nomination_identifier(&self, identifier: &str) -> bool {
+        let count = sqlx::query!(
+            "SELECT COUNT(*) as count FROM nomination WHERE identifier = $1",
+            identifier
+        )
+        .fetch_one(self.db_conn.get_pool())
+        .await
+        .map(|row| row.count.unwrap_or(0))
+        .unwrap_or(0);
+        count == 0
+    }
+
     pub async fn create_nomination(
         &self,
         doi: &str,
@@ -1283,6 +1295,18 @@ impl ProjectRepository {
         Ok(nomination)
     }
 
+    pub async fn get_nomination_by_identifier(
+        &self,
+        identifier: &str,
+    ) -> Result<Option<Nomination>, SqlxError> {
+        let nomination =
+            sqlx::query_as::<_, Nomination>("SELECT * FROM nomination WHERE identifier = $1")
+                .bind(identifier)
+                .fetch_optional(self.db_conn.get_pool())
+                .await?;
+        Ok(nomination)
+    }
+
     pub async fn submit_nomination(
         &self,
         nomination_id: Uuid,
@@ -1291,14 +1315,16 @@ impl ProjectRepository {
         nominator_email: String,
         nominator_institution: Option<String>,
         nominator_text: Option<String>,
+        identifier: &str,
     ) -> Result<bool, SqlxError> {
-        let result = sqlx::query("UPDATE nomination SET status = 1, nominator_id = $1, nominator_name = $2, nominator_email = $3, nominator_institution = $4, nominator_text = $5 WHERE id = $6")
+        let result = sqlx::query("UPDATE nomination SET status = 1, nominator_id = $1, nominator_name = $2, nominator_email = $3, nominator_institution = $4, nominator_text = $5, identifier = $6 WHERE id = $7")
             .bind(nominator_id)
             .bind(nominator_name)
             .bind(nominator_email)
             .bind(nominator_institution)
             .bind(nominator_text)
             .bind(nomination_id)
+            .bind(identifier)
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(result.rows_affected() == 1)

@@ -1402,6 +1402,18 @@ impl ProjectService {
             if nomination.status != NominationStatus::Fetched.to_i16() {
                 return Err(DbError::Str("Nomination already submitted".to_string()))?;
             }
+            let identifier = loop {
+                let year = Utc::now().year();
+                let rand = generate_random_number(1000, 9999);
+                let identifier = format!("NO{}{}", year, rand);
+                if self
+                    .project_repo
+                    .check_nomination_identifier(&identifier)
+                    .await
+                {
+                    break identifier;
+                }
+            };
             if !self
                 .project_repo
                 .submit_nomination(
@@ -1411,6 +1423,7 @@ impl ProjectService {
                     payload.email.clone(),
                     payload.institution,
                     payload.text,
+                    &identifier,
                 )
                 .await
                 .unwrap_or_default()
@@ -1419,18 +1432,12 @@ impl ProjectService {
             }
 
             // Send confirmation email to nominator
-            let nominator_first_name = payload
-                .name
-                .split_whitespace()
-                .next()
-                .unwrap_or("")
-                .to_string();
             let _ = utils::commons::send_nomination_confirmation_email(
                 payload.email.clone(),
-                nominator_first_name.clone(),
+                payload.name.clone(),
                 nomination.title.clone(),
                 nomination.authors.first().cloned().unwrap_or_default(),
-                nomination_id,
+                &identifier,
                 ses_client,
             )
             .await;
@@ -1465,16 +1472,11 @@ impl ProjectService {
                 //     .await;
                 // }
 
-                let author_first_name = author_name
-                    .split_whitespace()
-                    .next()
-                    .unwrap_or("")
-                    .to_string();
                 let _ = utils::commons::send_nomination_author_email(
                     "erikkaryan0330@gmail.com".to_string(),
-                    author_first_name,
+                    author_name,
                     nomination.title.clone(),
-                    nominator_first_name.clone(),
+                    payload.name.clone(),
                     nomination_id,
                     ses_client,
                 )
@@ -1540,5 +1542,19 @@ impl ProjectService {
             approved,
             rejected,
         })
+    }
+
+    pub async fn get_nomination_by_identifier(
+        &self,
+        identifier: &str,
+    ) -> Result<Option<Nomination>, ApiError> {
+        let nomination = self
+            .project_repo
+            .get_nomination_by_identifier(identifier)
+            .await
+            .map_err(|err| {
+                DbError::Str(format!("Failed to get nomination by identifier: {:?}", err))
+            })?;
+        Ok(nomination)
     }
 }
