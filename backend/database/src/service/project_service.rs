@@ -1419,9 +1419,15 @@ impl ProjectService {
             }
 
             // Send confirmation email to nominator
+            let nominator_first_name = payload
+                .name
+                .split_whitespace()
+                .next()
+                .unwrap_or("")
+                .to_string();
             let _ = utils::commons::send_nomination_confirmation_email(
                 payload.email.clone(),
-                payload.name.clone(),
+                nominator_first_name.clone(),
                 nomination.title.clone(),
                 nomination.authors.first().cloned().unwrap_or_default(),
                 nomination_id,
@@ -1459,11 +1465,16 @@ impl ProjectService {
                 //     .await;
                 // }
 
+                let author_first_name = author_name
+                    .split_whitespace()
+                    .next()
+                    .unwrap_or("")
+                    .to_string();
                 let _ = utils::commons::send_nomination_author_email(
                     "erikkaryan0330@gmail.com".to_string(),
-                    author_name,
+                    author_first_name,
                     nomination.title.clone(),
-                    payload.name.clone(),
+                    nominator_first_name.clone(),
                     nomination_id,
                     ses_client,
                 )
