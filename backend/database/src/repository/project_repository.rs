@@ -1323,8 +1323,8 @@ impl ProjectRepository {
             .bind(nominator_email)
             .bind(nominator_institution)
             .bind(nominator_text)
-            .bind(nomination_id)
             .bind(identifier)
+            .bind(nomination_id)
             .execute(self.db_conn.get_pool())
             .await?;
         Ok(result.rows_affected() == 1)
