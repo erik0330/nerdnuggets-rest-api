@@ -1443,6 +1443,7 @@ impl ProjectService {
             .await;
 
             // Send notification emails to all authors
+            let mut index = 0;
             for author in &nomination.authors {
                 // Extract email from author string if it contains email
                 // This assumes authors are stored as "Name <email@domain.com>" or just "Name"
@@ -1471,9 +1472,11 @@ impl ProjectService {
                 //     )
                 //     .await;
                 // }
-
+                if index == 3 {
+                    break;
+                }
                 let _ = utils::commons::send_nomination_author_email(
-                    "erikkaryan0330@gmail.com".to_string(),
+                    "info@nobleblocks.com".to_string(),
                     author_name,
                     nomination.title.clone(),
                     payload.name.clone(),
@@ -1481,6 +1484,7 @@ impl ProjectService {
                     ses_client,
                 )
                 .await;
+                index += 1;
             }
 
             return Ok(true);
