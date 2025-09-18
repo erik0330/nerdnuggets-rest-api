@@ -1447,4 +1447,61 @@ impl ProjectRepository {
 
         Ok((total, pending, reviewing, approved, rejected))
     }
+
+    pub async fn count_projects_with_search(&self, search: Option<&str>) -> Result<i64, SqlxError> {
+        let query = if search.filter(|s| !s.is_empty()).is_some() {
+            "SELECT COUNT(*) FROM project WHERE title ILIKE $1 OR description ILIKE $1 AND status = 7 OR status = 8"
+        } else {
+            "SELECT COUNT(*) FROM project WHERE status = 7 OR status = 8"
+        };
+
+        let mut db_query = sqlx::query_scalar::<_, i64>(query);
+
+        if let Some(search_term) = search.filter(|s| !s.is_empty()) {
+            db_query = db_query.bind(format!("%{}%", search_term));
+        }
+
+        let count = db_query.fetch_one(self.db_conn.get_pool()).await?;
+        Ok(count)
+    }
+
+    pub async fn count_all_projects(&self) -> Result<i64, SqlxError> {
+        let count = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM project WHERE status > 0")
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(count)
+    }
+
+    pub async fn count_daos_with_search(&self, search: Option<&str>) -> Result<i64, SqlxError> {
+        let query = if search.filter(|s| !s.is_empty()).is_some() {
+            "SELECT COUNT(*) FROM dao WHERE title ILIKE $1 OR description ILIKE $1"
+        } else {
+            "SELECT COUNT(*) FROM dao"
+        };
+
+        let mut db_query = sqlx::query_scalar::<_, i64>(query);
+
+        if let Some(search_term) = search.filter(|s| !s.is_empty()) {
+            db_query = db_query.bind(format!("%{}%", search_term));
+        }
+
+        let count = db_query.fetch_one(self.db_conn.get_pool()).await?;
+        Ok(count)
+    }
+
+    pub async fn count_projects_by_status(&self, status: i16) -> Result<i64, SqlxError> {
+        let count = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM project WHERE status = $1")
+            .bind(status)
+            .fetch_one(self.db_conn.get_pool())
+            .await?;
+        Ok(count)
+    }
+
+    pub async fn get_total_revenue(&self) -> Result<i64, SqlxError> {
+        let total =
+            sqlx::query_scalar::<_, i64>("SELECT COALESCE(SUM(funding_amount), 0) FROM project")
+                .fetch_one(self.db_conn.get_pool())
+                .await?;
+        Ok(total)
+    }
 }

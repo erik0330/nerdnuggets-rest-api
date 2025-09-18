@@ -3,15 +3,15 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
-    AdminMilestonesResponse, AdminProjectDashboardCounts, AssignEditorRequest,
-    DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts, FetchPaperFromDoiRequest,
-    GetAdminMilestonesOption, GetDaosOption, GetNominationsOption, GetProjectCommentsOption,
-    GetProjectFundersOption, GetProjectsOption, GetSimilarProjectsOption, GetUserDaoVotesOption,
-    MakeDecisionRequest, MilestoneApprovalRequest, NominationStatisticsResponse,
-    ProjectCountsResponse, ProjectFundersResponse, ProjectUpdateStep1Request,
-    ProjectUpdateStep2Request, ProjectUpdateStep3Request, ResearchProjectDashboardResponse,
-    SubmitDaoVoteRequest, SubmitNominationRequest, SubmitProjectCommentRequest,
-    UpdateMilestoneRequest, UserDaoVotingStats,
+    AdminDashboardCounts, AdminMilestonesResponse, AdminProjectDashboardCounts,
+    AssignEditorRequest, DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts,
+    FetchPaperFromDoiRequest, GetAdminMilestonesOption, GetDaosOption, GetNominationsOption,
+    GetProjectCommentsOption, GetProjectFundersOption, GetProjectsOption, GetSimilarProjectsOption,
+    GetUserDaoVotesOption, MakeDecisionRequest, MilestoneApprovalRequest,
+    NominationStatisticsResponse, ProjectCountsResponse, ProjectFundersResponse,
+    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+    ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitNominationRequest,
+    SubmitProjectCommentRequest, UpdateMilestoneRequest, UserDaoVotingStats,
 };
 use types::error::{ApiError, UserError, ValidatedRequest};
 use types::models::{
@@ -379,6 +379,18 @@ pub async fn get_admin_project_dashboard_counts(
         .project
         .get_admin_project_dashboard_counts()
         .await?;
+    Ok(Json(counts))
+}
+
+pub async fn get_admin_dashboard_counts(
+    Extension(role): Extension<String>,
+    State(state): State<AppState>,
+) -> Result<Json<AdminDashboardCounts>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+
+    let counts = state.service.project.get_admin_dashboard_counts().await?;
     Ok(Json(counts))
 }
 

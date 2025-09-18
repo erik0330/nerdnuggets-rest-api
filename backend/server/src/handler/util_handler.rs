@@ -9,7 +9,7 @@ use types::{
         CreateCategoryRequest, ExtractProjectInfoRequest, GetCategoryOption, GetCityOption,
         GetCityResponse, GetCountryOption, GetCountryResponse, GetInstitutionDetailItem,
         GetInstitutionDetailOption, GetInstitutionsItem, GetInstitutionsOption,
-        RemoveFileFromS3Request,
+        GetSearchCountsOption, RemoveFileFromS3Request, SearchCountsResponse,
     },
     error::{ApiError, UploadError, ValidatedRequest},
     models::Category,
@@ -198,4 +198,16 @@ pub async fn extract_project_info(
 ) -> Result<Json<types::dto::ExtractProjectInfoResponse>, ApiError> {
     let result = state.service.util.extract_project_info(request).await?;
     Ok(Json(result))
+}
+
+pub async fn get_search_counts(
+    Query(opts): Query<GetSearchCountsOption>,
+    State(state): State<AppState>,
+) -> Result<Json<SearchCountsResponse>, ApiError> {
+    let counts = state
+        .service
+        .util
+        .get_search_counts(opts.search.as_deref())
+        .await?;
+    Ok(Json(counts))
 }

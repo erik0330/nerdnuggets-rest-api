@@ -6,13 +6,13 @@ use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
-        AdminMilestonesResponse, AdminProjectDashboardCounts, DaoStatisticsResponse, DaoVoteTab,
-        EditorDashboardCounts, FetchPaperFromDoiRequest, MilestoneApprovalRequest,
-        MilestoneApprovalStatus, MilestoneProofStatus, NominationFilterStatus,
-        NominationStatisticsResponse, ProjectCountsResponse, ProjectFunderInfo,
-        ProjectFundersResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
-        ProjectUpdateStep3Request, ResearchProjectDashboardResponse, SubmitNominationRequest,
-        UpdateMilestoneRequest, UserDaoVotingStats,
+        AdminDashboardCounts, AdminMilestonesResponse, AdminProjectDashboardCounts,
+        DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts, FetchPaperFromDoiRequest,
+        MilestoneApprovalRequest, MilestoneApprovalStatus, MilestoneProofStatus,
+        NominationFilterStatus, NominationStatisticsResponse, ProjectCountsResponse,
+        ProjectFunderInfo, ProjectFundersResponse, ProjectUpdateStep1Request,
+        ProjectUpdateStep2Request, ProjectUpdateStep3Request, ResearchProjectDashboardResponse,
+        SubmitNominationRequest, UpdateMilestoneRequest, UserDaoVotingStats,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -1018,6 +1018,51 @@ impl ProjectService {
         }
 
         Ok(dashboard_counts)
+    }
+
+    pub async fn get_admin_dashboard_counts(&self) -> Result<AdminDashboardCounts, ApiError> {
+        // Get total users count
+        let total_users = self
+            .user_repo
+            .count_users_with_search(None)
+            .await
+            .map_err(|_| DbError::Str("Get total users count failed".to_string()))?;
+
+        // Get total projects count
+        let total_projects = self
+            .project_repo
+            .count_all_projects()
+            .await
+            .map_err(|_| DbError::Str("Get total projects count failed".to_string()))?;
+
+        // Get pending reviews (status = 1: PendingReview)
+        let pending_reviews = self
+            .project_repo
+            .count_projects_by_status(1)
+            .await
+            .map_err(|_| DbError::Str("Get pending reviews count failed".to_string()))?;
+
+        // Get editor requests (status = 2: UnderReview)
+        let editor_requests = self
+            .project_repo
+            .count_projects_by_status(2)
+            .await
+            .map_err(|_| DbError::Str("Get editor requests count failed".to_string()))?;
+
+        // Get total revenue (sum of funding_amount from all projects)
+        let total_revenue = self
+            .project_repo
+            .get_total_revenue()
+            .await
+            .map_err(|_| DbError::Str("Get total revenue failed".to_string()))?;
+
+        Ok(AdminDashboardCounts {
+            total_users,
+            total_projects,
+            pending_reviews,
+            editor_requests,
+            total_revenue,
+        })
     }
 
     pub async fn get_editor_dashboard_counts(
