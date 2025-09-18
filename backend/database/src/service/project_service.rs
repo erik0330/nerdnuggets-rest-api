@@ -1606,4 +1606,14 @@ impl ProjectService {
             })?;
         Ok(nomination)
     }
+
+    pub async fn get_nomination_by_id(&self, id: &str) -> Result<Option<Nomination>, ApiError> {
+        let id = uuid_from_str(id)?;
+        let nomination = self
+            .project_repo
+            .get_nomination_by_id(id)
+            .await
+            .map_err(|err| DbError::Str(format!("Failed to get nomination by id: {:?}", err)))?;
+        Ok(nomination)
+    }
 }

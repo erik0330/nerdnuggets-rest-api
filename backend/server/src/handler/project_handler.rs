@@ -13,7 +13,7 @@ use types::dto::{
     ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitNominationRequest,
     SubmitProjectCommentRequest, UpdateMilestoneRequest, UserDaoVotingStats,
 };
-use types::error::{ApiError, UserError, ValidatedRequest};
+use types::error::{ApiError, DbError, UserError, ValidatedRequest};
 use types::models::{
     DaoDetailInfo, DaoInfo, DaoVote, Milestone, Nomination, ProjectCommentInfo, ProjectIds,
     ProjectInfo, ProjectItemInfo, User,
@@ -572,4 +572,15 @@ pub async fn get_nomination_by_identifier(
         .get_nomination_by_identifier(&identifier)
         .await?;
     Ok(Json(nomination))
+}
+
+pub async fn get_nomination_by_id(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Nomination>, ApiError> {
+    if let Some(nomination) = state.service.project.get_nomination_by_id(&id).await? {
+        return Ok(Json(nomination));
+    } else {
+        return Err(DbError::Str("Nomination not found".to_string()))?;
+    }
 }
