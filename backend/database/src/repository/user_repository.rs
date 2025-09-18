@@ -661,4 +661,21 @@ impl UserRepository {
         .await?;
         Ok(count)
     }
+
+    pub async fn count_users_with_search(&self, search: Option<&str>) -> Result<i64, SqlxError> {
+        let query = if search.filter(|s| !s.is_empty()).is_some() {
+            "SELECT COUNT(*) FROM users WHERE username ILIKE $1 OR name ILIKE $1 OR email ILIKE $1"
+        } else {
+            "SELECT COUNT(*) FROM users"
+        };
+
+        let mut db_query = sqlx::query_scalar::<_, i64>(query);
+
+        if let Some(search_term) = search.filter(|s| !s.is_empty()) {
+            db_query = db_query.bind(format!("%{}%", search_term));
+        }
+
+        let count = db_query.fetch_one(self.db_conn.get_pool()).await?;
+        Ok(count)
+    }
 }

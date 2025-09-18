@@ -173,3 +173,18 @@ pub struct ExtractProjectInfoResponse {
     pub status: String,
     pub data: NerdNuggetsInfo,
 }
+
+#[derive(Clone, Serialize, Deserialize, Validate, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSearchCountsOption {
+    pub search: Option<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchCountsResponse {
+    pub dao: i64,
+    pub project: i64,
+    pub user: i64,
+    pub bounty: i64,
+}

@@ -1144,4 +1144,21 @@ impl BountyRepository {
             .await?;
         Ok(row.rows_affected() == 1)
     }
+
+    pub async fn count_bounties_with_search(&self, search: Option<&str>) -> Result<i64, SqlxError> {
+        let query = if search.filter(|s| !s.is_empty()).is_some() {
+            "SELECT COUNT(*) FROM bounty WHERE title ILIKE $1 OR description ILIKE $1"
+        } else {
+            "SELECT COUNT(*) FROM bounty"
+        };
+
+        let mut db_query = sqlx::query_scalar::<_, i64>(query);
+        
+        if let Some(search_term) = search.filter(|s| !s.is_empty()) {
+            db_query = db_query.bind(format!("%{}%", search_term));
+        }
+
+        let count = db_query.fetch_one(self.db_conn.get_pool()).await?;
+        Ok(count)
+    }
 }

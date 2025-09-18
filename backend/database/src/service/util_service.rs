@@ -1,10 +1,13 @@
-use crate::{pool::DatabasePool, repository::UtilRepository};
+use crate::{
+    pool::DatabasePool,
+    repository::{BountyRepository, ProjectRepository, UserRepository, UtilRepository},
+};
 use serde_json::Value;
 use std::{str::FromStr, sync::Arc};
 use types::{
     dto::{
         ExtractProjectInfoRequest, ExtractProjectInfoResponse, GetCityResponse, GetCountryResponse,
-        GetInstitutionDetailItem, GetInstitutionsItem,
+        GetInstitutionDetailItem, GetInstitutionsItem, SearchCountsResponse,
     },
     error::{ApiError, DbError},
     models::Category,
@@ -14,12 +17,18 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct UtilService {
     util_repo: UtilRepository,
+    project_repo: ProjectRepository,
+    user_repo: UserRepository,
+    bounty_repo: BountyRepository,
 }
 
 impl UtilService {
     pub fn new(db_conn: &Arc<DatabasePool>) -> Self {
         Self {
             util_repo: UtilRepository::new(db_conn),
+            project_repo: ProjectRepository::new(db_conn),
+            user_repo: UserRepository::new(db_conn),
+            bounty_repo: BountyRepository::new(db_conn),
         }
     }
 
@@ -246,5 +255,41 @@ impl UtilService {
         third_party_api::nerdbunny_api::extract_project_info(request)
             .await
             .map_err(|err| DbError::Str(err.to_string()).into())
+    }
+
+    pub async fn get_search_counts(
+        &self,
+        search: Option<&str>,
+    ) -> Result<SearchCountsResponse, ApiError> {
+        let dao_count = self
+            .project_repo
+            .count_daos_with_search(search)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+
+        let project_count = self
+            .project_repo
+            .count_projects_with_search(search)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+
+        let user_count = self
+            .user_repo
+            .count_users_with_search(search)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+
+        let bounty_count = self
+            .bounty_repo
+            .count_bounties_with_search(search)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+
+        Ok(SearchCountsResponse {
+            dao: dao_count,
+            project: project_count,
+            user: user_count,
+            bounty: bounty_count,
+        })
     }
 }
