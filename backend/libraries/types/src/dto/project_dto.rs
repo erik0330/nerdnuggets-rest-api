@@ -198,6 +198,16 @@ pub struct DaoStatisticsResponse {
     pub failed: i64,
 }
 
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminDashboardCounts {
+    pub total_users: i64,
+    pub total_projects: i64,
+    pub pending_reviews: i64,
+    pub editor_requests: i64,
+    pub total_revenue: i64,
+}
+
 #[derive(Clone, Deserialize, Serialize, Validate, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct MilestoneApprovalRequest {
