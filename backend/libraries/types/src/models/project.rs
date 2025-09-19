@@ -42,6 +42,7 @@ pub struct Project {
     pub count_view: i32,
 
     pub arweave_tx_id: Option<String>,
+    pub nomination_id: Option<Uuid>,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -91,6 +92,7 @@ pub struct ProjectInfo {
     pub count_view: i32,
 
     pub arweave_tx_id: Option<String>,
+    pub nomination_id: Option<Uuid>,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -320,6 +322,7 @@ impl Project {
             count_contributors: self.count_contributors,
             count_view: self.count_view,
             arweave_tx_id: self.arweave_tx_id.clone(),
+            nomination_id: self.nomination_id,
             created_at: self.created_at,
             updated_at: self.updated_at,
             dao_at: self.dao_at,
