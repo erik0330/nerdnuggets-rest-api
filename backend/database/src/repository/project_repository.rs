@@ -1485,6 +1485,23 @@ impl ProjectRepository {
         Ok((total, pending, reviewing, approved, rejected))
     }
 
+    pub async fn get_admin_nomination_dashboard_counts(
+        &self,
+    ) -> Result<(i64, i64, i64), SqlxError> {
+        let total = sqlx::query!("SELECT COUNT(*) as count FROM nomination WHERE status > 0",)
+            .fetch_one(self.db_conn.get_pool())
+            .await?
+            .count
+            .unwrap_or(0);
+        let claims_pending =
+            sqlx::query!("SELECT COUNT(*) as count FROM nomination WHERE status = 1",)
+                .fetch_one(self.db_conn.get_pool())
+                .await?
+                .count
+                .unwrap_or(0);
+        Ok((total, total, claims_pending))
+    }
+
     pub async fn count_projects_with_search(&self, search: Option<&str>) -> Result<i64, SqlxError> {
         let query = if search.filter(|s| !s.is_empty()).is_some() {
             "SELECT COUNT(*) FROM project WHERE title ILIKE $1 OR description ILIKE $1 AND status = 7 OR status = 8"

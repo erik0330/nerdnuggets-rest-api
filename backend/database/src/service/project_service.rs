@@ -6,13 +6,14 @@ use evm::EVMClient;
 use std::sync::Arc;
 use types::{
     dto::{
-        AdminDashboardCounts, AdminMilestonesResponse, AdminProjectDashboardCounts,
-        DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts, FetchPaperFromDoiRequest,
-        MilestoneApprovalRequest, MilestoneApprovalStatus, MilestoneProofStatus,
-        NominationFilterStatus, NominationStatisticsResponse, ProjectCountsResponse,
-        ProjectFunderInfo, ProjectFundersResponse, ProjectUpdateStep1Request,
-        ProjectUpdateStep2Request, ProjectUpdateStep3Request, ResearchProjectDashboardResponse,
-        SubmitNominationRequest, UpdateMilestoneRequest, UserDaoVotingStats,
+        AdminDashboardCounts, AdminMilestonesResponse, AdminNominationDashboardCounts,
+        AdminProjectDashboardCounts, DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts,
+        FetchPaperFromDoiRequest, MilestoneApprovalRequest, MilestoneApprovalStatus,
+        MilestoneProofStatus, NominationFilterStatus, NominationStatisticsResponse,
+        ProjectCountsResponse, ProjectFunderInfo, ProjectFundersResponse,
+        ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
+        ResearchProjectDashboardResponse, SubmitNominationRequest, UpdateMilestoneRequest,
+        UserDaoVotingStats,
     },
     error::{ApiError, DbError, UserError},
     models::{
@@ -1591,6 +1592,27 @@ impl ProjectService {
             reviewing,
             approved,
             rejected,
+        })
+    }
+
+    pub async fn get_admin_nomination_dashboard_counts(
+        &self,
+    ) -> Result<AdminNominationDashboardCounts, ApiError> {
+        let (total, authors_notified, claims_pending) = self
+            .project_repo
+            .get_admin_nomination_dashboard_counts()
+            .await
+            .map_err(|err| {
+                DbError::Str(format!(
+                    "Failed to get admin nomination dashboard counts: {:?}",
+                    err
+                ))
+            })?;
+        Ok(AdminNominationDashboardCounts {
+            total,
+            authors_notified,
+            claims_pending,
+            ai_score_avg: 0.0,
         })
     }
 
