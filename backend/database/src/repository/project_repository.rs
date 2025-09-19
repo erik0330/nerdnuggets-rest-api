@@ -5,8 +5,8 @@ use std::sync::Arc;
 use types::{
     dto::{MilestoneProofStatus, PaperData, ProjectStatusCount},
     models::{
-        CompletedDao, Dao, DaoVote, Funding, Milestone, Nomination, Prediction, PredictionStatus,
-        Project, ProjectComment, ProjectIds, ProjectItem, TeamMember,
+        CompletedDao, Dao, DaoVote, Funding, Milestone, Nomination, NominationStatus, Prediction,
+        PredictionStatus, Project, ProjectComment, ProjectIds, ProjectItem, TeamMember,
     },
     FeedbackStatus, ProjectStatus, UserRoleType,
 };
@@ -85,6 +85,28 @@ impl ProjectRepository {
         .bind(user_id)
         .bind(nerd_id)
         .bind(proposal_id)
+        .fetch_one(self.db_conn.get_pool())
+        .await?;
+        Ok(project)
+    }
+
+    pub async fn create_project_for_nomination(
+        &self,
+        user_id: Uuid,
+        nerd_id: &str,
+        proposal_id: i64,
+        title: &str,
+        nomination_id: Uuid,
+    ) -> Result<Project, SqlxError> {
+        let project = sqlx::query_as::<_, Project>(
+            "INSERT INTO project (user_id, nerd_id, proposal_id, title, nomination_id)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        )
+        .bind(user_id)
+        .bind(nerd_id)
+        .bind(proposal_id)
+        .bind(title)
+        .bind(nomination_id)
         .fetch_one(self.db_conn.get_pool())
         .await?;
         Ok(project)
@@ -1389,6 +1411,21 @@ impl ProjectRepository {
 
         let nominations = db_query.fetch_all(self.db_conn.get_pool()).await?;
         Ok(nominations)
+    }
+
+    pub async fn update_nomination_project_id(
+        &self,
+        nomination_id: Uuid,
+        project_id: Uuid,
+    ) -> Result<bool, SqlxError> {
+        let result =
+            sqlx::query("UPDATE nomination SET project_id = $1, status = $2 WHERE id = $3")
+                .bind(project_id)
+                .bind(NominationStatus::ProjectCreated.to_i16())
+                .bind(nomination_id)
+                .execute(self.db_conn.get_pool())
+                .await?;
+        Ok(result.rows_affected() == 1)
     }
 
     pub async fn get_nomination_statistics(

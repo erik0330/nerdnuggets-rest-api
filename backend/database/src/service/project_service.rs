@@ -18,6 +18,7 @@ use types::{
     models::{
         CompletedDao, DaoDetailInfo, DaoInfo, DaoVote, FunderInfo, Milestone, Nomination,
         NominationStatus, Project, ProjectCommentInfo, ProjectIds, ProjectInfo, ProjectItemInfo,
+        User,
     },
     FeedbackStatus, MileStoneStatus, ProjectStatus, UserRoleType,
 };
@@ -1615,5 +1616,72 @@ impl ProjectService {
             .await
             .map_err(|err| DbError::Str(format!("Failed to get nomination by id: {:?}", err)))?;
         Ok(nomination)
+    }
+
+    pub async fn claim_authorship(
+        &self,
+        user: User,
+        nomination_id: Uuid,
+    ) -> Result<ProjectInfo, ApiError> {
+        let nomination = self
+            .project_repo
+            .get_nomination_by_id(nomination_id)
+            .await
+            .map_err(|err| DbError::Str(format!("Failed to get nomination by id: {:?}", err)))?;
+        if nomination.is_none() {
+            return Err(DbError::Str("Nomination not found".to_string()))?;
+        }
+        let nomination = nomination.unwrap();
+        // TODO: check the nomination status
+        // if nomination.status != NominationStatus::Submitted.to_i16() {
+        //     return Err(DbError::Str("Nomination already submitted".to_string()))?;
+        // }
+        if user.email.is_empty() {
+            return Err(DbError::Str("User email is empty".to_string()))?;
+        }
+        if !nomination.authors.contains(&user.email) {
+            return Err(DbError::Str(
+                "User is not an author of the nomination".to_string(),
+            ))?;
+        }
+        if let Some(project_id) = nomination.project_id {
+            let project = self.project_repo.get_project_by_id(project_id).await;
+            if project.is_some() {
+                return Err(DbError::Str("Nomination already has a project".to_string()))?;
+            }
+        }
+        let (nerd_id, proposal_id) = loop {
+            let year = Utc::now().year();
+            let rand = generate_random_number(1000, 9999);
+            let nerd_id = format!("RP-{}-{}", year, rand);
+            if self.project_repo.check_project_nerd_id(&nerd_id).await {
+                break (nerd_id, year * 10000 + rand as i32);
+            }
+        };
+        let project = self
+            .project_repo
+            .create_project_for_nomination(
+                user.id,
+                &nerd_id,
+                proposal_id as i64,
+                &nomination.title,
+                nomination_id,
+            )
+            .await
+            .map_err(|err| {
+                DbError::Str(format!(
+                    "Failed to create project for nomination: {:?}",
+                    err
+                ))
+            })?;
+        self.project_repo
+            .update_nomination_project_id(nomination_id, project.id)
+            .await
+            .map_err(|err| {
+                DbError::Str(format!("Failed to update nomination project id: {:?}", err))
+            })?;
+
+        let project_info = self.project_to_info(&project).await?;
+        Ok(project_info)
     }
 }

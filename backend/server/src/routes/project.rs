@@ -2,8 +2,8 @@ use crate::{
     handler::{
         prediction_handler::get_my_prediction_stats,
         project_handler::{
-            approve_reject_milestone, assign_editor, create_project, delete_project,
-            get_admin_dashboard_counts, get_admin_project_dashboard_counts,
+            approve_reject_milestone, assign_editor, claim_authorship, create_project,
+            delete_project, get_admin_dashboard_counts, get_admin_project_dashboard_counts,
             get_editor_dashboard_counts, get_milestone_submissions, get_milestones,
             get_my_dao_vote, get_nomination_by_id, get_nomination_by_identifier,
             get_nomination_statistics, get_nominations, get_research_projects_dashboard,
@@ -56,4 +56,5 @@ pub fn routes() -> Router<AppState> {
             get(get_nomination_by_identifier),
         )
         .route("/nomination/:id", get(get_nomination_by_id))
+        .route("/nomination/:id/claim-authorship", post(claim_authorship))
 }
