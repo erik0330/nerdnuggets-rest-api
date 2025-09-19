@@ -1413,6 +1413,21 @@ impl ProjectRepository {
         Ok(nominations)
     }
 
+    pub async fn get_admin_nominations(
+        &self,
+        offset: i32,
+        limit: i32,
+    ) -> Result<Vec<Nomination>, SqlxError> {
+        let query =
+            "SELECT * FROM nomination WHERE status > 0 ORDER BY created_at DESC LIMIT $1 OFFSET $2";
+        let nominations = sqlx::query_as::<_, Nomination>(query)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(self.db_conn.get_pool())
+            .await?;
+        Ok(nominations)
+    }
+
     pub async fn update_nomination_project_id(
         &self,
         nomination_id: Uuid,

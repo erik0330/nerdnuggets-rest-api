@@ -4,7 +4,7 @@ use crate::{
         project_handler::{
             approve_reject_milestone, assign_editor, claim_authorship, create_project,
             delete_project, get_admin_dashboard_counts, get_admin_nomination_dashboard_counts,
-            get_admin_project_dashboard_counts, get_editor_dashboard_counts,
+            get_admin_nominations, get_admin_project_dashboard_counts, get_editor_dashboard_counts,
             get_milestone_submissions, get_milestones, get_my_dao_vote,
             get_nomination_by_identifier, get_nomination_statistics, get_nominations,
             get_research_projects_dashboard, get_user_dao_votes, get_user_dao_voting_stats,
@@ -55,6 +55,7 @@ pub fn routes() -> Router<AppState> {
             "/nomination/admin/dashboard",
             get(get_admin_nomination_dashboard_counts),
         )
+        .route("/nomination/admin/recent", get(get_admin_nominations))
         .route(
             "/nomination/identifier/:identifier",
             get(get_nomination_by_identifier),

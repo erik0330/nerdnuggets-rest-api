@@ -1574,6 +1574,20 @@ impl ProjectService {
         Ok(nominations)
     }
 
+    pub async fn get_admin_nominations(
+        &self,
+        offset: i32,
+        limit: i32,
+    ) -> Result<Vec<Nomination>, ApiError> {
+        let nominations = self
+            .project_repo
+            .get_admin_nominations(offset, limit)
+            .await
+            .map_err(|err| DbError::Str(format!("Failed to get admin nominations: {:?}", err)))?;
+
+        Ok(nominations)
+    }
+
     pub async fn get_nomination_statistics(
         &self,
         nominator_email: &str,
