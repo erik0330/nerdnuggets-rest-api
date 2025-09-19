@@ -1639,7 +1639,9 @@ impl ProjectService {
         if user.email.is_empty() {
             return Err(DbError::Str("User email is empty".to_string()))?;
         }
-        if !nomination.authors.contains(&user.email) {
+        // Check if the user's email is listed as an author of the nomination
+        let is_author = nomination.authors.iter().any(|a| a.contains(&user.email));
+        if !is_author {
             return Err(DbError::Str(
                 "User is not an author of the nomination".to_string(),
             ))?;
