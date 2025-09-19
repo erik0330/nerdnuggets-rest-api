@@ -326,7 +326,7 @@ pub async fn send_nomination_author_email(
             <div style="max-width: 1000px;">
                 <div style="width: 100%; margin: 30px;">
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Dear {},</p>
-                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">We're pleased to inform you that your research "{}" has been nominated for funding consideration on NerdNuggets, our platform connecting research with backers.</p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">We're pleased to inform you that your research <strong>{}</strong> has been nominated for funding consideration on NerdNuggets, our platform connecting research with backers.</p>
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">{} selected your work for its potential impact.</p>
                     
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">Next steps include:</p>
@@ -337,7 +337,7 @@ pub async fn send_nomination_author_email(
                         <li>Possible funding opportunities</li>
                     </ul>
                     
-                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">To claim authorship: <a href="https://nerdnuggets.org/nomination/claim-authorship/{}" style="color: #1155cc;">nerdnuggets.org</a></p>
+                    <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">To claim authorship, please visit: <a href="https://nerdnuggets.org/nominations/claim-authorship/{}" style="color: #1155cc;"><strong>{}</strong></a></p>
                     
                     <p style="font-size: 16px;font-family: Arial,'Helvetica Neue',Helvetica,sans-serif;color: black;">This nomination highlights the value of your work.</p>
                     
@@ -345,7 +345,7 @@ pub async fn send_nomination_author_email(
                 </div>
             </div>
         </div>"#,
-        author_name, paper_title, nominator_name, nomination_id
+        author_name, paper_title, nominator_name, nomination_id, paper_title
     );
 
     send_email(author_email, subject, content, ses_client).await

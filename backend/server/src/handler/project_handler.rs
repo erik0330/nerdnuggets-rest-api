@@ -584,3 +584,16 @@ pub async fn get_nomination_by_id(
         return Err(DbError::Str("Nomination not found".to_string()))?;
     }
 }
+
+pub async fn claim_authorship(
+    Extension(user): Extension<User>,
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<ProjectInfo>, ApiError> {
+    let response = state
+        .service
+        .project
+        .claim_authorship(user, uuid_from_str(&id)?)
+        .await?;
+    Ok(Json(response))
+}
