@@ -3,15 +3,16 @@ use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use third_party_api::arweave::upload_project_submission;
 use types::dto::{
-    AdminDashboardCounts, AdminMilestonesResponse, AdminProjectDashboardCounts,
-    AssignEditorRequest, DaoStatisticsResponse, DaoVoteTab, EditorDashboardCounts,
-    FetchPaperFromDoiRequest, GetAdminMilestonesOption, GetDaosOption, GetNominationsOption,
-    GetProjectCommentsOption, GetProjectFundersOption, GetProjectsOption, GetSimilarProjectsOption,
-    GetUserDaoVotesOption, MakeDecisionRequest, MilestoneApprovalRequest,
-    NominationStatisticsResponse, ProjectCountsResponse, ProjectFundersResponse,
-    ProjectUpdateStep1Request, ProjectUpdateStep2Request, ProjectUpdateStep3Request,
-    ResearchProjectDashboardResponse, SubmitDaoVoteRequest, SubmitNominationRequest,
-    SubmitProjectCommentRequest, UpdateMilestoneRequest, UserDaoVotingStats,
+    AdminDashboardCounts, AdminMilestonesResponse, AdminNominationDashboardCounts,
+    AdminProjectDashboardCounts, AssignEditorRequest, DaoStatisticsResponse, DaoVoteTab,
+    EditorDashboardCounts, FetchPaperFromDoiRequest, GetAdminMilestonesOption, GetDaosOption,
+    GetNominationsOption, GetProjectCommentsOption, GetProjectFundersOption, GetProjectsOption,
+    GetSimilarProjectsOption, GetUserDaoVotesOption, MakeDecisionRequest, MilestoneApprovalRequest,
+    NominationStatisticsResponse, OffsetAndLimitOption, ProjectCountsResponse,
+    ProjectFundersResponse, ProjectUpdateStep1Request, ProjectUpdateStep2Request,
+    ProjectUpdateStep3Request, ResearchProjectDashboardResponse, SubmitDaoVoteRequest,
+    SubmitNominationRequest, SubmitProjectCommentRequest, UpdateMilestoneRequest,
+    UserDaoVotingStats,
 };
 use types::error::{ApiError, DbError, UserError, ValidatedRequest};
 use types::models::{
@@ -560,6 +561,41 @@ pub async fn get_nomination_statistics(
     } else {
         return Ok(Json(NominationStatisticsResponse::default()));
     }
+}
+
+pub async fn get_admin_nomination_dashboard_counts(
+    Extension(role): Extension<String>,
+    State(state): State<AppState>,
+) -> Result<Json<AdminNominationDashboardCounts>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+    let counts = state
+        .service
+        .project
+        .get_admin_nomination_dashboard_counts()
+        .await?;
+    Ok(Json(counts))
+}
+
+pub async fn get_admin_nominations(
+    Extension(role): Extension<String>,
+    Query(opts): Query<OffsetAndLimitOption>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<Nomination>>, ApiError> {
+    if role != UserRoleType::Admin.to_string() {
+        return Err(UserError::RoleNotAllowed)?;
+    }
+
+    let offset = opts.offset.unwrap_or(0);
+    let limit = opts.limit.unwrap_or(10);
+
+    let nominations = state
+        .service
+        .project
+        .get_admin_nominations(offset, limit)
+        .await?;
+    Ok(Json(nominations))
 }
 
 pub async fn get_nomination_by_identifier(

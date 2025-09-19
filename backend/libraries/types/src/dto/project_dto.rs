@@ -384,3 +384,12 @@ pub struct NominationStatisticsResponse {
     pub approved: i64,
     pub rejected: i64,
 }
+
+#[derive(Clone, Deserialize, Serialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminNominationDashboardCounts {
+    pub total: i64,
+    pub authors_notified: i64,
+    pub claims_pending: i64,
+    pub ai_score_avg: f32,
+}
