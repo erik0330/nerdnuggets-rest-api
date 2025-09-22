@@ -1684,8 +1684,15 @@ impl ProjectService {
         }
         if let Some(project_id) = nomination.project_id {
             let project = self.project_repo.get_project_by_id(project_id).await;
-            if project.is_some() {
-                return Err(DbError::Str("Nomination already has a project".to_string()))?;
+            if let Some(project) = project {
+                if project.user_id == user.id {
+                    return Ok(self.project_to_info(&project).await?);
+                } else {
+                    return Err(DbError::Str(format!(
+                        "Other author \"{}\" already claimed this nomination",
+                        user.email
+                    )))?;
+                }
             }
         }
         let (nerd_id, proposal_id) = loop {
