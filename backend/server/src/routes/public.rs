@@ -1,6 +1,7 @@
 use crate::{
     handler::{
         bounty_handler::{get_bids, get_bounties, get_bounty_by_id, get_similar_bounties},
+        holder_handler::get_holders,
         prediction_handler::{get_prediction_by_id, get_predictions, get_top_predictors},
         project_handler::{
             fetch_paper_from_doi, get_dao_by_id, get_dao_statistics, get_daos,
@@ -45,4 +46,5 @@ pub fn routes() -> Router<AppState> {
         .route("/nomination/fetch", post(fetch_paper_from_doi))
         .route("/nomination/:id", get(get_nomination_by_id))
         .route("/nomination/:id/submit", post(submit_nomination))
+        .route("/holders", get(get_holders))
 }

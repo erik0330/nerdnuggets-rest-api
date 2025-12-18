@@ -1,5 +1,6 @@
 mod admin_dto;
 mod bounty_dto;
+mod holder_dto;
 mod prediction_dto;
 mod privy_token_dto;
 mod project_dto;
@@ -10,6 +11,7 @@ mod util_dto;
 
 pub use admin_dto::*;
 pub use bounty_dto::*;
+pub use holder_dto::*;
 pub use prediction_dto::*;
 pub use privy_token_dto::*;
 pub use project_dto::*;

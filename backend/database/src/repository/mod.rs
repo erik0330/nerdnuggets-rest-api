@@ -1,4 +1,5 @@
 mod bounty_repository;
+mod holder_repository;
 mod notification_repository;
 mod prediction_placement_repository;
 mod prediction_repository;
@@ -8,6 +9,7 @@ mod user_repository;
 mod util_repository;
 
 pub use bounty_repository::*;
+pub use holder_repository::*;
 pub use notification_repository::*;
 pub use prediction_placement_repository::*;
 pub use prediction_repository::*;

@@ -1,4 +1,5 @@
 mod bounty_service;
+mod holder_service;
 mod notification_service;
 mod prediction_placement_service;
 mod prediction_service;
@@ -10,6 +11,7 @@ mod user_service;
 mod util_service;
 
 pub use bounty_service::*;
+pub use holder_service::*;
 pub use notification_service::*;
 pub use prediction_placement_service::*;
 pub use prediction_service::*;
@@ -27,6 +29,7 @@ use utils::env::Env;
 #[derive(Clone)]
 pub struct AppService {
     pub bounty: BountyService,
+    pub holder: HolderService,
     pub notification: NotificationService,
     pub prediction: PredictionService,
     pub prediction_placement: PredictionPlacementService,
@@ -41,6 +44,7 @@ impl AppService {
     pub fn init(db: &Arc<DatabasePool>, env: &Env) -> Self {
         Self {
             bounty: BountyService::new(db),
+            holder: HolderService::new(db),
             notification: NotificationService::new(db),
             prediction: PredictionService::new(db),
             prediction_placement: PredictionPlacementService::new(db),
