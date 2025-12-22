@@ -8999,4 +8999,4 @@ INSERT INTO holder (telegram_id, username, first_name, last_name, photo_url, tot
     ('5707773895', 'weleoeleoel', 'kueng', '🍅▪️🐾🐐', NULL, 903450, 903450),
     ('6697891224', 'JOSELITO0804', '| Drops💧🍅🌱🦒Meshchain.Ai Joselito', 'Bendero', NULL, 903443, 903443),
     ('6397224526', 'Addngo221', 'Vfrjkd▪️🐾🦉Tearline', 'Nn21101986', 'user/6397224526', 903439, 552439),
-    ('1694900685', 'ICryptotradingBillionares', 'Tomarket🍅▪️ 🐾 Ⓜ️ MEMES #P4L 🐼 🐐 MeshChain.Ai 💲BLM', 'Muhammeed🐦📦🍅🐅🛒📦👾 BITS 📦 Bums', NULL, 903427, 903427);
+    ('1694900685', 'ICryptotradingBillionares', 'Tomarket🍅▪️ 🐾 Ⓜ️ MEMES #P4L 🐼 🐐 MeshChain.Ai 💲BLM', 'Muhammeed🐦📦🍅🐅🛒📦👾 BITS 📦 Bums', NULL, 903427, 903427) ON CONFLICT (telegram_id) DO NOTHING;
