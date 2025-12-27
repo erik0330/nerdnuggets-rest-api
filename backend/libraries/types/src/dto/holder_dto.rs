@@ -41,3 +41,50 @@ pub struct HoldersListResponse {
     pub total_count: i64,
     pub has_more: bool,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TelegramLoginRequest {
+    pub id: i64,
+    pub first_name: String,
+    pub last_name: Option<String>,
+    pub username: Option<String>,
+    pub photo_url: Option<String>,
+    pub auth_date: i64,
+    pub hash: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VerifyTelegramResponse {
+    pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub points: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub telegram_id: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub username: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaimRequest {
+    pub telegram_id: u64,
+    pub wallet_address: String,
+    pub message: String,
+    pub signature: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaimResponse {
+    pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub points_claimed: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub wallet: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}

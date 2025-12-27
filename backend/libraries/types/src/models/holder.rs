@@ -12,6 +12,8 @@ pub struct Holder {
     pub photo_url: Option<String>,
     pub total_coins: i64,
     pub current_coins: i64,
+    pub wallet_address: Option<String>,
+    pub claimed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

@@ -37,6 +37,8 @@ pub struct Env {
     // Add Privy configuration
     pub privy_app_id: String,
     pub privy_app_secret: String,
+    // Telegram bot token for login verification
+    pub telegram_bot_token: String,
 }
 
 impl Env {
@@ -129,6 +131,10 @@ impl Env {
         let privy_app_secret =
             std::env::var("PRIVY_APP_SECRET").expect("PRIVY_APP_SECRET must be set");
 
+        // Telegram bot token for login verification
+        let telegram_bot_token =
+            std::env::var("TELEGRAM_BOT_TOKEN").expect("TELEGRAM_BOT_TOKEN must be set");
+
         Self {
             port,
             jwt_secret,
@@ -162,6 +168,7 @@ impl Env {
             apple_private_key,
             privy_app_id,
             privy_app_secret,
+            telegram_bot_token,
         }
     }
 

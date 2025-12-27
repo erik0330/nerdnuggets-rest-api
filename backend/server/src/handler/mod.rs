@@ -5,5 +5,6 @@ pub mod notification_handler;
 pub mod prediction_handler;
 pub mod project_handler;
 pub mod reward_handler;
+pub mod telegram_handler;
 pub mod user_handler;
 pub mod util_handler;

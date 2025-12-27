@@ -36,4 +36,27 @@ impl HolderRepository {
             .await?;
         Ok(count)
     }
+
+    pub async fn get_holder_by_telegram_id(&self, telegram_id: &str) -> Option<Holder> {
+        sqlx::query_as::<_, Holder>("SELECT * FROM holder WHERE telegram_id = $1")
+            .bind(telegram_id)
+            .fetch_optional(self.db_conn.get_pool())
+            .await
+            .unwrap_or(None)
+    }
+
+    pub async fn update_holder_claim(
+        &self,
+        telegram_id: &str,
+        wallet_address: &str,
+    ) -> Result<(), SqlxError> {
+        sqlx::query(
+            "UPDATE holder SET wallet_address = $1, claimed_at = NOW(), updated_at = NOW() WHERE telegram_id = $2",
+        )
+        .bind(wallet_address)
+        .bind(telegram_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(())
+    }
 }

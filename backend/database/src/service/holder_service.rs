@@ -1,8 +1,9 @@
 use crate::{pool::DatabasePool, repository::HolderRepository};
 use std::sync::Arc;
 use types::{
-    dto::{HolderDto, HoldersListResponse},
+    dto::{ClaimRequest, ClaimResponse, HolderDto, HoldersListResponse, TelegramLoginRequest, VerifyTelegramResponse},
     error::{ApiError, DbError},
+    models::Holder,
 };
 
 #[derive(Clone)]
@@ -49,5 +50,21 @@ impl HolderService {
             total_count,
             has_more,
         })
+    }
+
+    pub async fn get_holder_by_telegram_id(&self, telegram_id: &str) -> Option<Holder> {
+        self.holder_repo.get_holder_by_telegram_id(telegram_id).await
+    }
+
+    pub async fn update_holder_claim(
+        &self,
+        telegram_id: &str,
+        wallet_address: &str,
+    ) -> Result<(), ApiError> {
+        self.holder_repo
+            .update_holder_claim(telegram_id, wallet_address)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))?;
+        Ok(())
     }
 }
