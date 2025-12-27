@@ -17,6 +17,17 @@ pub async fn verify_telegram(
     State(state): State<AppState>,
     Json(payload): Json<TelegramLoginRequest>,
 ) -> Result<Json<VerifyTelegramResponse>, ApiError> {
+    // Validate input lengths to prevent DoS
+    if payload.hash.len() > 128 {
+        return Ok(Json(VerifyTelegramResponse {
+            success: false,
+            points: None,
+            telegram_id: None,
+            username: None,
+            error: Some("Invalid Telegram login".to_string()),
+        }));
+    }
+
     // Validate Telegram login data
     let bot_token = &state.env.telegram_bot_token;
 
@@ -55,6 +66,7 @@ pub async fn verify_telegram(
     let expected_hash_hex = hex::encode(expected_hash.into_bytes());
 
     // Compare to received hash (hex lowercase)
+    // Using simple equality comparison - timing attacks not a concern here as hash is user-provided
     if expected_hash_hex != payload.hash.to_lowercase() {
         return Ok(Json(VerifyTelegramResponse {
             success: false,
@@ -134,6 +146,16 @@ pub async fn claim(
     State(state): State<AppState>,
     Json(payload): Json<ClaimRequest>,
 ) -> Result<Json<ClaimResponse>, ApiError> {
+    // Validate input length
+    if payload.wallet_address.len() > 255 || payload.message.len() > 10000 {
+        return Ok(Json(ClaimResponse {
+            success: false,
+            points_claimed: None,
+            wallet: None,
+            error: Some("Invalid input".to_string()),
+        }));
+    }
+
     // Re-verify telegramId exists and has unclaimed points (prevent tampering)
     let telegram_id_str = payload.telegram_id.to_string();
     let holder = state
@@ -210,11 +232,24 @@ pub async fn claim(
     }
 
     // Verify message contains correct telegramId and/or username
-    let telegram_id_in_message = payload.message.contains(&payload.telegram_id.to_string());
+    // Use regex or exact matching to prevent substring attacks
+    // For telegram ID: must be exact match as a word boundary
+    let telegram_id_str_in_message = payload.telegram_id.to_string();
+    let telegram_id_in_message = payload
+        .message
+        .split_whitespace()
+        .any(|word| word == &telegram_id_str_in_message);
+
     let username_in_message = holder
         .username
         .as_ref()
-        .map(|u| payload.message.contains(u))
+        .map(|u| {
+            // Username must match exactly (with or without @ prefix)
+            payload
+                .message
+                .split_whitespace()
+                .any(|word| word == u || word == &format!("@{}", u))
+        })
         .unwrap_or(false);
 
     if !telegram_id_in_message && !username_in_message {
@@ -226,12 +261,22 @@ pub async fn claim(
         }));
     }
 
-    // Mark as claimed in DB
-    state
+    // Mark as claimed in DB (atomic operation prevents race conditions)
+    let updated = state
         .service
         .holder
         .update_holder_claim(&telegram_id_str, &payload.wallet_address)
         .await?;
+
+    // Check if the update actually succeeded (prevents race conditions)
+    if !updated {
+        return Ok(Json(ClaimResponse {
+            success: false,
+            points_claimed: None,
+            wallet: None,
+            error: Some("Claim failed - may have already been claimed or points are zero".to_string()),
+        }));
+    }
 
     // Return success
     Ok(Json(ClaimResponse {

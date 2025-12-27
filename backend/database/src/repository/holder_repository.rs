@@ -49,14 +49,21 @@ impl HolderRepository {
         &self,
         telegram_id: &str,
         wallet_address: &str,
-    ) -> Result<(), SqlxError> {
-        sqlx::query(
-            "UPDATE holder SET wallet_address = $1, claimed_at = NOW(), updated_at = NOW() WHERE telegram_id = $2",
+    ) -> Result<bool, SqlxError> {
+        // Use UPDATE with WHERE conditions to atomically check and update
+        // This prevents race conditions - only updates if not already claimed and has points
+        let result = sqlx::query(
+            "UPDATE holder 
+             SET wallet_address = $1, claimed_at = NOW(), updated_at = NOW() 
+             WHERE telegram_id = $2 
+               AND claimed_at IS NULL 
+               AND current_coins > 0",
         )
         .bind(wallet_address)
         .bind(telegram_id)
         .execute(self.db_conn.get_pool())
         .await?;
-        Ok(())
+        // Return true if a row was actually updated, false otherwise
+        Ok(result.rows_affected() > 0)
     }
 }

@@ -60,11 +60,10 @@ impl HolderService {
         &self,
         telegram_id: &str,
         wallet_address: &str,
-    ) -> Result<(), ApiError> {
+    ) -> Result<bool, ApiError> {
         self.holder_repo
             .update_holder_claim(telegram_id, wallet_address)
             .await
-            .map_err(|err| DbError::Str(err.to_string()))?;
-        Ok(())
+            .map_err(|err| DbError::Str(err.to_string()))
     }
 }
