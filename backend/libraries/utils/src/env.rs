@@ -26,9 +26,11 @@ pub struct Env {
     pub dao_contract_address: String,
     pub funding_contract_address: String,
     pub prediction_contract_address: String,
+    pub nerd_token_contract_address: String,
     pub rpc_url: String,
     pub chain_id: u64,
     pub wallet_private_key: String,
+    pub points_to_tokens_conversion_rate: u64,
     pub dao_duration: Duration,
     pub apple_client_id: String,
     pub apple_team_id: String,
@@ -39,6 +41,8 @@ pub struct Env {
     pub privy_app_secret: String,
     // Telegram bot token for login verification
     pub telegram_bot_token: String,
+    // Claim deadline - unix timestamp when claims end (None = no deadline)
+    pub telegram_claim_deadline: Option<i64>,
 }
 
 impl Env {
@@ -106,6 +110,8 @@ impl Env {
             .expect("FUNDING_CONTRACT_ADDRESS must be set");
         let prediction_contract_address = std::env::var("PREDICTION_CONTRACT_ADDRESS")
             .expect("PREDICTION_CONTRACT_ADDRESS must be set");
+        let nerd_token_contract_address = std::env::var("NERD_TOKEN_CONTRACT_ADDRESS")
+            .expect("NERD_TOKEN_CONTRACT_ADDRESS must be set");
         let rpc_url = std::env::var("RPC_URL").expect("RPC_URL must be set");
         let chain_id = std::env::var("CHAIN_ID")
             .ok()
@@ -113,6 +119,10 @@ impl Env {
             .unwrap_or(1);
         let wallet_private_key =
             std::env::var("WALLET_PRIVATE_KEY").expect("WALLET_PRIVATE_KEY must be set");
+        let points_to_tokens_conversion_rate = std::env::var("POINTS_TO_TOKENS_CONVERSION_RATE")
+            .ok()
+            .and_then(|p| p.parse().ok())
+            .unwrap_or(1_000_000_000_000_000_000); // Default: 1 point = 1 token (1e18 wei)
         let dao_duration = if production {
             Duration::days(7)
         } else {
@@ -134,6 +144,12 @@ impl Env {
         // Telegram bot token for login verification
         let telegram_bot_token =
             std::env::var("TELEGRAM_BOT_TOKEN").expect("TELEGRAM_BOT_TOKEN must be set");
+
+        // Telegram claim deadline - optional unix timestamp when claims end
+        // If not set, claims are allowed indefinitely
+        let telegram_claim_deadline = std::env::var("TELEGRAM_CLAIM_DEADLINE")
+            .ok()
+            .and_then(|d| d.parse::<i64>().ok());
 
         Self {
             port,
@@ -158,9 +174,11 @@ impl Env {
             dao_contract_address,
             funding_contract_address,
             prediction_contract_address,
+            nerd_token_contract_address,
             rpc_url,
             chain_id,
             wallet_private_key,
+            points_to_tokens_conversion_rate,
             dao_duration,
             apple_client_id,
             apple_team_id,
@@ -169,6 +187,7 @@ impl Env {
             privy_app_id,
             privy_app_secret,
             telegram_bot_token,
+            telegram_claim_deadline,
         }
     }
 

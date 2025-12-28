@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use axum::{extract::State, Json};
 use chrono::Utc;
-use ethers::core::types::{Address, Signature};
+use ethers::core::types::{Address, Signature, U256};
 use hmac::{Hmac, Mac};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -11,6 +11,15 @@ use types::{
 };
 
 type HmacSha256 = Hmac<Sha256>;
+
+/// Convert points to tokens (in wei, 18 decimals)
+/// Formula: tokens_wei = points * conversion_rate
+/// The conversion_rate is in wei (18 decimals), so 1 point = conversion_rate tokens
+fn calculate_tokens_from_points(points: u64, conversion_rate: u64) -> U256 {
+    // Multiply points by conversion rate to get tokens in wei
+    // Both are already in the correct units (points as integer, conversion_rate in wei)
+    U256::from(points) * U256::from(conversion_rate)
+}
 
 /// Verify Telegram login data and check if user has unclaimed points
 pub async fn verify_telegram(
@@ -130,6 +139,20 @@ pub async fn verify_telegram(
                 }));
             }
 
+            // Check if claim period has ended
+            if let Some(deadline) = state.env.telegram_claim_deadline {
+                let now = Utc::now().timestamp();
+                if now > deadline {
+                    return Ok(Json(VerifyTelegramResponse {
+                        success: false,
+                        points: None,
+                        telegram_id: None,
+                        username: None,
+                        error: Some("Claim period has ended".to_string()),
+                    }));
+                }
+            }
+
             Ok(Json(VerifyTelegramResponse {
                 success: true,
                 points: Some(h.current_coins as u64),
@@ -185,6 +208,19 @@ pub async fn claim(
             wallet: None,
             error: Some("No points found".to_string()),
         }));
+    }
+
+    // Check if claim period has ended
+    if let Some(deadline) = state.env.telegram_claim_deadline {
+        let now = Utc::now().timestamp();
+        if now > deadline {
+            return Ok(Json(ClaimResponse {
+                success: false,
+                points_claimed: None,
+                wallet: None,
+                error: Some("Claim period has ended".to_string()),
+            }));
+        }
     }
 
     // Verify wallet address format
@@ -261,21 +297,77 @@ pub async fn claim(
         }));
     }
 
-    // Mark as claimed in DB (atomic operation prevents race conditions)
+    // Calculate tokens from points
+    let conversion_rate = state.env.points_to_tokens_conversion_rate;
+    
+    // Validate conversion rate (must be > 0 to prevent zero token claims)
+    if conversion_rate == 0 {
+        tracing::error!("Invalid conversion rate: 0");
+        return Ok(Json(ClaimResponse {
+            success: false,
+            points_claimed: None,
+            wallet: None,
+            error: Some("Configuration error - please contact support".to_string()),
+        }));
+    }
+    
+    let tokens_wei = calculate_tokens_from_points(holder.current_coins as u64, conversion_rate);
+
+    // CRITICAL: Update DB FIRST (atomically) to prevent race conditions
+    // Only update contract if DB update succeeds
+    // This prevents contract state changes if another request claimed first
     let updated = state
         .service
         .holder
         .update_holder_claim(&telegram_id_str, &payload.wallet_address)
         .await?;
 
-    // Check if the update actually succeeded (prevents race conditions)
+    // Check if the DB update succeeded (prevents race conditions)
     if !updated {
+        // Another request already claimed this, or holder state changed
         return Ok(Json(ClaimResponse {
             success: false,
             points_claimed: None,
             wallet: None,
-            error: Some("Claim failed - may have already been claimed or points are zero".to_string()),
+            error: Some("Already claimed or no points available".to_string()),
         }));
+    }
+
+    // DB update succeeded, now update the contract
+    // If contract update fails, we've already marked as claimed in DB
+    // This is acceptable - the user can retry contract operations separately if needed
+    match state
+        .evm
+        .set_owed_amount(&payload.wallet_address, tokens_wei)
+        .await
+    {
+        Ok(tx_hash) => {
+            // Log the transaction hash for debugging
+            tracing::info!(
+                "Set owed amount for wallet {}: {} tokens (tx: {})",
+                payload.wallet_address,
+                tokens_wei,
+                tx_hash
+            );
+        }
+        Err(e) => {
+            // DB already marked as claimed, but contract update failed
+            // Log error for manual intervention
+            // User's claim is marked in DB, but tokens not set in contract
+            tracing::error!(
+                "CRITICAL: DB marked as claimed but contract update failed for telegram_id {} wallet {}: {}",
+                telegram_id_str,
+                payload.wallet_address,
+                e
+            );
+            // Return error so user knows to contact support
+            return Ok(Json(ClaimResponse {
+                success: false,
+                points_claimed: None,
+                wallet: None,
+                error: Some("Claim recorded but contract update failed - please contact support".to_string()),
+            }));
+        }
     }
 
     // Return success
