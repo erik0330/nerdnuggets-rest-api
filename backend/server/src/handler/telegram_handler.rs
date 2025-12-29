@@ -313,6 +313,36 @@ pub async fn claim(
     
     let tokens_wei = calculate_tokens_from_points(holder.current_coins as u64, conversion_rate);
 
+    // Validate referrer if provided (but don't process rewards yet - wait for successful claim)
+    let referrer_telegram_id_str_opt = payload.referrer_telegram_id.as_ref().map(|id| id.to_string());
+    if let Some(ref referrer_telegram_id_str) = referrer_telegram_id_str_opt {
+        // Validate referrer exists and is not the same as the claimer
+        if referrer_telegram_id_str == &telegram_id_str {
+            return Ok(Json(ClaimResponse {
+                success: false,
+                points_claimed: None,
+                wallet: None,
+                error: Some("Cannot refer yourself".to_string()),
+            }));
+        }
+
+        // Check if referrer exists
+        let referrer = state
+            .service
+            .holder
+            .get_holder_by_telegram_id(referrer_telegram_id_str)
+            .await;
+
+        if referrer.is_none() {
+            return Ok(Json(ClaimResponse {
+                success: false,
+                points_claimed: None,
+                wallet: None,
+                error: Some("Referrer not found".to_string()),
+            }));
+        }
+    }
+
     // CRITICAL: Update DB FIRST (atomically) to prevent race conditions
     // Only update contract if DB update succeeds
     // This prevents contract state changes if another request claimed first
@@ -331,6 +361,53 @@ pub async fn claim(
             wallet: None,
             error: Some("Already claimed or no points available".to_string()),
         }));
+    }
+
+    // DB update succeeded - NOW process referral rewards (only after successful claim)
+    if let Some(ref referrer_telegram_id_str) = referrer_telegram_id_str_opt {
+        // Set referrer relationship (only if not already set - immutable)
+        let _ = state
+            .service
+            .holder
+            .set_referrer(&telegram_id_str, referrer_telegram_id_str)
+            .await;
+        
+        // Calculate referral reward: same as points claimed (1:1 ratio)
+        // Both referrer and referee get the same reward amount
+        let referral_reward = holder.current_coins;
+        
+        // Validate referral reward amount is reasonable (prevent overflow/abuse)
+        if referral_reward > 0 && referral_reward <= 1_000_000_000_000 {
+            // Add referral reward to referrer's leaderboard points
+            // This adds to both total_coins and current_coins
+            if let Err(e) = state
+                .service
+                .holder
+                .add_referral_reward(referrer_telegram_id_str, referral_reward)
+                .await
+            {
+                tracing::error!(
+                    "Failed to add referral reward for referrer {}: {}",
+                    referrer_telegram_id_str,
+                    e
+                );
+                // Don't fail the claim if referral reward addition fails
+                // Log error but continue with claim processing
+            } else {
+                tracing::info!(
+                    "Referral reward added: referrer {} received {} points for referring {}",
+                    referrer_telegram_id_str,
+                    referral_reward,
+                    telegram_id_str
+                );
+            }
+        } else {
+            tracing::warn!(
+                "Invalid referral reward amount: {} (telegram_id: {})",
+                referral_reward,
+                telegram_id_str
+            );
+        }
     }
 
     // DB update succeeded, now update the contract
