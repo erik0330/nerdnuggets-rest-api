@@ -14,6 +14,10 @@ pub struct Holder {
     pub current_coins: i64,
     pub wallet_address: Option<String>,
     pub claimed_at: Option<DateTime<Utc>>,
+    pub referrer_telegram_id: Option<String>,
+    pub referral_rewards_earned: i64,
+    pub total_referred: i32,
+    pub referral_rewards_claimed: i64,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

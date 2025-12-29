@@ -66,4 +66,56 @@ impl HolderRepository {
         // Return true if a row was actually updated, false otherwise
         Ok(result.rows_affected() > 0)
     }
+
+    /// Set referrer for a holder (only if not already set)
+    pub async fn set_referrer(
+        &self,
+        telegram_id: &str,
+        referrer_telegram_id: &str,
+    ) -> Result<bool, SqlxError> {
+        // Only set referrer if not already set (immutable once set)
+        let result = sqlx::query(
+            "UPDATE holder 
+             SET referrer_telegram_id = $1, updated_at = NOW() 
+             WHERE telegram_id = $2 
+               AND referrer_telegram_id IS NULL",
+        )
+        .bind(referrer_telegram_id)
+        .bind(telegram_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(result.rows_affected() > 0)
+    }
+
+    /// Add referral reward to referrer and increment total_referred count
+    /// This adds the reward to both total_coins and current_coins (for leaderboard)
+    pub async fn add_referral_reward(
+        &self,
+        referrer_telegram_id: &str,
+        reward_amount: i64,
+    ) -> Result<bool, SqlxError> {
+        let result = sqlx::query(
+            "UPDATE holder 
+             SET referral_rewards_earned = referral_rewards_earned + $1,
+                 total_referred = total_referred + 1,
+                 total_coins = total_coins + $1,
+                 current_coins = current_coins + $1,
+                 updated_at = NOW() 
+             WHERE telegram_id = $2",
+        )
+        .bind(reward_amount)
+        .bind(referrer_telegram_id)
+        .execute(self.db_conn.get_pool())
+        .await?;
+        Ok(result.rows_affected() > 0)
+    }
+
+    /// Get holder by wallet address (for referral tracking from contract)
+    pub async fn get_holder_by_wallet_address(&self, wallet_address: &str) -> Option<Holder> {
+        sqlx::query_as::<_, Holder>("SELECT * FROM holder WHERE wallet_address = $1")
+            .bind(wallet_address)
+            .fetch_optional(self.db_conn.get_pool())
+            .await
+            .unwrap_or(None)
+    }
 }

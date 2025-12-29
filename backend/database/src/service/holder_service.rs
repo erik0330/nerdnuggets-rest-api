@@ -66,4 +66,33 @@ impl HolderService {
             .await
             .map_err(|err| DbError::Str(err.to_string()))
     }
+
+    /// Set referrer for a holder
+    pub async fn set_referrer(
+        &self,
+        telegram_id: &str,
+        referrer_telegram_id: &str,
+    ) -> Result<bool, ApiError> {
+        self.holder_repo
+            .set_referrer(telegram_id, referrer_telegram_id)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))
+    }
+
+    /// Add referral reward to referrer (adds to leaderboard points)
+    pub async fn add_referral_reward(
+        &self,
+        referrer_telegram_id: &str,
+        reward_amount: i64,
+    ) -> Result<bool, ApiError> {
+        self.holder_repo
+            .add_referral_reward(referrer_telegram_id, reward_amount)
+            .await
+            .map_err(|err| DbError::Str(err.to_string()))
+    }
+
+    /// Get holder by wallet address
+    pub async fn get_holder_by_wallet_address(&self, wallet_address: &str) -> Option<Holder> {
+        self.holder_repo.get_holder_by_wallet_address(wallet_address).await
+    }
 }
