@@ -8,7 +8,9 @@ members = [
     "backend/server",
     "backend/notification_websockets",
     "backend/libraries/postgres_macro",
-    "backend/libraries/evm", "backend/jobs",
+    "backend/libraries/evm",
+    "backend/libraries/merkle",
+    "backend/jobs",
 ]
 resolver = "2"
 
@@ -39,6 +41,7 @@ ethers = { version = "2.0", features = ["rustls"] }
 futures = "0.3.31"
 getrandom = { version = "0.2.15", features = ["custom"] }
 hex = "0.4.3"
+hmac = "0.12.1"
 hyper = { version = "1.5.2", features = ["full"] }
 ic-agent = "0.39.2"
 ic-cdk = "0.17.1"

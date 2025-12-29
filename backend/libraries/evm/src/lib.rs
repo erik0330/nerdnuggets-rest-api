@@ -7,12 +7,14 @@ use std::sync::Arc;
 abigen!(DAO_CONTRACT, "./abis/dao_contract_abi.json");
 abigen!(FUNDING_CONTRACT, "./abis/funding_contract_abi.json");
 abigen!(PREDICTION_CONTRACT, "./abis/prediction_contract_abi.json");
+abigen!(NERD_TOKEN_CONTRACT, "./abis/nerd_token_contract_abi.json");
 
 #[derive(Clone)]
 pub struct EVMClient {
     dao_contract: DAO_CONTRACT<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
     funding_contract: FUNDING_CONTRACT<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
     prediction_contract: PREDICTION_CONTRACT<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
+    nerd_token_contract: NERD_TOKEN_CONTRACT<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
     provider: Provider<Http>,
 }
 
@@ -21,6 +23,7 @@ impl EVMClient {
         dao_contract_address: &str,
         funding_contract_address: &str,
         prediction_contract_address: &str,
+        nerd_token_contract_address: &str,
         wallet_private_key: &str,
         rpc_url: &str,
         chain_id: u64,
@@ -34,6 +37,9 @@ impl EVMClient {
         let prediction_contract_address = prediction_contract_address
             .parse::<Address>()
             .expect("Invalid PREDICTION_CONTRACT_ADDRESS");
+        let nerd_token_contract_address = nerd_token_contract_address
+            .parse::<Address>()
+            .expect("Invalid NERD_TOKEN_CONTRACT_ADDRESS");
         let provider = Provider::<Http>::try_from(rpc_url).expect("Invalid RPC_URL");
         let wallet: LocalWallet = wallet_private_key
             .parse()
@@ -51,11 +57,16 @@ impl EVMClient {
             prediction_contract_address,
             Arc::new(provider_with_wallet.clone()),
         );
+        let nerd_token_contract = NERD_TOKEN_CONTRACT::new(
+            nerd_token_contract_address,
+            Arc::new(provider_with_wallet.clone()),
+        );
 
         EVMClient {
             dao_contract,
             funding_contract,
             prediction_contract,
+            nerd_token_contract,
             provider,
         }
     }
@@ -200,5 +211,52 @@ impl EVMClient {
             .await?;
 
         Ok((filtered_events, Some(to_block_number)))
+    }
+
+    /// Set the owed token amount for a user based on their points
+    /// This should be called when a user claims their Telegram points
+    /// @param user_address: The wallet address of the user
+    /// @param tokens_wei: The amount of tokens to set (in wei, 18 decimals)
+    pub async fn set_owed_amount(
+        &self,
+        user_address: &str,
+        tokens_wei: U256,
+    ) -> Result<String, anyhow::Error> {
+        let user_address = user_address.parse::<Address>()?;
+
+        if let Some(tx) = self
+            .nerd_token_contract
+            .set_owed_amount(user_address, tokens_wei)
+            .send()
+            .await?
+            .await?
+        {
+            return Ok(format!("{:?}", tx.transaction_hash));
+        } else {
+            return Err(anyhow!("Failed to set owed amount"));
+        }
+    }
+
+    /// Set the Merkle root for efficient Telegram points claims
+    /// This should be called periodically (e.g., daily) to update the root with new users
+    /// @param merkle_root: The new Merkle root (32 bytes)
+    pub async fn set_merkle_root(
+        &self,
+        merkle_root: [u8; 32],
+    ) -> Result<String, anyhow::Error> {
+        let root_bytes32: [u8; 32] = merkle_root;
+        let root = ethers::types::H256::from(root_bytes32);
+
+        if let Some(tx) = self
+            .nerd_token_contract
+            .set_merkle_root(root)
+            .send()
+            .await?
+            .await?
+        {
+            return Ok(format!("{:?}", tx.transaction_hash));
+        } else {
+            return Err(anyhow!("Failed to set Merkle root"));
+        }
     }
 }

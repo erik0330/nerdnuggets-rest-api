@@ -1,5 +1,6 @@
 mod bounty_service;
 mod holder_service;
+mod merkle_service;
 mod notification_service;
 mod prediction_placement_service;
 mod prediction_service;
@@ -12,6 +13,7 @@ mod util_service;
 
 pub use bounty_service::*;
 pub use holder_service::*;
+pub use merkle_service::*;
 pub use notification_service::*;
 pub use prediction_placement_service::*;
 pub use prediction_service::*;
@@ -30,6 +32,7 @@ use utils::env::Env;
 pub struct AppService {
     pub bounty: BountyService,
     pub holder: HolderService,
+    pub merkle: MerkleService,
     pub notification: NotificationService,
     pub prediction: PredictionService,
     pub prediction_placement: PredictionPlacementService,
@@ -45,6 +48,7 @@ impl AppService {
         Self {
             bounty: BountyService::new(db),
             holder: HolderService::new(db),
+            merkle: MerkleService::new(db),
             notification: NotificationService::new(db),
             prediction: PredictionService::new(db),
             prediction_placement: PredictionPlacementService::new(db),
