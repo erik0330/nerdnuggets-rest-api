@@ -236,4 +236,27 @@ impl EVMClient {
             return Err(anyhow!("Failed to set owed amount"));
         }
     }
+
+    /// Set the Merkle root for efficient Telegram points claims
+    /// This should be called periodically (e.g., daily) to update the root with new users
+    /// @param merkle_root: The new Merkle root (32 bytes)
+    pub async fn set_merkle_root(
+        &self,
+        merkle_root: [u8; 32],
+    ) -> Result<String, anyhow::Error> {
+        let root_bytes32: [u8; 32] = merkle_root;
+        let root = ethers::types::H256::from(root_bytes32);
+
+        if let Some(tx) = self
+            .nerd_token_contract
+            .set_merkle_root(root)
+            .send()
+            .await?
+            .await?
+        {
+            return Ok(format!("{:?}", tx.transaction_hash));
+        } else {
+            return Err(anyhow!("Failed to set Merkle root"));
+        }
+    }
 }

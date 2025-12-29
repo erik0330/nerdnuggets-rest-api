@@ -1,7 +1,7 @@
 use crate::{pool::DatabasePool, repository::HolderRepository};
 use std::sync::Arc;
 use types::{
-    dto::{ClaimRequest, ClaimResponse, HolderDto, HoldersListResponse, TelegramLoginRequest, VerifyTelegramResponse},
+    dto::{HolderDto, HoldersListResponse},
     error::{ApiError, DbError},
     models::Holder,
 };
@@ -61,10 +61,11 @@ impl HolderService {
         telegram_id: &str,
         wallet_address: &str,
     ) -> Result<bool, ApiError> {
-        self.holder_repo
+        Ok(self
+            .holder_repo
             .update_holder_claim(telegram_id, wallet_address)
             .await
-            .map_err(|err| DbError::Str(err.to_string()))
+            .map_err(|err| DbError::Str(err.to_string()))?)
     }
 
     /// Set referrer for a holder
@@ -73,10 +74,11 @@ impl HolderService {
         telegram_id: &str,
         referrer_telegram_id: &str,
     ) -> Result<bool, ApiError> {
-        self.holder_repo
+        Ok(self
+            .holder_repo
             .set_referrer(telegram_id, referrer_telegram_id)
             .await
-            .map_err(|err| DbError::Str(err.to_string()))
+            .map_err(|err| DbError::Str(err.to_string()))?)
     }
 
     /// Add referral reward to referrer (adds to leaderboard points)
@@ -85,10 +87,11 @@ impl HolderService {
         referrer_telegram_id: &str,
         reward_amount: i64,
     ) -> Result<bool, ApiError> {
-        self.holder_repo
+        Ok(self
+            .holder_repo
             .add_referral_reward(referrer_telegram_id, reward_amount)
             .await
-            .map_err(|err| DbError::Str(err.to_string()))
+            .map_err(|err| DbError::Str(err.to_string()))?)
     }
 
     /// Get holder by wallet address

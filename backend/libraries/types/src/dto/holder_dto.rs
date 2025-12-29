@@ -98,3 +98,13 @@ pub struct ClaimResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MerkleProofResponse {
+    pub telegram_id: String,
+    pub wallet_address: String,
+    pub token_amount: u64,
+    pub proof: Vec<String>, // Array of hex-encoded proof hashes
+    pub merkle_root: String, // Hex-encoded root
+}

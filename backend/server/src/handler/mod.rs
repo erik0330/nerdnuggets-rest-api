@@ -1,6 +1,7 @@
 pub mod auth_handler;
 pub mod bounty_handler;
 pub mod holder_handler;
+pub mod merkle_handler;
 pub mod notification_handler;
 pub mod prediction_handler;
 pub mod project_handler;

@@ -5,6 +5,7 @@ use crate::{
             login_with_email, login_with_privy, register_with_email, resend_verification_email,
             reset_password, verify_email,
         },
+        merkle_handler::get_merkle_proof,
         telegram_handler::{claim, verify_telegram},
     },
     state::AppState,
@@ -26,6 +27,7 @@ pub fn routes() -> Router<AppState> {
         .route("/auth/email/verify", post(verify_email))
         .route("/auth/forgot-password", post(forgot_password))
         .route("/auth/reset-password", post(reset_password))
-        .route("/verify-telegram", post(verify_telegram))
-        .route("/claim", post(claim))
+            .route("/verify-telegram", post(verify_telegram))
+            .route("/claim", post(claim))
+            .route("/merkle-proof", get(get_merkle_proof))
 }
